@@ -61,7 +61,10 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="gradient-card card-shadow border-white/10 p-4">
+          <Card 
+            className="gradient-card card-shadow border-white/10 p-4 cursor-pointer hover:scale-105 transition-all duration-300"
+            onClick={() => navigate("/weight-tracker")}
+          >
             <div className="text-sm text-muted-foreground mb-1">
               {isGerman ? "Gewicht" : "Weight"}
             </div>
@@ -98,6 +101,7 @@ const Dashboard = () => {
               return (
                 <Card
                   key={index}
+                  onClick={() => navigate(`/training/${group.label.toLowerCase()}`)}
                   className="gradient-card card-shadow border-white/10 p-6 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
                   <div className="flex flex-col items-center gap-3">
