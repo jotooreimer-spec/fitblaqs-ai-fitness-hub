@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import logo from "@/assets/fitblaqs-logo.png";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -39,6 +41,10 @@ const Login = () => {
     }
   };
 
+  const handleGoogleLogin = () => {
+    toast.info(isGerman ? "Google Login erfordert Lovable Cloud Aktivierung" : "Google Login requires Lovable Cloud activation");
+  };
+
   return (
     <div className="min-h-screen gradient-male flex items-center justify-center p-4">
       <Card className="w-full max-w-md gradient-card card-shadow border-white/10 p-8">
@@ -49,6 +55,25 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google Login Button */}
+          <Button 
+            type="button"
+            variant="outline" 
+            size="lg" 
+            className="w-full"
+            onClick={handleGoogleLogin}
+          >
+            <Mail className="w-5 h-5 mr-2" />
+            {isGerman ? "Mit Google anmelden" : "Sign in with Google"}
+          </Button>
+
+          <div className="relative">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              {isGerman ? "oder" : "or"}
+            </span>
+          </div>
+
           {/* Email */}
           <div>
             <Label>E-Mail</Label>
