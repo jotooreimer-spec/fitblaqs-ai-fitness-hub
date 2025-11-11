@@ -1,15 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import logo from "@/assets/fitblaqs-logo.png";
 import { toast } from "sonner";
+import { Mail } from "lucide-react";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     age: "",
@@ -21,7 +26,24 @@ const Register = () => {
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -31,12 +53,44 @@ const Register = () => {
       return;
     }
 
-    // Store user data temporarily (will be replaced with Lovable Cloud)
-    localStorage.setItem("fitblaqs_user", JSON.stringify(formData));
-    localStorage.setItem("fitblaqs_theme", formData.gender === "female" ? "theme-female" : "");
-    
-    toast.success(formData.language === "de" ? "Registrierung erfolgreich!" : "Registration successful!");
-    navigate("/dashboard");
+    setLoading(true);
+
+    try {
+      await signUpWithEmail(formData.email, formData.password, {
+        name: formData.name,
+        age: formData.age,
+        weight: formData.weight,
+        height: formData.height,
+        gender: formData.gender,
+        language: formData.language,
+      });
+      
+      toast.success(formData.language === "de" ? "Registrierung erfolgreich!" : "Registration successful!");
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error(
+        formData.language === "de" 
+          ? "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut." 
+          : "Registration failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast.error(
+        formData.language === "de" 
+          ? "Google Login fehlgeschlagen" 
+          : "Google login failed"
+      );
+      setLoading(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -55,6 +109,26 @@ const Register = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Google Login Button */}
+          <Button 
+            type="button"
+            variant="outline" 
+            size="lg" 
+            className="w-full"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+          >
+            <Mail className="w-5 h-5 mr-2" />
+            {isGerman ? "Mit Google registrieren" : "Sign up with Google"}
+          </Button>
+
+          <div className="relative">
+            <Separator />
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+              {isGerman ? "oder" : "or"}
+            </span>
+          </div>
+
           {/* Language Selection */}
           <div>
             <Label>{isGerman ? "Sprache" : "Language"}</Label>
@@ -149,8 +223,8 @@ const Register = () => {
 
           {/* Submit */}
           <div className="flex flex-col gap-4 pt-4">
-            <Button type="submit" variant="hero" size="lg" className="w-full">
-              {isGerman ? "Konto erstellen" : "Create Account"}
+            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
+              {loading ? (isGerman ? "Lädt..." : "Loading...") : (isGerman ? "Konto erstellen" : "Create Account")}
             </Button>
             
             <button

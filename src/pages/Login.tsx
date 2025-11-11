@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,41 +8,66 @@ import { Separator } from "@/components/ui/separator";
 import logo from "@/assets/fitblaqs-logo.png";
 import { toast } from "sonner";
 import { Mail } from "lucide-react";
+import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isGerman, setIsGerman] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Get language from localStorage if user exists
-  const storedUser = localStorage.getItem("fitblaqs_user");
-  const userLanguage = storedUser ? JSON.parse(storedUser).language : "de";
-  const isGerman = userLanguage === "de";
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
 
-  const handleSubmit = (e: React.FormEvent) => {
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simple validation (will be replaced with Lovable Cloud auth)
-    const storedUser = localStorage.getItem("fitblaqs_user");
-    
-    if (!storedUser) {
-      toast.error(isGerman ? "Kein Konto gefunden. Bitte registrieren Sie sich zuerst." : "No account found. Please register first.");
-      return;
-    }
+    setLoading(true);
 
-    const user = JSON.parse(storedUser);
-    
-    if (user.email === email && user.password === password) {
-      localStorage.setItem("fitblaqs_theme", user.gender === "female" ? "theme-female" : "");
+    try {
+      await signInWithEmail(email, password);
       toast.success(isGerman ? "Anmeldung erfolgreich!" : "Login successful!");
-      navigate("/dashboard");
-    } else {
-      toast.error(isGerman ? "Ungültige Anmeldedaten" : "Invalid credentials");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(
+        isGerman 
+          ? "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten." 
+          : "Login failed. Please check your credentials."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    toast.info(isGerman ? "Google Login erfordert Lovable Cloud Aktivierung" : "Google Login requires Lovable Cloud activation");
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast.error(
+        isGerman 
+          ? "Google Login fehlgeschlagen" 
+          : "Google login failed"
+      );
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,8 +125,8 @@ const Login = () => {
 
           {/* Submit */}
           <div className="flex flex-col gap-4 pt-4">
-            <Button type="submit" variant="hero" size="lg" className="w-full">
-              {isGerman ? "Anmelden" : "Login"}
+            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
+              {loading ? (isGerman ? "Lädt..." : "Loading...") : (isGerman ? "Anmelden" : "Login")}
             </Button>
             
             <button
