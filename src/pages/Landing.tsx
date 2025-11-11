@@ -31,9 +31,6 @@ const Landing = () => {
           />
           <div className="text-center">
             <h1 className="text-6xl font-black mb-4">FitBlaqs</h1>
-            <p className="text-xl text-muted-foreground max-w-md">
-              Your AI-powered fitness & nutrition companion
-            </p>
           </div>
         </div>
 
