@@ -31,6 +31,7 @@ const Landing = () => {
           />
           <div className="text-center">
             <h1 className="text-6xl font-black mb-4">FitBlaqs</h1>
+            <p className="text-2xl font-semibold text-primary glow">Power & Healthy</p>
           </div>
         </div>
 
