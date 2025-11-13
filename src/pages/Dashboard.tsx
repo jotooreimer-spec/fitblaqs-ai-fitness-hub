@@ -7,6 +7,7 @@ import {
   Bike, PersonStanding, Armchair, TrendingUp,
   Activity, Award
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -14,21 +15,41 @@ const Dashboard = () => {
   const [isGerman, setIsGerman] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("fitblaqs_user");
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-    const user = JSON.parse(storedUser);
-    setUserData(user);
-    setIsGerman(user.language === "de");
+      const user = session.user;
+      const metadata = user.user_metadata;
+      
+      setUserData({
+        name: metadata.name || metadata.full_name || "User",
+        age: metadata.age || "N/A",
+        weight: metadata.weight || "N/A",
+        height: metadata.height || "N/A",
+        gender: metadata.gender || "male",
+        language: metadata.language || "de"
+      });
+      
+      setIsGerman(metadata.language === "de");
 
-    // Apply theme
-    const theme = user.gender === "female" ? "theme-female" : "";
-    if (theme) {
-      document.documentElement.classList.add(theme);
-    }
+      // Apply theme
+      const theme = metadata.gender === "female" ? "theme-female" : "";
+      if (theme) {
+        document.documentElement.classList.add(theme);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const muscleGroups = [

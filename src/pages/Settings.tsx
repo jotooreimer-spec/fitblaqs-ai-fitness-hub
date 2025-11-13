@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Bell, CreditCard, Globe, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { signOut } from "@/lib/auth";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -12,23 +14,42 @@ const Settings = () => {
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("fitblaqs_user");
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-    const user = JSON.parse(storedUser);
-    setUserData(user);
-    setIsGerman(user.language === "de");
+      const user = session.user;
+      const metadata = user.user_metadata;
+      
+      setUserData({
+        name: metadata.name || metadata.full_name || "User",
+        email: user.email,
+        language: metadata.language || "de"
+      });
+      
+      setIsGerman(metadata.language === "de");
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("fitblaqs_user");
-    localStorage.removeItem("fitblaqs_theme");
-    document.documentElement.classList.remove("theme-female");
-    toast.success(isGerman ? "Erfolgreich abgemeldet" : "Logged out successfully");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      document.documentElement.classList.remove("theme-female");
+      toast.success(isGerman ? "Erfolgreich abgemeldet" : "Logged out successfully");
+      navigate("/");
+    } catch (error) {
+      toast.error(isGerman ? "Abmelden fehlgeschlagen" : "Logout failed");
+    }
   };
 
   const settingsSections = [
