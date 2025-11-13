@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WeightEntry {
   id: string;
@@ -23,27 +24,45 @@ const WeightTracker = () => {
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("fitblaqs_user");
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-    const user = JSON.parse(storedUser);
-    setUserData(user);
-    setIsGerman(user.language === "de");
+      const user = session.user;
+      const metadata = user.user_metadata;
+      
+      const userInfo = {
+        name: metadata.name || metadata.full_name || "User",
+        weight: metadata.weight || "N/A",
+        gender: metadata.gender || "male",
+        language: metadata.language || "de"
+      };
 
-    // Apply theme
-    const theme = user.gender === "female" ? "theme-female" : "";
-    if (theme) {
-      document.documentElement.classList.add(theme);
-    }
+      setUserData(userInfo);
+      setIsGerman(metadata.language === "de");
 
-    // Load weight history
-    const savedHistory = localStorage.getItem("weight_history");
-    if (savedHistory) {
-      setWeightHistory(JSON.parse(savedHistory));
-    }
+      // Apply theme
+      const theme = metadata.gender === "female" ? "theme-female" : "";
+      if (theme) {
+        document.documentElement.classList.add(theme);
+      }
+
+      // Load weight history
+      const savedHistory = localStorage.getItem("weight_history");
+      if (savedHistory) {
+        setWeightHistory(JSON.parse(savedHistory));
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const addWeight = () => {

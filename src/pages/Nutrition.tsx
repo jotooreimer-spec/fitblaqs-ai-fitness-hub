@@ -3,20 +3,30 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Leaf, Carrot, Drumstick, Pill } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Nutrition = () => {
   const navigate = useNavigate();
   const [isGerman, setIsGerman] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("fitblaqs_user");
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-    const user = JSON.parse(storedUser);
-    setIsGerman(user.language === "de");
+      const metadata = session.user.user_metadata;
+      setIsGerman(metadata.language === "de");
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const nutritionCategories = [
