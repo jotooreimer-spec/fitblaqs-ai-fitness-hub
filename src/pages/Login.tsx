@@ -80,25 +80,6 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Google Login Button */}
-          <Button 
-            type="button"
-            variant="outline" 
-            size="lg" 
-            className="w-full"
-            onClick={handleGoogleLogin}
-          >
-            <Mail className="w-5 h-5 mr-2" />
-            {isGerman ? "Mit Google anmelden" : "Sign in with Google"}
-          </Button>
-
-          <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              {isGerman ? "oder" : "or"}
-            </span>
-          </div>
-
           {/* Email */}
           <div>
             <Label>E-Mail</Label>

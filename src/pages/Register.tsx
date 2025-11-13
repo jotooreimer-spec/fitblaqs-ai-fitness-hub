@@ -109,26 +109,6 @@ const Register = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Google Login Button */}
-          <Button 
-            type="button"
-            variant="outline" 
-            size="lg" 
-            className="w-full"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-          >
-            <Mail className="w-5 h-5 mr-2" />
-            {isGerman ? "Mit Google registrieren" : "Sign up with Google"}
-          </Button>
-
-          <div className="relative">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-              {isGerman ? "oder" : "or"}
-            </span>
-          </div>
-
           {/* Language Selection */}
           <div>
             <Label>{isGerman ? "Sprache" : "Language"}</Label>
