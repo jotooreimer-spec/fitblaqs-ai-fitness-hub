@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Settings from "./pages/Settings";
 import TrainingDetail from "./pages/TrainingDetail";
 import WeightTracker from "./pages/WeightTracker";
+import ExerciseCategory from "./pages/ExerciseCategory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/training/:muscleGroup" element={<TrainingDetail />} />
+          <Route path="/exercise/:category" element={<ExerciseCategory />} />
           <Route path="/weight-tracker" element={<WeightTracker />} />
           <Route path="/nutrition" element={<Nutrition />} />
           <Route path="/tracker" element={<Tracker />} />
