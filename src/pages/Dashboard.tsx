@@ -122,6 +122,19 @@ const Dashboard = () => {
     });
   };
 
+  const muscleGroupsMap: { [key: string]: { de: string; en: string; category: string } } = {
+    brust: { de: "Brust", en: "Chest", category: "brust" },
+    ruecken: { de: "Rücken", en: "Back", category: "ruecken" },
+    schulter: { de: "Schultern", en: "Shoulders", category: "schulter" },
+    bizeps: { de: "Bizeps", en: "Biceps", category: "bizeps" },
+    trizeps: { de: "Trizeps", en: "Triceps", category: "trizeps" },
+    beine: { de: "Beine", en: "Legs", category: "beine" },
+    waden: { de: "Waden", en: "Calves", category: "waden" },
+    bauch: { de: "Bauch", en: "Abs", category: "bauch" },
+    core: { de: "Core", en: "Core", category: "core" },
+    po: { de: "Po", en: "Glutes", category: "po" }
+  };
+
   const muscleGroups = [
     { icon: Dumbbell, label: isGerman ? "Brust" : "Chest", color: "text-blue-400" },
     { icon: TrendingUp, label: isGerman ? "Rücken" : "Back", color: "text-green-400" },
@@ -259,10 +272,14 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {muscleGroups.map((group, index) => {
               const Icon = group.icon;
+              const categoryKey = Object.keys(muscleGroupsMap).find(
+                key => muscleGroupsMap[key].de === group.label || muscleGroupsMap[key].en === group.label
+              ) || group.label.toLowerCase();
+              
               return (
                 <Card
                   key={index}
-                  onClick={() => navigate(`/training/${group.label.toLowerCase()}`)}
+                  onClick={() => navigate(`/exercise/${categoryKey}`)}
                   className="gradient-card card-shadow border-white/10 p-6 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
                   <div className="flex flex-col items-center gap-3">
