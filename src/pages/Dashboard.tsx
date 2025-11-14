@@ -135,17 +135,33 @@ const Dashboard = () => {
     po: { de: "Po", en: "Glutes", category: "po" }
   };
 
+  // Category mapping for German/English
+  const categoryMapping: Record<string, { de: string; en: string }> = {
+    beine: { de: "Beine", en: "Legs" },
+    waden: { de: "Waden", en: "Calves" },
+    squats: { de: "Squats", en: "Squats" },
+    po: { de: "Po", en: "Glutes" },
+    brust: { de: "Brust", en: "Chest" },
+    ruecken: { de: "Rücken", en: "Back" },
+    core: { de: "Core", en: "Core" },
+    schulter: { de: "Schultern", en: "Shoulders" },
+    trizeps: { de: "Trizeps", en: "Triceps" },
+    bizeps: { de: "Bizeps", en: "Biceps" },
+    bauch: { de: "Bauch", en: "Abs" }
+  };
+
   const muscleGroups = [
-    { icon: Dumbbell, label: isGerman ? "Brust" : "Chest", color: "text-blue-400" },
-    { icon: TrendingUp, label: isGerman ? "Rücken" : "Back", color: "text-green-400" },
-    { icon: Zap, label: isGerman ? "Schultern" : "Shoulders", color: "text-yellow-400" },
-    { icon: Target, label: isGerman ? "Bizeps" : "Biceps", color: "text-red-400" },
-    { icon: Activity, label: isGerman ? "Trizeps" : "Triceps", color: "text-purple-400" },
-    { icon: Heart, label: isGerman ? "Beine" : "Legs", color: "text-pink-400" },
-    { icon: Bike, label: isGerman ? "Waden" : "Calves", color: "text-indigo-400" },
-    { icon: PersonStanding, label: isGerman ? "Bauch" : "Abs", color: "text-orange-400" },
-    { icon: Armchair, label: isGerman ? "Cardio" : "Cardio", color: "text-cyan-400" },
-    { icon: Award, label: isGerman ? "Ganzkörper" : "Full Body", color: "text-emerald-400" },
+    { icon: Dumbbell, category: "beine", color: "text-blue-400", bodyPart: "lower_body" },
+    { icon: Heart, category: "waden", color: "text-pink-400", bodyPart: "lower_body" },
+    { icon: Target, category: "squats", color: "text-red-400", bodyPart: "lower_body" },
+    { icon: Armchair, category: "po", color: "text-cyan-400", bodyPart: "lower_body" },
+    { icon: Dumbbell, category: "brust", color: "text-blue-400", bodyPart: "upper_body" },
+    { icon: TrendingUp, category: "ruecken", color: "text-green-400", bodyPart: "upper_body" },
+    { icon: Activity, category: "core", color: "text-purple-400", bodyPart: "upper_body" },
+    { icon: Zap, category: "schulter", color: "text-yellow-400", bodyPart: "upper_body" },
+    { icon: Activity, category: "trizeps", color: "text-purple-400", bodyPart: "upper_body" },
+    { icon: Target, category: "bizeps", color: "text-red-400", bodyPart: "upper_body" },
+    { icon: PersonStanding, category: "bauch", color: "text-orange-400", bodyPart: "upper_body" },
   ];
 
   if (!userData) return null;
