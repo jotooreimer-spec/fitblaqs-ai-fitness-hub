@@ -2,21 +2,35 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Dumbbell, Heart, Zap, Target, 
   Bike, PersonStanding, Armchair, TrendingUp,
-  Activity, Award
+  Activity, Award, Edit
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [userData, setUserData] = useState<any>(null);
   const [isGerman, setIsGerman] = useState(true);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    height: "",
+    weight: "",
+    body_type: ""
+  });
 
   useEffect(() => {
     // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/login");
         return;
@@ -28,8 +42,6 @@ const Dashboard = () => {
       setUserData({
         name: metadata.name || metadata.full_name || "User",
         age: metadata.age || "N/A",
-        weight: metadata.weight || "N/A",
-        height: metadata.height || "N/A",
         gender: metadata.gender || "male",
         language: metadata.language || "de"
       });
@@ -41,6 +53,22 @@ const Dashboard = () => {
       if (theme) {
         document.documentElement.classList.add(theme);
       }
+
+      // Fetch profile data
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        setProfileData(profile);
+        setEditForm({
+          height: profile.height?.toString() || "",
+          weight: profile.weight?.toString() || "",
+          body_type: profile.body_type || ""
+        });
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -51,6 +79,48 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const handleSaveProfile = async () => {
+    if (!userData) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        height: editForm.height ? parseFloat(editForm.height) : null,
+        weight: editForm.weight ? parseFloat(editForm.weight) : null,
+        body_type: editForm.body_type || null
+      })
+      .eq("user_id", session.user.id);
+
+    if (error) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: isGerman ? "Profil konnte nicht gespeichert werden" : "Could not save profile",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Refresh profile data
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (profile) {
+      setProfileData(profile);
+    }
+
+    setIsEditDialogOpen(false);
+    toast({
+      title: isGerman ? "Gespeichert" : "Saved",
+      description: isGerman ? "Profil erfolgreich aktualisiert" : "Profile updated successfully"
+    });
+  };
 
   const muscleGroups = [
     { icon: Dumbbell, label: isGerman ? "Brust" : "Chest", color: "text-blue-400" },
@@ -80,36 +150,106 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card 
-            className="gradient-card card-shadow border-white/10 p-4 cursor-pointer hover:scale-105 transition-all duration-300"
-            onClick={() => navigate("/weight-tracker")}
-          >
-            <div className="text-sm text-muted-foreground mb-1">
-              {isGerman ? "Gewicht" : "Weight"}
+        {/* Profile Card with Edit */}
+        <Card className="gradient-card card-shadow border-white/10 p-6 mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">
+              {isGerman ? "Mein Profil" : "My Profile"}
+            </h2>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {isGerman ? "Profil bearbeiten" : "Edit Profile"}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="height">{isGerman ? "Größe (cm)" : "Height (cm)"}</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      step="0.1"
+                      value={editForm.height}
+                      onChange={(e) => setEditForm({ ...editForm, height: e.target.value })}
+                      placeholder="180"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weight">{isGerman ? "Gewicht (kg)" : "Weight (kg)"}</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      step="0.1"
+                      value={editForm.weight}
+                      onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
+                      placeholder="75"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="body_type">{isGerman ? "Körpertyp" : "Body Type"}</Label>
+                    <Select value={editForm.body_type} onValueChange={(value) => setEditForm({ ...editForm, body_type: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ectomorph">Ectomorph</SelectItem>
+                        <SelectItem value="mesomorph">Mesomorph</SelectItem>
+                        <SelectItem value="endomorph">Endomorph</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleSaveProfile} className="w-full">
+                    {isGerman ? "Speichern" : "Save"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">
+                {isGerman ? "Größe" : "Height"}
+              </div>
+              <div className="text-2xl font-bold">
+                {profileData?.height ? `${profileData.height} cm` : "N/A"}
+              </div>
             </div>
-            <div className="text-2xl font-bold">{userData.weight} kg</div>
-          </Card>
-          <Card className="gradient-card card-shadow border-white/10 p-4">
-            <div className="text-sm text-muted-foreground mb-1">
-              {isGerman ? "Größe" : "Height"}
+            <div 
+              className="cursor-pointer hover:scale-105 transition-all"
+              onClick={() => navigate("/weight-tracker")}
+            >
+              <div className="text-sm text-muted-foreground mb-1">
+                {isGerman ? "Gewicht" : "Weight"}
+              </div>
+              <div className="text-2xl font-bold">
+                {profileData?.weight ? `${profileData.weight} kg` : "N/A"}
+              </div>
             </div>
-            <div className="text-2xl font-bold">{userData.height} cm</div>
-          </Card>
-          <Card className="gradient-card card-shadow border-white/10 p-4">
-            <div className="text-sm text-muted-foreground mb-1">BMI</div>
-            <div className="text-2xl font-bold">
-              {(parseFloat(userData.weight) / Math.pow(parseFloat(userData.height) / 100, 2)).toFixed(1)}
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">BMI</div>
+              <div className="text-2xl font-bold">
+                {profileData?.height && profileData?.weight
+                  ? (profileData.weight / Math.pow(profileData.height / 100, 2)).toFixed(1)
+                  : "N/A"}
+              </div>
             </div>
-          </Card>
-          <Card className="gradient-card card-shadow border-white/10 p-4">
-            <div className="text-sm text-muted-foreground mb-1">
-              {isGerman ? "Alter" : "Age"}
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">
+                {isGerman ? "Körpertyp" : "Body Type"}
+              </div>
+              <div className="text-lg font-bold capitalize">
+                {profileData?.body_type || "N/A"}
+              </div>
             </div>
-            <div className="text-2xl font-bold">{userData.age}</div>
-          </Card>
-        </div>
+          </div>
+        </Card>
 
         {/* Training Modules */}
         <div>
