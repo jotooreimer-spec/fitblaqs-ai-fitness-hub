@@ -14,7 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercises: {
+        Row: {
+          body_part: Database["public"]["Enums"]["body_part"]
+          category: Database["public"]["Enums"]["exercise_category"]
+          created_at: string
+          description_de: string | null
+          description_en: string | null
+          id: string
+          image_url: string | null
+          name_de: string
+          name_en: string
+        }
+        Insert: {
+          body_part: Database["public"]["Enums"]["body_part"]
+          category: Database["public"]["Enums"]["exercise_category"]
+          created_at?: string
+          description_de?: string | null
+          description_en?: string | null
+          id?: string
+          image_url?: string | null
+          name_de: string
+          name_en: string
+        }
+        Update: {
+          body_part?: Database["public"]["Enums"]["body_part"]
+          category?: Database["public"]["Enums"]["exercise_category"]
+          created_at?: string
+          description_de?: string | null
+          description_en?: string | null
+          id?: string
+          image_url?: string | null
+          name_de?: string
+          name_en?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          body_type: string | null
+          created_at: string
+          height: number | null
+          id: string
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          body_type?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          body_type?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      workout_logs: {
+        Row: {
+          completed_at: string
+          created_at: string
+          exercise_id: string
+          id: string
+          notes: string | null
+          reps: number
+          sets: number
+          unit: string | null
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          exercise_id: string
+          id?: string
+          notes?: string | null
+          reps?: number
+          sets?: number
+          unit?: string | null
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          notes?: string | null
+          reps?: number
+          sets?: number
+          unit?: string | null
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +135,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      body_part: "lower_body" | "upper_body"
+      exercise_category:
+        | "beine"
+        | "waden"
+        | "squats"
+        | "po"
+        | "brust"
+        | "ruecken"
+        | "core"
+        | "schulter"
+        | "trizeps"
+        | "bizeps"
+        | "bauch"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +274,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      body_part: ["lower_body", "upper_body"],
+      exercise_category: [
+        "beine",
+        "waden",
+        "squats",
+        "po",
+        "brust",
+        "ruecken",
+        "core",
+        "schulter",
+        "trizeps",
+        "bizeps",
+        "bauch",
+      ],
+    },
   },
 } as const

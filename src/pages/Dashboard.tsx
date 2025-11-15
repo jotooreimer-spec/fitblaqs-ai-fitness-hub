@@ -288,20 +288,20 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {muscleGroups.map((group, index) => {
               const Icon = group.icon;
-              const categoryKey = Object.keys(muscleGroupsMap).find(
-                key => muscleGroupsMap[key].de === group.label || muscleGroupsMap[key].en === group.label
-              ) || group.label.toLowerCase();
+              const label = isGerman 
+                ? categoryMapping[group.category]?.de 
+                : categoryMapping[group.category]?.en;
               
               return (
                 <Card
                   key={index}
-                  onClick={() => navigate(`/exercise/${categoryKey}`)}
+                  onClick={() => navigate(`/exercise/${group.category}`)}
                   className="gradient-card card-shadow border-white/10 p-6 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
                   <div className="flex flex-col items-center gap-3">
                     <Icon className={`w-12 h-12 ${group.color}`} />
                     <span className="text-sm font-semibold text-center">
-                      {group.label}
+                      {label}
                     </span>
                   </div>
                 </Card>
