@@ -50,6 +50,81 @@ export type Database = {
         }
         Relationships: []
       }
+      jogging_logs: {
+        Row: {
+          calories: number | null
+          completed_at: string
+          created_at: string
+          distance: number
+          duration: number
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          calories?: number | null
+          completed_at?: string
+          created_at?: string
+          distance: number
+          duration: number
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          calories?: number | null
+          completed_at?: string
+          created_at?: string
+          distance?: number
+          duration?: number
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nutrition_logs: {
+        Row: {
+          calories: number
+          carbs: number | null
+          completed_at: string
+          created_at: string
+          fats: number | null
+          food_name: string
+          id: string
+          meal_type: Database["public"]["Enums"]["meal_type"]
+          notes: string | null
+          protein: number | null
+          user_id: string
+        }
+        Insert: {
+          calories: number
+          carbs?: number | null
+          completed_at?: string
+          created_at?: string
+          fats?: number | null
+          food_name: string
+          id?: string
+          meal_type: Database["public"]["Enums"]["meal_type"]
+          notes?: string | null
+          protein?: number | null
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          carbs?: number | null
+          completed_at?: string
+          created_at?: string
+          fats?: number | null
+          food_name?: string
+          id?: string
+          meal_type?: Database["public"]["Enums"]["meal_type"]
+          notes?: string | null
+          protein?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           body_type: string | null
@@ -77,6 +152,33 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight?: number | null
+        }
+        Relationships: []
+      }
+      weight_logs: {
+        Row: {
+          created_at: string
+          id: string
+          measured_at: string
+          notes: string | null
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          measured_at?: string
+          notes?: string | null
+          user_id?: string
+          weight?: number
         }
         Relationships: []
       }
@@ -148,6 +250,7 @@ export type Database = {
         | "trizeps"
         | "bizeps"
         | "bauch"
+      meal_type: "breakfast" | "lunch" | "dinner" | "snack"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -289,6 +392,7 @@ export const Constants = {
         "bizeps",
         "bauch",
       ],
+      meal_type: ["breakfast", "lunch", "dinner", "snack"],
     },
   },
 } as const
