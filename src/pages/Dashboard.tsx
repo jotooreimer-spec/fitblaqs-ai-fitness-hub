@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import DashboardStats from "@/components/DashboardStats";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userData, setUserData] = useState<any>(null);
+  const [userId, setUserId] = useState<string>("");
   const [isGerman, setIsGerman] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -39,6 +41,7 @@ const Dashboard = () => {
       const user = session.user;
       const metadata = user.user_metadata;
       
+      setUserId(user.id);
       setUserData({
         name: metadata.name || metadata.full_name || "User",
         age: metadata.age || "N/A",
@@ -178,6 +181,9 @@ const Dashboard = () => {
             {isGerman ? "Wähle deine Muskelgruppe" : "Choose your muscle group"}
           </p>
         </div>
+
+        {/* Statistics Dashboard */}
+        {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
 
         {/* Profile Card with Edit */}
         <Card className="gradient-card card-shadow border-white/10 p-6 mb-8">
