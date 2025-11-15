@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Dumbbell, Apple, Timer, Calendar, Settings } from "lucide-react";
+import { Dumbbell, Apple, MapPin, Calendar, Settings } from "lucide-react";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -8,7 +8,7 @@ const BottomNav = () => {
   const navItems = [
     { icon: Dumbbell, label: "Training", path: "/dashboard" },
     { icon: Apple, label: "Nutrition", path: "/nutrition" },
-    { icon: Timer, label: "Tracker", path: "/tracker" },
+    { icon: MapPin, label: "Jogging", path: "/jogging-tracker" },
     { icon: Calendar, label: "Calendar", path: "/calendar" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
