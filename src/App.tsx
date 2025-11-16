@@ -8,7 +8,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Nutrition from "./pages/Nutrition";
-import Tracker from "./pages/Tracker";
+
 import JoggingTracker from "./pages/JoggingTracker";
 import CalendarPage from "./pages/CalendarPage";
 import Settings from "./pages/Settings";
@@ -34,7 +34,7 @@ const App = () => (
           <Route path="/exercise/:category" element={<ExerciseCategory />} />
           <Route path="/weight-tracker" element={<WeightTracker />} />
           <Route path="/nutrition" element={<Nutrition />} />
-          <Route path="/tracker" element={<Tracker />} />
+          
           <Route path="/jogging-tracker" element={<JoggingTracker />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/settings" element={<Settings />} />
