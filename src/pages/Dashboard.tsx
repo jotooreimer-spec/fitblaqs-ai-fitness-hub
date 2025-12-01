@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import DashboardStats from "@/components/DashboardStats";
+import { AvatarUpload } from "@/components/AvatarUpload";
+import { TrainingLogDialog } from "@/components/TrainingLogDialog";
+import { TrainingHistory } from "@/components/TrainingHistory";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,9 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Dumbbell, Heart, Zap, Target, 
-  Bike, PersonStanding, Armchair, TrendingUp,
-  Activity, Award, Edit
+  Dumbbell, User, Edit, Plus
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,8 +28,11 @@ const Dashboard = () => {
   const [editForm, setEditForm] = useState({
     height: "",
     weight: "",
-    body_type: ""
+    body_type: "",
+    athlete_level: ""
   });
+  const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
+  const [refreshHistory, setRefreshHistory] = useState(0);
 
   useEffect(() => {
     // Check authentication
@@ -69,7 +73,8 @@ const Dashboard = () => {
         setEditForm({
           height: profile.height?.toString() || "",
           weight: profile.weight?.toString() || "",
-          body_type: profile.body_type || ""
+          body_type: profile.body_type || "",
+          athlete_level: profile.athlete_level || ""
         });
       }
     });
@@ -94,7 +99,8 @@ const Dashboard = () => {
       .update({
         height: editForm.height ? parseFloat(editForm.height) : null,
         weight: editForm.weight ? parseFloat(editForm.weight) : null,
-        body_type: editForm.body_type || null
+        body_type: editForm.body_type || null,
+        athlete_level: editForm.athlete_level || null
       })
       .eq("user_id", session.user.id);
 
@@ -153,19 +159,53 @@ const Dashboard = () => {
     bauch: { de: "Bauch", en: "Abs" }
   };
 
-  const muscleGroups = [
-    { icon: Dumbbell, category: "beine", color: "text-blue-400", bodyPart: "lower_body" },
-    { icon: Heart, category: "waden", color: "text-pink-400", bodyPart: "lower_body" },
-    { icon: Target, category: "squats", color: "text-red-400", bodyPart: "lower_body" },
-    { icon: Armchair, category: "po", color: "text-cyan-400", bodyPart: "lower_body" },
-    { icon: Dumbbell, category: "brust", color: "text-blue-400", bodyPart: "upper_body" },
-    { icon: TrendingUp, category: "ruecken", color: "text-green-400", bodyPart: "upper_body" },
-    { icon: Activity, category: "core", color: "text-purple-400", bodyPart: "upper_body" },
-    { icon: Zap, category: "schulter", color: "text-yellow-400", bodyPart: "upper_body" },
-    { icon: Activity, category: "trizeps", color: "text-purple-400", bodyPart: "upper_body" },
-    { icon: Target, category: "bizeps", color: "text-red-400", bodyPart: "upper_body" },
-    { icon: PersonStanding, category: "bauch", color: "text-orange-400", bodyPart: "upper_body" },
+  // Training modules with new icons
+  const trainingModules = [
+    { 
+      icon: Dumbbell, 
+      title: isGerman ? "Upper Body" : "Upper Body",
+      description: isGerman ? "Brust, Rücken, Schultern, Arme" : "Chest, Back, Shoulders, Arms",
+      color: "text-blue-400"
+    },
+    { 
+      icon: User, 
+      title: isGerman ? "Middle Body" : "Middle Body",
+      description: isGerman ? "Core, Bauch" : "Core, Abs",
+      color: "text-purple-400"
+    },
+    { 
+      icon: Dumbbell, 
+      title: isGerman ? "Lower Body" : "Lower Body",
+      description: isGerman ? "Beine, Po, Waden" : "Legs, Glutes, Calves",
+      color: "text-green-400"
+    }
   ];
+
+  const bodyTypeTranslations: Record<string, Record<string, string>> = {
+    de: {
+      "ectomorph": "Fett",
+      "mesomorph": "Schlank",
+      "endomorph": "Muskulös",
+      "defined": "Definiert"
+    },
+    en: {
+      "ectomorph": "Fat",
+      "mesomorph": "Slim",
+      "endomorph": "Muscular",
+      "defined": "Defined"
+    }
+  };
+
+  const athleteLevelTranslations: Record<string, Record<string, string>> = {
+    de: {
+      "beginner": "Anfänger",
+      "professional": "Profi"
+    },
+    en: {
+      "beginner": "Beginner",
+      "professional": "Professional"
+    }
+  };
 
   if (!userData) return null;
 
@@ -175,17 +215,17 @@ const Dashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            {isGerman ? `Willkommen, ${userData.name}!` : `Welcome, ${userData.name}!`}
+            {isGerman ? `Start your Workout Today, ${userData.name}` : `Start your Workout Today, ${userData.name}`}
           </h1>
           <p className="text-muted-foreground">
-            {isGerman ? "Wähle deine Muskelgruppe" : "Choose your muscle group"}
+            {isGerman ? "Wähle deine Trainingseinheit" : "Choose your training session"}
           </p>
         </div>
 
         {/* Statistics Dashboard */}
         {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
 
-        {/* Profile Card with Edit */}
+        {/* Profile Card with Avatar and Edit */}
         <Card className="gradient-card card-shadow border-white/10 p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">
@@ -233,9 +273,22 @@ const Dashboard = () => {
                         <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ectomorph">Ectomorph</SelectItem>
-                        <SelectItem value="mesomorph">Mesomorph</SelectItem>
-                        <SelectItem value="endomorph">Endomorph</SelectItem>
+                        <SelectItem value="ectomorph">{bodyTypeTranslations[isGerman ? 'de' : 'en'].ectomorph}</SelectItem>
+                        <SelectItem value="mesomorph">{bodyTypeTranslations[isGerman ? 'de' : 'en'].mesomorph}</SelectItem>
+                        <SelectItem value="endomorph">{bodyTypeTranslations[isGerman ? 'de' : 'en'].endomorph}</SelectItem>
+                        <SelectItem value="defined">{bodyTypeTranslations[isGerman ? 'de' : 'en'].defined}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="athlete_level">{isGerman ? "Athlete Level" : "Athlete Level"}</Label>
+                    <Select value={editForm.athlete_level} onValueChange={(value) => setEditForm({ ...editForm, athlete_level: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">{athleteLevelTranslations[isGerman ? 'de' : 'en'].beginner}</SelectItem>
+                        <SelectItem value="professional">{athleteLevelTranslations[isGerman ? 'de' : 'en'].professional}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -247,75 +300,105 @@ const Dashboard = () => {
             </Dialog>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Größe" : "Height"}
+          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+            {/* Avatar Upload */}
+            <AvatarUpload
+              userId={userId}
+              currentAvatarUrl={profileData?.avatar_url}
+              onUploadSuccess={(url) => setProfileData({ ...profileData, avatar_url: url })}
+              isGerman={isGerman}
+            />
+
+            {/* Profile Info Grid */}
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  {isGerman ? "Größe" : "Height"}
+                </div>
+                <div className="text-2xl font-bold">
+                  {profileData?.height ? `${profileData.height} cm` : "N/A"}
+                </div>
               </div>
-              <div className="text-2xl font-bold">
-                {profileData?.height ? `${profileData.height} cm` : "N/A"}
+              <div 
+                className="cursor-pointer hover:scale-105 transition-all"
+                onClick={() => navigate("/weight-tracker")}
+              >
+                <div className="text-sm text-muted-foreground mb-1">
+                  {isGerman ? "Gewicht" : "Weight"}
+                </div>
+                <div className="text-2xl font-bold">
+                  {profileData?.weight ? `${profileData.weight} kg` : "N/A"}
+                </div>
               </div>
-            </div>
-            <div 
-              className="cursor-pointer hover:scale-105 transition-all"
-              onClick={() => navigate("/weight-tracker")}
-            >
-              <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Gewicht" : "Weight"}
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  {isGerman ? "Athlete" : "Athlete"}
+                </div>
+                <div className="text-lg font-bold capitalize">
+                  {profileData?.athlete_level ? athleteLevelTranslations[isGerman ? 'de' : 'en'][profileData.athlete_level] : "N/A"}
+                </div>
               </div>
-              <div className="text-2xl font-bold">
-                {profileData?.weight ? `${profileData.weight} kg` : "N/A"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground mb-1">BMI</div>
-              <div className="text-2xl font-bold">
-                {profileData?.height && profileData?.weight
-                  ? (profileData.weight / Math.pow(profileData.height / 100, 2)).toFixed(1)
-                  : "N/A"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Körpertyp" : "Body Type"}
-              </div>
-              <div className="text-lg font-bold capitalize">
-                {profileData?.body_type || "N/A"}
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">
+                  {isGerman ? "Körpertyp" : "Body Type"}
+                </div>
+                <div className="text-lg font-bold">
+                  {profileData?.body_type ? bodyTypeTranslations[isGerman ? 'de' : 'en'][profileData.body_type] : "N/A"}
+                </div>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Training Modules */}
-        <div>
+        {/* Training Modules - 3 Boxes */}
+        <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6">
             {isGerman ? "Trainingsmodule" : "Training Modules"}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {muscleGroups.map((group, index) => {
-              const Icon = group.icon;
-              const label = isGerman 
-                ? categoryMapping[group.category]?.de 
-                : categoryMapping[group.category]?.en;
-              
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {trainingModules.map((module, index) => {
+              const Icon = module.icon;
               return (
                 <Card
                   key={index}
-                  onClick={() => navigate(`/exercise/${group.category}`)}
-                  className="gradient-card card-shadow border-white/10 p-6 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
+                  onClick={() => setIsTrainingDialogOpen(true)}
+                  className="gradient-card card-shadow border-white/10 p-8 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
                 >
-                  <div className="flex flex-col items-center gap-3">
-                    <Icon className={`w-12 h-12 ${group.color}`} />
-                    <span className="text-sm font-semibold text-center">
-                      {label}
-                    </span>
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <Icon className={`w-16 h-16 ${module.color}`} />
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">{module.title}</h3>
+                      <p className="text-sm text-muted-foreground">{module.description}</p>
+                    </div>
                   </div>
                 </Card>
               );
             })}
           </div>
         </div>
+
+        {/* Training History */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">
+              {isGerman ? "Trainingsverlauf" : "Training History"}
+            </h2>
+            <Button onClick={() => setIsTrainingDialogOpen(true)} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {isGerman ? "Hinzufügen" : "Add"}
+            </Button>
+          </div>
+          <TrainingHistory userId={userId} isGerman={isGerman} refreshTrigger={refreshHistory} />
+        </div>
       </div>
+
+      <TrainingLogDialog
+        open={isTrainingDialogOpen}
+        onOpenChange={setIsTrainingDialogOpen}
+        userId={userId}
+        isGerman={isGerman}
+        onSuccess={() => setRefreshHistory(prev => prev + 1)}
+      />
 
       <BottomNav />
     </div>
