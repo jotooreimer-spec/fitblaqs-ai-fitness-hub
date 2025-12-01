@@ -127,6 +127,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          athlete_level: string | null
+          avatar_url: string | null
           body_type: string | null
           created_at: string
           height: number | null
@@ -136,6 +138,8 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          athlete_level?: string | null
+          avatar_url?: string | null
           body_type?: string | null
           created_at?: string
           height?: number | null
@@ -145,6 +149,8 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          athlete_level?: string | null
+          avatar_url?: string | null
           body_type?: string | null
           created_at?: string
           height?: number | null
