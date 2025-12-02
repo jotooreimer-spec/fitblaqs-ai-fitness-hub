@@ -174,7 +174,7 @@ const Dashboard = () => {
       color: "text-purple-400"
     },
     { 
-      icon: Dumbbell, 
+      icon: User, 
       title: isGerman ? "Lower Body" : "Lower Body",
       description: isGerman ? "Beine, Po, Waden" : "Legs, Glutes, Calves",
       color: "text-green-400"

@@ -1,0 +1,276 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface NutritionLogDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  category: "vegetarian" | "vegan" | "protein" | "supplements" | null;
+  userId: string;
+  isGerman: boolean;
+  onSuccess: () => void;
+}
+
+export const NutritionLogDialog = ({
+  open,
+  onOpenChange,
+  category,
+  userId,
+  isGerman,
+  onSuccess
+}: NutritionLogDialogProps) => {
+  const { toast } = useToast();
+  const [foodName, setFoodName] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [carbsUnit, setCarbsUnit] = useState("g");
+  const [vitamin, setVitamin] = useState("");
+  const [vitaminUnit, setVitaminUnit] = useState("mg");
+  const [fats, setFats] = useState("");
+  const [fatsUnit, setFatsUnit] = useState("g");
+  const [water, setWater] = useState("");
+  const [waterUnit, setWaterUnit] = useState("ml");
+  const [protein, setProtein] = useState("");
+  const [proteinUnit, setProteinUnit] = useState("g");
+
+  const categoryLabels = {
+    vegetarian: { de: "Vegetarisch", en: "Vegetarian" },
+    vegan: { de: "Vegan", en: "Vegan" },
+    protein: { de: "Fleisch & Protein", en: "Meat & Protein" },
+    supplements: { de: "Supplements", en: "Supplements" }
+  };
+
+  const convertToGrams = (value: number, unit: string) => {
+    switch (unit) {
+      case "mg": return value / 1000;
+      case "kg": return value * 1000;
+      case "lb": return value * 453.592;
+      default: return value;
+    }
+  };
+
+  const convertWaterToML = (value: number, unit: string) => {
+    switch (unit) {
+      case "dz": return value * 100;
+      case "liter": return value * 1000;
+      default: return value;
+    }
+  };
+
+  const calculateCalories = () => {
+    const carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
+    const fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
+    const proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
+    
+    return Math.round((carbsInG * 4) + (fatsInG * 9) + (proteinInG * 4));
+  };
+
+  const handleSave = async () => {
+    if (!category || !foodName.trim()) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: isGerman ? "Bitte Namen eingeben" : "Please enter food name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const calories = calculateCalories();
+    const proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
+    const carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
+    const fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
+
+    const { error } = await supabase
+      .from("nutrition_logs")
+      .insert({
+        user_id: userId,
+        food_name: foodName,
+        meal_type: category === "vegetarian" ? "breakfast" : category === "vegan" ? "lunch" : category === "protein" ? "dinner" : "snack",
+        calories,
+        protein: proteinInG,
+        carbs: carbsInG,
+        fats: fatsInG,
+        notes: `Water: ${water || 0}${waterUnit}, Vitamin: ${vitamin || 0}${vitaminUnit}`
+      });
+
+    if (error) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: isGerman ? "Gespeichert" : "Saved",
+      description: isGerman ? "Ernährungseintrag gespeichert" : "Nutrition entry saved"
+    });
+
+    // Reset form
+    setFoodName("");
+    setCarbs("");
+    setVitamin("");
+    setFats("");
+    setWater("");
+    setProtein("");
+    onOpenChange(false);
+    onSuccess();
+  };
+
+  if (!category) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {isGerman ? categoryLabels[category].de : categoryLabels[category].en}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="foodName">{isGerman ? "Name" : "Name"}</Label>
+            <Input
+              id="foodName"
+              value={foodName}
+              onChange={(e) => setFoodName(e.target.value)}
+              placeholder={isGerman ? "z.B. Haferflocken" : "e.g. Oatmeal"}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="carbs">{isGerman ? "Carbs" : "Carbs"}</Label>
+              <Input
+                id="carbs"
+                type="number"
+                value={carbs}
+                onChange={(e) => setCarbs(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>&nbsp;</Label>
+              <Select value={carbsUnit} onValueChange={setCarbsUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="g">g</SelectItem>
+                  <SelectItem value="mg">mg</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="lb">lb</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="vitamin">{isGerman ? "Vitamin" : "Vitamin"}</Label>
+              <Input
+                id="vitamin"
+                type="number"
+                value={vitamin}
+                onChange={(e) => setVitamin(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>&nbsp;</Label>
+              <Select value={vitaminUnit} onValueChange={setVitaminUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mg">mg</SelectItem>
+                  <SelectItem value="g">g</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="lb">lb</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="fats">{isGerman ? "Fette" : "Fats"}</Label>
+              <Input
+                id="fats"
+                type="number"
+                value={fats}
+                onChange={(e) => setFats(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>&nbsp;</Label>
+              <Select value={fatsUnit} onValueChange={setFatsUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="g">g</SelectItem>
+                  <SelectItem value="mg">mg</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="lb">lb</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="water">{isGerman ? "Wasser" : "Water"}</Label>
+              <Input
+                id="water"
+                type="number"
+                value={water}
+                onChange={(e) => setWater(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>&nbsp;</Label>
+              <Select value={waterUnit} onValueChange={setWaterUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ml">ml</SelectItem>
+                  <SelectItem value="dz">dz</SelectItem>
+                  <SelectItem value="liter">liter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="protein">{isGerman ? "Protein" : "Protein"}</Label>
+              <Input
+                id="protein"
+                type="number"
+                value={protein}
+                onChange={(e) => setProtein(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>&nbsp;</Label>
+              <Select value={proteinUnit} onValueChange={setProteinUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="g">g</SelectItem>
+                  <SelectItem value="mg">mg</SelectItem>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="lb">lb</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button onClick={handleSave} className="w-full">
+            {isGerman ? "Speichern" : "Save"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
