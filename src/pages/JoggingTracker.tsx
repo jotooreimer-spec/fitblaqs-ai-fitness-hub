@@ -1,16 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip } from "recharts";
 
 interface JoggingLog {
   id: string;
@@ -21,16 +20,23 @@ interface JoggingLog {
   notes: string | null;
 }
 
+interface ChartDataPoint {
+  time: number;
+  speed: number;
+}
+
 const JoggingTracker = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGerman, setIsGerman] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [distance, setDistance] = useState("");
   const [notes, setNotes] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [logs, setLogs] = useState<JoggingLog[]>([]);
+  const [userWeight, setUserWeight] = useState(70);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [currentSpeed, setCurrentSpeed] = useState(0);
+  const speedRef = useRef(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -45,6 +51,17 @@ const JoggingTracker = () => {
       const theme = metadata.gender === "female" ? "theme-female" : "";
       if (theme) {
         document.documentElement.classList.add(theme);
+      }
+
+      // Get user weight from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("weight")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (profile?.weight) {
+        setUserWeight(profile.weight);
       }
 
       loadLogs();
@@ -67,7 +84,8 @@ const JoggingTracker = () => {
       .from("jogging_logs")
       .select("*")
       .eq("user_id", session.user.id)
-      .order("completed_at", { ascending: false });
+      .order("completed_at", { ascending: false })
+      .limit(10);
 
     if (error) {
       console.error("Error loading logs:", error);
@@ -84,31 +102,69 @@ const JoggingTracker = () => {
 
     if (isActive) {
       interval = setInterval(() => {
-        setSeconds((seconds) => seconds + 1);
+        setSeconds((prev) => {
+          const newSeconds = prev + 1;
+          
+          // Simulate speed variation (5-15 km/h typical jogging)
+          const baseSpeed = 8;
+          const variation = Math.sin(newSeconds / 10) * 2 + (Math.random() - 0.5) * 2;
+          const newSpeed = Math.max(0, baseSpeed + variation);
+          speedRef.current = newSpeed;
+          setCurrentSpeed(newSpeed);
+          
+          // Add data point every 5 seconds
+          if (newSeconds % 5 === 0) {
+            setChartData(prevData => [...prevData, { 
+              time: Math.floor(newSeconds / 60), 
+              speed: parseFloat(newSpeed.toFixed(1)) 
+            }]);
+          }
+          
+          return newSeconds;
+        });
       }, 1000);
-    } else if (!isActive && seconds !== 0 && interval) {
+    } else if (!isActive && interval) {
       clearInterval(interval);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, seconds]);
+  }, [isActive]);
 
   const toggle = () => setIsActive(!isActive);
   
   const reset = () => {
     setSeconds(0);
     setIsActive(false);
-    setDistance("");
     setNotes("");
+    setChartData([]);
+    setCurrentSpeed(0);
+    speedRef.current = 0;
+  };
+
+  // Calculate distance based on average speed and time
+  const calculateDistance = () => {
+    if (chartData.length === 0) return 0;
+    const avgSpeed = chartData.reduce((sum, d) => sum + d.speed, 0) / chartData.length;
+    const hours = seconds / 3600;
+    return avgSpeed * hours;
+  };
+
+  // Calculate calories: MET value * weight * time (hours)
+  // Running MET ~= 8-10, we use speed-based calculation
+  const calculateCalories = (distanceKm: number) => {
+    const hours = seconds / 3600;
+    const avgSpeed = hours > 0 ? distanceKm / hours : 0;
+    const MET = avgSpeed < 8 ? 8 : avgSpeed < 10 ? 10 : 12;
+    return Math.round(MET * userWeight * hours);
   };
 
   const saveJoggingLog = async () => {
-    if (!distance || parseFloat(distance) <= 0) {
+    if (seconds < 60) {
       toast({
         title: isGerman ? "Fehler" : "Error",
-        description: isGerman ? "Bitte Distanz eingeben" : "Please enter distance",
+        description: isGerman ? "Mindestens 1 Minute laufen" : "Run for at least 1 minute",
         variant: "destructive"
       });
       return;
@@ -118,17 +174,15 @@ const JoggingTracker = () => {
     if (!session) return;
 
     const durationMinutes = Math.floor(seconds / 60);
-    const distanceKm = parseFloat(distance);
-    
-    // Simple calorie calculation: ~60 calories per km
-    const estimatedCalories = Math.round(distanceKm * 60);
+    const distanceKm = calculateDistance();
+    const estimatedCalories = calculateCalories(distanceKm);
 
     const { error } = await supabase
       .from("jogging_logs")
       .insert({
         user_id: session.user.id,
         duration: durationMinutes,
-        distance: distanceKm,
+        distance: parseFloat(distanceKm.toFixed(2)),
         calories: estimatedCalories,
         notes: notes || null
       });
@@ -147,7 +201,6 @@ const JoggingTracker = () => {
       description: isGerman ? "Lauf erfolgreich gespeichert" : "Run saved successfully"
     });
 
-    setIsDialogOpen(false);
     reset();
     loadLogs();
   };
@@ -184,14 +237,8 @@ const JoggingTracker = () => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const getTotalStats = () => {
-    const totalDistance = logs.reduce((sum, log) => sum + parseFloat(log.distance.toString()), 0);
-    const totalDuration = logs.reduce((sum, log) => sum + log.duration, 0);
-    const totalCalories = logs.reduce((sum, log) => sum + (log.calories || 0), 0);
-    return { totalDistance, totalDuration, totalCalories };
-  };
-
-  const stats = getTotalStats();
+  const currentDistance = calculateDistance();
+  const currentCalories = calculateCalories(currentDistance);
 
   return (
     <div className="min-h-screen pb-24 gradient-male">
@@ -216,18 +263,57 @@ const JoggingTracker = () => {
           </div>
         </div>
 
+        {/* Live Line Chart */}
+        <Card className="gradient-card card-shadow border-white/10 p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">{isGerman ? "Live Geschwindigkeit" : "Live Speed"}</h3>
+            <div className="text-2xl font-bold text-primary">
+              {currentSpeed.toFixed(1)} km/h
+            </div>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData.length > 0 ? chartData : [{ time: 0, speed: 0 }]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                <XAxis 
+                  dataKey="time" 
+                  stroke="hsl(var(--muted-foreground))"
+                  label={{ value: isGerman ? 'Zeit (min)' : 'Time (min)', position: 'bottom', fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  domain={[0, 20]}
+                  label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="speed" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={3}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
         {/* Timer Display */}
-        <Card className="gradient-card card-shadow border-white/10 p-12 mb-8">
+        <Card className="gradient-card card-shadow border-white/10 p-8 mb-6">
           <div className="text-center">
-            <div className="text-7xl font-bold mb-8 tabular-nums glow">
+            <div className="text-6xl font-bold mb-6 tabular-nums glow">
               {formatTime(seconds)}
             </div>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center mb-6">
               <Button
                 variant="default"
                 size="lg"
                 onClick={toggle}
-                className="w-32"
+                className="w-24"
               >
                 {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </Button>
@@ -235,74 +321,63 @@ const JoggingTracker = () => {
                 variant="outline"
                 size="lg"
                 onClick={reset}
-                className="w-32"
+                className="w-24"
               >
                 <RotateCcw className="w-6 h-6" />
               </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="default" size="lg" className="w-32" disabled={seconds === 0}>
-                    <Save className="w-6 h-6" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {isGerman ? "Lauf speichern" : "Save Run"}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>{isGerman ? "Zeit" : "Time"}</Label>
-                      <Input value={formatTime(seconds)} disabled />
-                    </div>
-                    <div>
-                      <Label>{isGerman ? "Distanz (km)" : "Distance (km)"}</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={distance}
-                        onChange={(e) => setDistance(e.target.value)}
-                        placeholder="5.0"
-                      />
-                    </div>
-                    <div>
-                      <Label>{isGerman ? "Notizen" : "Notes"}</Label>
-                      <Textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder={isGerman ? "Optional..." : "Optional..."}
-                      />
-                    </div>
-                    <Button onClick={saveJoggingLog} className="w-full">
-                      {isGerman ? "Speichern" : "Save"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button 
+                variant="default" 
+                size="lg" 
+                className="w-24" 
+                disabled={seconds < 60}
+                onClick={saveJoggingLog}
+              >
+                <Save className="w-6 h-6" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={reset}
+                className="w-24"
+              >
+                <Trash2 className="w-6 h-6" />
+              </Button>
             </div>
+            
+            {/* Notes */}
+            {seconds > 0 && (
+              <div className="max-w-md mx-auto">
+                <Label>{isGerman ? "Notizen" : "Notes"}</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={isGerman ? "Optional..." : "Optional..."}
+                  className="mt-2"
+                />
+              </div>
+            )}
           </div>
         </Card>
 
-        {/* Stats */}
+        {/* Live Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card className="gradient-card card-shadow border-white/10 p-6">
             <div className="text-sm text-muted-foreground mb-2">
               {isGerman ? "Gesamte Distanz" : "Total Distance"}
             </div>
-            <div className="text-3xl font-bold">{stats.totalDistance.toFixed(1)} km</div>
+            <div className="text-3xl font-bold">{currentDistance.toFixed(2)} km</div>
           </Card>
           <Card className="gradient-card card-shadow border-white/10 p-6">
             <div className="text-sm text-muted-foreground mb-2">
               {isGerman ? "Gesamte Zeit" : "Total Time"}
             </div>
-            <div className="text-3xl font-bold">{stats.totalDuration} min</div>
+            <div className="text-3xl font-bold">{Math.floor(seconds / 60)} min</div>
           </Card>
           <Card className="gradient-card card-shadow border-white/10 p-6">
             <div className="text-sm text-muted-foreground mb-2">
               {isGerman ? "Kalorien" : "Calories"}
             </div>
-            <div className="text-3xl font-bold">{stats.totalCalories}</div>
+            <div className="text-3xl font-bold">{currentCalories}</div>
           </Card>
         </div>
 
@@ -315,15 +390,13 @@ const JoggingTracker = () => {
             {logs.map((log) => (
               <Card key={log.id} className="gradient-card card-shadow border-white/10 p-6">
                 <div className="flex justify-between items-start">
-                  <div>
+                  <div className="flex-1">
                     <div className="text-sm text-muted-foreground mb-2">
-                      {format(new Date(log.completed_at), "dd.MM.yyyy HH:mm")}
+                      {format(new Date(log.completed_at), "dd.MM.yyyy")}
                     </div>
                     <div className="grid grid-cols-3 gap-4 mb-2">
                       <div>
-                        <div className="text-xs text-muted-foreground">
-                          {isGerman ? "Distanz" : "Distance"}
-                        </div>
+                        <div className="text-xs text-muted-foreground">KM</div>
                         <div className="text-lg font-bold">{log.distance} km</div>
                       </div>
                       <div>
@@ -343,13 +416,15 @@ const JoggingTracker = () => {
                       <div className="text-sm text-muted-foreground">{log.notes}</div>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteLog(log.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteLog(log.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}

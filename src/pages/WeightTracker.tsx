@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, TrendingDown, TrendingUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface WeightEntry {
   id: string;
   weight: number;
-  date: string;
+  measured_at: string;
 }
 
 const WeightTracker = () => {
@@ -22,9 +22,10 @@ const WeightTracker = () => {
   const [currentWeight, setCurrentWeight] = useState("");
   const [weightHistory, setWeightHistory] = useState<WeightEntry[]>([]);
   const [userData, setUserData] = useState<any>(null);
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/login");
         return;
@@ -33,27 +34,21 @@ const WeightTracker = () => {
       const user = session.user;
       const metadata = user.user_metadata;
       
-      const userInfo = {
+      setUserId(user.id);
+      setUserData({
         name: metadata.name || metadata.full_name || "User",
         weight: metadata.weight || "N/A",
         gender: metadata.gender || "male",
         language: metadata.language || "de"
-      };
-
-      setUserData(userInfo);
+      });
       setIsGerman(metadata.language === "de");
 
-      // Apply theme
       const theme = metadata.gender === "female" ? "theme-female" : "";
       if (theme) {
         document.documentElement.classList.add(theme);
       }
 
-      // Load weight history
-      const savedHistory = localStorage.getItem("weight_history");
-      if (savedHistory) {
-        setWeightHistory(JSON.parse(savedHistory));
-      }
+      loadWeightHistory(user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -65,7 +60,25 @@ const WeightTracker = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const addWeight = () => {
+  const loadWeightHistory = async (uid: string) => {
+    const { data, error } = await supabase
+      .from("weight_logs")
+      .select("id, weight, measured_at")
+      .eq("user_id", uid)
+      .order("measured_at", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error("Error loading weight history:", error);
+      return;
+    }
+
+    if (data) {
+      setWeightHistory(data);
+    }
+  };
+
+  const addWeight = async () => {
     if (!currentWeight || parseFloat(currentWeight) <= 0) {
       toast({
         title: isGerman ? "Fehler" : "Error",
@@ -75,27 +88,56 @@ const WeightTracker = () => {
       return;
     }
 
-    const entry: WeightEntry = {
-      id: Date.now().toString(),
-      weight: parseFloat(currentWeight),
-      date: new Date().toISOString(),
-    };
+    const { error } = await supabase
+      .from("weight_logs")
+      .insert({
+        user_id: userId,
+        weight: parseFloat(currentWeight),
+      });
 
-    const updatedHistory = [entry, ...weightHistory];
-    setWeightHistory(updatedHistory);
-    localStorage.setItem("weight_history", JSON.stringify(updatedHistory));
-
-    // Update user weight
-    if (userData) {
-      const updatedUser = { ...userData, weight: currentWeight };
-      localStorage.setItem("fitblaqs_user", JSON.stringify(updatedUser));
-      setUserData(updatedUser);
+    if (error) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
     }
 
+    // Update profile weight
+    await supabase
+      .from("profiles")
+      .update({ weight: parseFloat(currentWeight) })
+      .eq("user_id", userId);
+
     setCurrentWeight("");
+    loadWeightHistory(userId);
+    
     toast({
       title: isGerman ? "Gewicht gespeichert" : "Weight saved",
       description: isGerman ? "Dein Gewicht wurde erfolgreich eingetragen" : "Your weight has been recorded successfully",
+    });
+  };
+
+  const deleteWeight = async (id: string) => {
+    const { error } = await supabase
+      .from("weight_logs")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    loadWeightHistory(userId);
+    toast({
+      title: isGerman ? "Gelöscht" : "Deleted",
+      description: isGerman ? "Eintrag gelöscht" : "Entry deleted",
     });
   };
 
@@ -107,6 +149,7 @@ const WeightTracker = () => {
   };
 
   const weightChange = getWeightChange();
+  const latestWeight = weightHistory.length > 0 ? weightHistory[0].weight : (userData?.weight || "N/A");
 
   if (!userData) return null;
 
@@ -131,29 +174,24 @@ const WeightTracker = () => {
         {/* Scale Design */}
         <Card className="gradient-card card-shadow border-white/10 p-8 mb-6">
           <div className="flex flex-col items-center">
-            {/* Scale Display */}
             <div className="relative w-full max-w-md">
-              {/* Scale Body */}
               <div className="bg-gradient-to-b from-muted/20 to-muted/40 rounded-t-full h-40 flex items-end justify-center pb-6 border-4 border-white/10">
                 <div className="text-center">
                   <div className="text-6xl font-bold glow">
-                    {userData.weight}
+                    {latestWeight}
                   </div>
                   <div className="text-2xl text-muted-foreground">kg</div>
                 </div>
               </div>
               
-              {/* Scale Platform */}
               <div className="bg-gradient-to-b from-muted/40 to-muted/20 h-8 rounded-b-3xl border-4 border-t-0 border-white/10" />
               
-              {/* Scale Feet */}
               <div className="flex justify-between px-8 mt-2">
                 <div className="w-12 h-3 bg-muted/30 rounded-full" />
                 <div className="w-12 h-3 bg-muted/30 rounded-full" />
               </div>
             </div>
 
-            {/* Weight Change Indicator */}
             {weightChange !== null && (
               <div className="mt-6 flex items-center gap-2">
                 {weightChange > 0 ? (
@@ -188,7 +226,7 @@ const WeightTracker = () => {
                 step="0.1"
                 value={currentWeight}
                 onChange={(e) => setCurrentWeight(e.target.value)}
-                placeholder={userData.weight}
+                placeholder={String(latestWeight)}
                 className="text-lg"
               />
             </div>
@@ -225,25 +263,35 @@ const WeightTracker = () => {
                       <div>
                         <div className="text-2xl font-bold">{entry.weight} kg</div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(entry.date).toLocaleDateString(isGerman ? 'de-DE' : 'en-US', {
+                          {new Date(entry.measured_at).toLocaleDateString(isGerman ? 'de-DE' : 'en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           })}
                         </div>
                       </div>
-                      {change !== null && (
-                        <div className={`flex items-center gap-1 ${change > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                          {change > 0 ? (
-                            <TrendingUp className="w-4 h-4" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4" />
-                          )}
-                          <span className="font-semibold">
-                            {change > 0 ? '+' : ''}{change.toFixed(1)} kg
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-4">
+                        {change !== null && (
+                          <div className={`flex items-center gap-1 ${change > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                            {change > 0 ? (
+                              <TrendingUp className="w-4 h-4" />
+                            ) : (
+                              <TrendingDown className="w-4 h-4" />
+                            )}
+                            <span className="font-semibold">
+                              {change > 0 ? '+' : ''}{change.toFixed(1)} kg
+                            </span>
+                          </div>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteWeight(entry.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 );
