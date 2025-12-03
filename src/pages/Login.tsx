@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import logo from "@/assets/fitblaqs-logo.png";
+import authBackground from "@/assets/auth-background.png";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
 import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,14 +18,12 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate("/dashboard");
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate("/dashboard");
@@ -55,24 +52,20 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      toast.error(
-        isGerman 
-          ? "Google Login fehlgeschlagen" 
-          : "Google login failed"
-      );
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen gradient-male flex items-center justify-center p-4">
-      <Card className="w-full max-w-md gradient-card card-shadow border-white/10 p-8">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: `url(${authBackground})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/60" />
+      
+      <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-white/10 p-8 relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="FitBlaqs" className="w-24 h-24 mb-4" />

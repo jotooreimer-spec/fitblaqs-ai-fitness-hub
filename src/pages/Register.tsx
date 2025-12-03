@@ -5,11 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import logo from "@/assets/fitblaqs-logo.png";
+import authBackground from "@/assets/auth-background.png";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
-import { signInWithGoogle, signUpWithEmail } from "@/lib/auth";
+import { signUpWithEmail } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
@@ -27,7 +26,6 @@ const Register = () => {
   });
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate("/dashboard");
@@ -46,7 +44,6 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name || !formData.age || !formData.weight || !formData.height || 
         !formData.gender || !formData.email || !formData.password) {
       toast.error(formData.language === "de" ? "Bitte füllen Sie alle Felder aus" : "Please fill in all fields");
@@ -78,21 +75,6 @@ const Register = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      toast.error(
-        formData.language === "de" 
-          ? "Google Login fehlgeschlagen" 
-          : "Google login failed"
-      );
-      setLoading(false);
-    }
-  };
-
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -100,8 +82,19 @@ const Register = () => {
   const isGerman = formData.language === "de";
 
   return (
-    <div className="min-h-screen gradient-male flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl gradient-card card-shadow border-white/10 p-8">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: `url(${authBackground})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/60" />
+      
+      <Card className="w-full max-w-2xl bg-background/80 backdrop-blur-xl border-white/10 p-8 relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="FitBlaqs" className="w-24 h-24 mb-4" />
@@ -117,8 +110,8 @@ const Register = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="de">Deutsch 🇩🇪</SelectItem>
-                <SelectItem value="en">English 🇬🇧</SelectItem>
+                <SelectItem value="de">Deutsch</SelectItem>
+                <SelectItem value="en">English</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -165,7 +158,7 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Gender */}
+          {/* Gender - Without icons */}
           <div>
             <Label>{isGerman ? "Geschlecht" : "Gender"}</Label>
             <Select value={formData.gender} onValueChange={(value) => updateField("gender", value)}>
@@ -173,8 +166,8 @@ const Register = () => {
                 <SelectValue placeholder={isGerman ? "Wählen Sie Ihr Geschlecht" : "Select your gender"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">{isGerman ? "Männlich" : "Male"} 🧔</SelectItem>
-                <SelectItem value="female">{isGerman ? "Weiblich" : "Female"} 👩</SelectItem>
+                <SelectItem value="male">{isGerman ? "Männlich" : "Male"}</SelectItem>
+                <SelectItem value="female">{isGerman ? "Weiblich" : "Female"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -207,6 +200,14 @@ const Register = () => {
               {loading ? (isGerman ? "Lädt..." : "Loading...") : (isGerman ? "Konto erstellen" : "Create Account")}
             </Button>
             
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isGerman ? "Bereits ein Konto? Anmelden" : "Already have an account? Login"}
+            </button>
+
             <button
               type="button"
               onClick={() => navigate("/")}
