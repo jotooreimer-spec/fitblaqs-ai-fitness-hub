@@ -2,17 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { Leaf, Carrot, Drumstick, Pill, Trash2, Save } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NutritionLogDialog } from "@/components/NutritionLogDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import vegetableImg from "@/assets/vegetable.jpg";
+import veganImg from "@/assets/vegan.jpg";
+import proteinImg from "@/assets/protein.jpg";
+import supplementsImg from "@/assets/supplements.jpg";
 
 const Nutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGerman, setIsGerman] = useState(true);
   const [userId, setUserId] = useState<string>("");
+  const [userWeight, setUserWeight] = useState(70);
   const [selectedCategory, setSelectedCategory] = useState<"vegetarian" | "vegan" | "protein" | "supplements" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([]);
@@ -29,7 +34,17 @@ const Nutrition = () => {
       setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
 
-      // Load nutrition logs
+      // Get user weight
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("weight")
+        .eq("user_id", session.user.id)
+        .single();
+
+      if (profile?.weight) {
+        setUserWeight(profile.weight);
+      }
+
       loadNutritionLogs(session.user.id);
     });
 
@@ -109,35 +124,39 @@ const Nutrition = () => {
       }
     });
 
-    return totals;
+    // Adjust calories based on weight (BMR estimation)
+    const bmr = userWeight * 24; // Basic estimation
+    const adjustedCalories = totals.calories > 0 ? totals.calories : 0;
+
+    return { ...totals, calories: adjustedCalories };
   };
 
   const dailyTotals = calculateDailyTotals();
 
   const nutritionCategories = [
     {
-      icon: Leaf,
+      image: vegetableImg,
       title: isGerman ? "Vegetarisch" : "Vegetarian",
       description: isGerman ? "Pflanzliche Ernährung" : "Plant-based nutrition",
-      color: "text-green-400",
+      key: "vegetarian" as const,
     },
     {
-      icon: Carrot,
+      image: veganImg,
       title: "Vegan",
       description: isGerman ? "100% pflanzlich" : "100% plant-based",
-      color: "text-emerald-400",
+      key: "vegan" as const,
     },
     {
-      icon: Drumstick,
+      image: proteinImg,
       title: isGerman ? "Fleisch & Protein" : "Meat & Protein",
       description: isGerman ? "Proteinreiche Ernährung" : "High-protein nutrition",
-      color: "text-orange-400",
+      key: "protein" as const,
     },
     {
-      icon: Pill,
+      image: supplementsImg,
       title: "Supplements",
       description: isGerman ? "Nahrungsergänzung" : "Nutritional supplements",
-      color: "text-purple-400",
+      key: "supplements" as const,
     },
   ];
 
@@ -166,7 +185,7 @@ const Nutrition = () => {
             </div>
             <div>
               <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Protein" : "Protein"}
+                Protein
               </div>
               <div className="text-3xl font-bold text-green-400">{Math.round(dailyTotals.protein)}g</div>
             </div>
@@ -177,33 +196,31 @@ const Nutrition = () => {
               <div className="text-3xl font-bold text-blue-400">{(dailyTotals.water / 1000).toFixed(1)}L</div>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            {isGerman ? "Berechnet anhand heutigem Essensplan und Gewicht" : "Calculated based on today's meal plan and weight"}
+          </p>
         </Card>
 
-        {/* Nutrition Categories */}
+        {/* Nutrition Categories with Images */}
         <div className="grid md:grid-cols-2 gap-6">
-          {nutritionCategories.map((category, index) => {
-            const Icon = category.icon;
-            const categoryKey = index === 0 ? "vegetarian" : index === 1 ? "vegan" : index === 2 ? "protein" : "supplements";
-            return (
-              <Card
-                key={index}
-                onClick={() => handleCategoryClick(categoryKey as any)}
-                className="gradient-card card-shadow border-white/10 p-8 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="p-4 rounded-2xl bg-background/50">
-                    <Icon className={`w-12 h-12 ${category.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-1">{category.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {category.description}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+          {nutritionCategories.map((category, index) => (
+            <Card
+              key={index}
+              onClick={() => handleCategoryClick(category.key)}
+              className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48"
+            >
+              <img 
+                src={category.image} 
+                alt={category.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                <h3 className="text-xl font-bold mb-1">{category.title}</h3>
+                <p className="text-sm text-white/80">{category.description}</p>
+              </div>
+            </Card>
+          ))}
         </div>
 
         {/* Nutrition History */}

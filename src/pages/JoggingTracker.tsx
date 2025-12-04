@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +29,6 @@ const JoggingTracker = () => {
   const [isGerman, setIsGerman] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [notes, setNotes] = useState("");
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -53,7 +50,6 @@ const JoggingTracker = () => {
         document.documentElement.classList.add(theme);
       }
 
-      // Get user weight from profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("weight")
@@ -105,10 +101,10 @@ const JoggingTracker = () => {
         setSeconds((prev) => {
           const newSeconds = prev + 1;
           
-          // Simulate speed variation (5-15 km/h typical jogging)
-          const baseSpeed = 8;
-          const variation = Math.sin(newSeconds / 10) * 2 + (Math.random() - 0.5) * 2;
-          const newSpeed = Math.max(0, baseSpeed + variation);
+          // Simulate speed variation (5-40 km/h typical jogging/running)
+          const baseSpeed = 15;
+          const variation = Math.sin(newSeconds / 10) * 5 + (Math.random() - 0.5) * 5;
+          const newSpeed = Math.max(0, Math.min(100, baseSpeed + variation));
           speedRef.current = newSpeed;
           setCurrentSpeed(newSpeed);
           
@@ -137,7 +133,6 @@ const JoggingTracker = () => {
   const reset = () => {
     setSeconds(0);
     setIsActive(false);
-    setNotes("");
     setChartData([]);
     setCurrentSpeed(0);
     speedRef.current = 0;
@@ -152,11 +147,10 @@ const JoggingTracker = () => {
   };
 
   // Calculate calories: MET value * weight * time (hours)
-  // Running MET ~= 8-10, we use speed-based calculation
   const calculateCalories = (distanceKm: number) => {
     const hours = seconds / 3600;
     const avgSpeed = hours > 0 ? distanceKm / hours : 0;
-    const MET = avgSpeed < 8 ? 8 : avgSpeed < 10 ? 10 : 12;
+    const MET = avgSpeed < 8 ? 8 : avgSpeed < 12 ? 10 : avgSpeed < 16 ? 12 : 14;
     return Math.round(MET * userWeight * hours);
   };
 
@@ -184,7 +178,7 @@ const JoggingTracker = () => {
         duration: durationMinutes,
         distance: parseFloat(distanceKm.toFixed(2)),
         calories: estimatedCalories,
-        notes: notes || null
+        notes: null
       });
 
     if (error) {
@@ -254,9 +248,7 @@ const JoggingTracker = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
-            <h1 className="text-4xl font-bold">
-              {isGerman ? "Jogging Tracker" : "Jogging Tracker"}
-            </h1>
+            <h1 className="text-4xl font-bold">Jogging Tracker</h1>
             <p className="text-muted-foreground">
               {isGerman ? "Verfolge deine Läufe" : "Track your runs"}
             </p>
@@ -266,7 +258,7 @@ const JoggingTracker = () => {
         {/* Live Line Chart */}
         <Card className="gradient-card card-shadow border-white/10 p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">{isGerman ? "Live Geschwindigkeit" : "Live Speed"}</h3>
+            <h3 className="text-lg font-bold">Jogging Tracker</h3>
             <div className="text-2xl font-bold text-primary">
               {currentSpeed.toFixed(1)} km/h
             </div>
@@ -282,7 +274,8 @@ const JoggingTracker = () => {
                 />
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
-                  domain={[0, 20]}
+                  domain={[0, 100]}
+                  ticks={[5, 25, 50, 75, 100]}
                   label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
                 />
                 <Tooltip 
@@ -343,19 +336,6 @@ const JoggingTracker = () => {
                 <Trash2 className="w-6 h-6" />
               </Button>
             </div>
-            
-            {/* Notes */}
-            {seconds > 0 && (
-              <div className="max-w-md mx-auto">
-                <Label>{isGerman ? "Notizen" : "Notes"}</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={isGerman ? "Optional..." : "Optional..."}
-                  className="mt-2"
-                />
-              </div>
-            )}
           </div>
         </Card>
 
@@ -412,9 +392,6 @@ const JoggingTracker = () => {
                         <div className="text-lg font-bold">{log.calories || 0}</div>
                       </div>
                     </div>
-                    {log.notes && (
-                      <div className="text-sm text-muted-foreground">{log.notes}</div>
-                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
