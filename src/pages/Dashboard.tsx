@@ -11,11 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Dumbbell, User, Edit, Plus
-} from "lucide-react";
+import { Edit, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import upperbodyImg from "@/assets/upperbody.png";
+import middlebodyImg from "@/assets/middlebody.png";
+import lowerbodyImg from "@/assets/lowerbody.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,9 +35,9 @@ const Dashboard = () => {
   });
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
   const [refreshHistory, setRefreshHistory] = useState(0);
+  const [monthlyProgress, setMonthlyProgress] = useState(0);
 
   useEffect(() => {
-    // Check authentication
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/login");
@@ -55,13 +57,11 @@ const Dashboard = () => {
       
       setIsGerman(metadata.language === "de");
 
-      // Apply theme
       const theme = metadata.gender === "female" ? "theme-female" : "";
       if (theme) {
         document.documentElement.classList.add(theme);
       }
 
-      // Fetch profile data
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -77,6 +77,21 @@ const Dashboard = () => {
           athlete_level: profile.athlete_level || ""
         });
       }
+
+      // Calculate monthly workout progress
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const { count } = await supabase
+        .from("workout_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("completed_at", startOfMonth.toISOString());
+
+      // Calculate progress (30 workouts = 100%)
+      const progress = Math.min(((count || 0) / 30) * 100, 100);
+      setMonthlyProgress(progress);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -86,7 +101,7 @@ const Dashboard = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, refreshHistory]);
 
   const handleSaveProfile = async () => {
     if (!userData) return;
@@ -113,7 +128,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Refresh profile data
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -131,53 +145,21 @@ const Dashboard = () => {
     });
   };
 
-  const muscleGroupsMap: { [key: string]: { de: string; en: string; category: string } } = {
-    brust: { de: "Brust", en: "Chest", category: "brust" },
-    ruecken: { de: "Rücken", en: "Back", category: "ruecken" },
-    schulter: { de: "Schultern", en: "Shoulders", category: "schulter" },
-    bizeps: { de: "Bizeps", en: "Biceps", category: "bizeps" },
-    trizeps: { de: "Trizeps", en: "Triceps", category: "trizeps" },
-    beine: { de: "Beine", en: "Legs", category: "beine" },
-    waden: { de: "Waden", en: "Calves", category: "waden" },
-    bauch: { de: "Bauch", en: "Abs", category: "bauch" },
-    core: { de: "Core", en: "Core", category: "core" },
-    po: { de: "Po", en: "Glutes", category: "po" }
-  };
-
-  // Category mapping for German/English
-  const categoryMapping: Record<string, { de: string; en: string }> = {
-    beine: { de: "Beine", en: "Legs" },
-    waden: { de: "Waden", en: "Calves" },
-    squats: { de: "Squats", en: "Squats" },
-    po: { de: "Po", en: "Glutes" },
-    brust: { de: "Brust", en: "Chest" },
-    ruecken: { de: "Rücken", en: "Back" },
-    core: { de: "Core", en: "Core" },
-    schulter: { de: "Schultern", en: "Shoulders" },
-    trizeps: { de: "Trizeps", en: "Triceps" },
-    bizeps: { de: "Bizeps", en: "Biceps" },
-    bauch: { de: "Bauch", en: "Abs" }
-  };
-
-  // Training modules with new icons
   const trainingModules = [
     { 
-      icon: Dumbbell, 
-      title: isGerman ? "Upper Body" : "Upper Body",
+      image: upperbodyImg,
+      title: "Upper Body",
       description: isGerman ? "Brust, Rücken, Schultern, Arme" : "Chest, Back, Shoulders, Arms",
-      color: "text-blue-400"
     },
     { 
-      icon: User, 
-      title: isGerman ? "Middle Body" : "Middle Body",
+      image: middlebodyImg,
+      title: "Middle Body",
       description: isGerman ? "Core, Bauch" : "Core, Abs",
-      color: "text-purple-400"
     },
     { 
-      icon: User, 
-      title: isGerman ? "Lower Body" : "Lower Body",
+      image: lowerbodyImg,
+      title: "Lower Body",
       description: isGerman ? "Beine, Po, Waden" : "Legs, Glutes, Calves",
-      color: "text-green-400"
     }
   ];
 
@@ -310,7 +292,7 @@ const Dashboard = () => {
             />
 
             {/* Profile Info Grid */}
-            <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+            <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
               <div>
                 <div className="text-sm text-muted-foreground mb-1">
                   {isGerman ? "Größe" : "Height"}
@@ -332,7 +314,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">
-                  {isGerman ? "Athlete" : "Athlete"}
+                  Athlete
                 </div>
                 <div className="text-lg font-bold capitalize">
                   {profileData?.athlete_level ? athleteLevelTranslations[isGerman ? 'de' : 'en'][profileData.athlete_level] : "N/A"}
@@ -350,32 +332,49 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Training Modules - 3 Boxes */}
+        {/* Training Modules - 3 Boxes with Images */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6">
             {isGerman ? "Trainingsmodule" : "Training Modules"}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {trainingModules.map((module, index) => {
-              const Icon = module.icon;
-              return (
-                <Card
-                  key={index}
-                  onClick={() => setIsTrainingDialogOpen(true)}
-                  className="gradient-card card-shadow border-white/10 p-8 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50"
-                >
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    <Icon className={`w-16 h-16 ${module.color}`} />
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">{module.title}</h3>
-                      <p className="text-sm text-muted-foreground">{module.description}</p>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+            {trainingModules.map((module, index) => (
+              <Card
+                key={index}
+                onClick={() => setIsTrainingDialogOpen(true)}
+                className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-64"
+              >
+                <img 
+                  src={module.image} 
+                  alt={module.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <h3 className="text-xl font-bold mb-1">{module.title}</h3>
+                  <p className="text-sm text-white/80">{module.description}</p>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
+
+        {/* Workout Activity Progress Bar */}
+        <Card className="gradient-card card-shadow border-white/10 p-6 mb-8">
+          <h3 className="text-lg font-bold mb-4">
+            {isGerman ? "Workout Aktivitäten" : "Workout Activities"}
+          </h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{isGerman ? "Monatlicher Fortschritt" : "Monthly Progress"}</span>
+              <span className="font-bold">{Math.round(monthlyProgress)}%</span>
+            </div>
+            <Progress value={monthlyProgress} className="h-3" />
+            <p className="text-xs text-muted-foreground">
+              {isGerman ? "Jeden Tag nach Abschluss steigt der Balken" : "Progress increases with each completed workout"}
+            </p>
+          </div>
+        </Card>
 
         {/* Training History */}
         <div>

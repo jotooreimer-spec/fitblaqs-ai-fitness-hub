@@ -28,6 +28,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   const [weight, setWeight] = useState("0");
   const [unit, setUnit] = useState("kg");
   const [date, setDate] = useState<Date>(new Date());
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
 
   const handleSave = async () => {
     if (!category || !sets || !reps) {
@@ -50,7 +52,6 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
 
     // If exercise doesn't exist, we'll use a placeholder
     if (!exerciseId) {
-      // Use first available exercise as placeholder (workout_logs requires exercise_id)
       const { data: firstExercise } = await supabase
         .from('exercises')
         .select('id')
@@ -59,6 +60,11 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       
       exerciseId = firstExercise?.id;
     }
+
+    // Combine date with start time
+    const completedAt = new Date(date);
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    completedAt.setHours(startHour, startMin, 0, 0);
 
     const { error } = await supabase
       .from('workout_logs')
@@ -69,8 +75,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
         reps: parseInt(reps),
         weight: parseFloat(weight),
         unit: unit,
-        completed_at: date.toISOString(),
-        notes: category // Store custom category in notes
+        completed_at: completedAt.toISOString(),
+        notes: `${category} | ${startTime}-${endTime}` // Store category and times in notes
       });
 
     if (error) {
@@ -92,6 +98,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     setReps("10");
     setWeight("0");
     setDate(new Date());
+    setStartTime("09:00");
+    setEndTime("10:00");
     onOpenChange(false);
     onSuccess();
   };
@@ -140,12 +148,11 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="weight">{isGerman ? "Gewicht (1-100)" : "Weight (1-100)"}</Label>
+              <Label htmlFor="weight">{isGerman ? "Gewicht" : "Weight"}</Label>
               <Input
                 id="weight"
                 type="number"
                 min="0"
-                max="100"
                 step="0.5"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
@@ -162,6 +169,28 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
                   <SelectItem value="lbs">lbs</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Start and End Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="startTime">{isGerman ? "Beginn" : "Start Time"}</Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="endTime">{isGerman ? "Ende" : "End Time"}</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+              />
             </div>
           </div>
 

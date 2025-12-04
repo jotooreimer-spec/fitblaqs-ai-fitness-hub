@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
 interface DayData {
@@ -22,7 +22,6 @@ const CalendarPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [userId, setUserId] = useState<string>("");
   const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [] });
-  const [monthStats, setMonthStats] = useState({ weight: 0, caloriesBurned: 0 });
   const [weeklyChartData, setWeeklyChartData] = useState<any[]>([]);
 
   useEffect(() => {
@@ -59,17 +58,6 @@ const CalendarPage = () => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
 
-    // Get weight for the month (last measurement)
-    const { data: weightData } = await supabase
-      .from("weight_logs")
-      .select("weight")
-      .eq("user_id", uid)
-      .gte("measured_at", monthStart.toISOString())
-      .lte("measured_at", monthEnd.toISOString())
-      .order("measured_at", { ascending: false })
-      .limit(1);
-
-    // Get total calories burned (from workouts and jogging)
     const { data: workoutData } = await supabase
       .from("workout_logs")
       .select("*")
@@ -84,17 +72,8 @@ const CalendarPage = () => {
       .gte("completed_at", monthStart.toISOString())
       .lte("completed_at", monthEnd.toISOString());
 
-    const joggingCalories = joggingData?.reduce((sum, j) => sum + (j.calories || 0), 0) || 0;
-    // Estimate workout calories: ~5 cal per minute of exercise
-    const workoutCalories = workoutData?.reduce((sum, w) => sum + (w.sets * w.reps * 2), 0) || 0;
-
-    setMonthStats({
-      weight: weightData?.[0]?.weight || 0,
-      caloriesBurned: joggingCalories + workoutCalories
-    });
-
-    // Build weekly chart data
-    const days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    // Build weekly chart data with hours (max 10 hours)
+    const days = isGerman ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const chartData = days.map((day, index) => {
       const dayWorkouts = workoutData?.filter(w => {
         const d = new Date(w.completed_at);
@@ -105,10 +84,11 @@ const CalendarPage = () => {
         return d.getDay() === (index === 6 ? 0 : index + 1);
       }) || [];
       
-      const totalMinutes = dayJogging.reduce((sum, j) => sum + (j.duration || 0), 0) + 
-                          dayWorkouts.length * 30; // Estimate 30 min per workout
+      // Calculate total hours from start/end times or estimate
+      const joggingHours = dayJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
+      const workoutHours = dayWorkouts.length * 0.5; // Estimate 30 min per workout
 
-      return { day, minutes: totalMinutes };
+      return { day, hours: Math.min(joggingHours + workoutHours, 10) };
     });
 
     setWeeklyChartData(chartData);
@@ -167,16 +147,14 @@ const CalendarPage = () => {
       <div className="max-w-screen-xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            {isGerman ? "Trainingskalender" : "Workout Calendar"}
-          </h1>
+          <h1 className="text-4xl font-bold mb-2">Performance</h1>
           <p className="text-muted-foreground">
             {isGerman ? "Alle deine Aktivitäten" : "All your activities"}
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left Side - Calendar + Month Stats */}
+          {/* Left Side - Calendar + Performance Chart */}
           <div className="space-y-6">
             <Card className="gradient-card card-shadow border-white/10 p-6">
               <Calendar
@@ -187,38 +165,42 @@ const CalendarPage = () => {
               />
             </Card>
 
-            {/* Month Stats */}
-            <Card className="gradient-card card-shadow border-white/10 p-6">
-              <h3 className="text-lg font-bold mb-4">
-                {isGerman ? "Monatsübersicht" : "Monthly Overview"}
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    {isGerman ? "Gewicht" : "Weight"}
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {monthStats.weight ? `${monthStats.weight} kg` : "N/A"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    {isGerman ? "Kalorien verbrannt" : "Calories Burned"}
-                  </div>
-                  <div className="text-2xl font-bold">{monthStats.caloriesBurned}</div>
-                </div>
+            {/* Performance Bar Chart */}
+            <Card className="gradient-card card-shadow border-white/10 p-4">
+              <h3 className="text-lg font-bold mb-4">Performance</h3>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyChartData}>
+                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis 
+                      stroke="hsl(var(--muted-foreground))" 
+                      domain={[0, 10]} 
+                      ticks={[0, 2, 4, 6, 8, 10]}
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Stunden' : 'Hours']}
+                    />
+                    <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-center text-xs text-muted-foreground mt-2">
+                {isGerman ? "Trainingsdauer (Stunden)" : "Training Duration (Hours)"}
               </div>
             </Card>
           </div>
 
-          {/* Right Side - Day Data + Performance */}
+          {/* Right Side - Dailyplaner */}
           <div className="space-y-6">
-            {/* Selected Day Data */}
             <Card className="gradient-card card-shadow border-white/10 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold">
+                <h3 className="text-lg font-bold">Dailyplaner</h3>
+                <span className="text-sm text-muted-foreground">
                   {date ? format(date, "dd.MM.yyyy") : ""}
-                </h3>
+                </span>
               </div>
 
               {!hasData ? (
@@ -226,7 +208,7 @@ const CalendarPage = () => {
                   {isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}
                 </p>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-4 max-h-[500px] overflow-y-auto">
                   {/* Workouts */}
                   {selectedDayData.workouts.map((w) => (
                     <div key={w.id} className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
@@ -235,10 +217,10 @@ const CalendarPage = () => {
                           {isGerman ? "Training" : "Workout"}
                         </div>
                         <div className="text-sm">
-                          {isGerman ? w.exercises?.name_de : w.exercises?.name_en}
+                          {w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'}
+                          Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'} | {(w.sets * w.reps * 2)} kcal
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => deleteEntry("workout_logs", w.id)}>
@@ -297,27 +279,6 @@ const CalendarPage = () => {
                   ))}
                 </div>
               )}
-            </Card>
-
-            {/* Performance Bar Chart */}
-            <Card className="gradient-card card-shadow border-white/10 p-6">
-              <h3 className="text-lg font-bold mb-4">Performance</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyChartData}>
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Bar dataKey="minutes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="text-center text-sm text-muted-foreground mt-2">
-                {isGerman ? "Trainingszeit (Minuten)" : "Training Time (Minutes)"}
-              </div>
             </Card>
           </div>
         </div>

@@ -10,7 +10,7 @@ const BottomNav = () => {
     { icon: Apple, label: "Nutrition", path: "/nutrition" },
     { icon: MapPin, label: "Jogging", path: "/jogging-tracker" },
     { icon: Scale, label: "Weight", path: "/weight-tracker" },
-    { icon: Calendar, label: "Calendar", path: "/calendar" },
+    { icon: Calendar, label: "Performance", path: "/calendar" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
