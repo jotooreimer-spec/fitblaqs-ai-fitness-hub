@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Camera, Plus, Loader2, HelpCircle } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, HelpCircle, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
 
 // Barcode Icon
 const BarcodeIcon = ({ className }: { className?: string }) => (
@@ -41,6 +42,8 @@ const ProNutrition = () => {
     protein: 108,
     carbs: 215
   });
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -56,6 +59,36 @@ const ProNutrition = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [manualFoodName, setManualFoodName] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setUploadedFile(url);
+      setShowManualInput(true);
+    }
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setUploadedFile(url);
+      setShowManualInput(true);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   const analyzeFood = async (foodName: string, barcode?: string) => {
     setIsScanning(true);
@@ -130,55 +163,101 @@ const ProNutrition = () => {
       
       setAddToDayDialogOpen(false);
       setScannedFood(null);
+      setUploadedFile(null);
     }
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-black">
-      <div className="max-w-screen-xl mx-auto p-4">
+    <div className="min-h-screen pb-24 relative">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${proSubscriptionBg})` }}
+      />
+      <div className="fixed inset-0 bg-black/70" />
+
+      <div className="relative z-10 max-w-screen-xl mx-auto p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")}>
-            <ArrowLeft className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")} className="text-white">
+            <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl font-semibold text-white">Mahlzeit scannen</h1>
-          <Button variant="ghost" size="icon">
-            <HelpCircle className="w-6 h-6 text-white" />
+          <h1 className="text-lg font-semibold text-white">{isGerman ? "Mahlzeit scannen" : "Scan Meal"}</h1>
+          <Button variant="ghost" size="icon" className="text-white">
+            <HelpCircle className="w-6 h-6" />
           </Button>
         </div>
 
-        {/* Scan Area */}
-        <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-8 mb-6">
-          <div className="border-2 border-dashed border-zinc-600 rounded-2xl p-12 text-center min-h-[200px] flex items-center justify-center">
+        {/* Scan Area - Smaller with Drag & Drop */}
+        <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+          <div 
+            className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[120px] flex items-center justify-center transition-colors ${
+              isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
             {isScanning ? (
-              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <p className="text-zinc-400 text-lg">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-zinc-400 text-sm">
                   {isGerman ? "Analysiere..." : "Analyzing..."}
                 </p>
               </div>
+            ) : uploadedFile ? (
+              <div className="relative w-full">
+                <img src={uploadedFile} alt="Uploaded" className="max-h-24 mx-auto rounded-lg" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-0 right-0 w-6 h-6"
+                  onClick={() => setUploadedFile(null)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
             ) : (
-              <p className="text-zinc-400 text-lg">
-                {isGerman ? "Richte Barcode / Produkt in den Rahmen aus" : "Align barcode / product in frame"}
-              </p>
+              <div>
+                <Upload className="w-8 h-8 mx-auto mb-2 text-zinc-400" />
+                <p className="text-zinc-400 text-sm mb-2">
+                  {isGerman ? "Bild/Scan per Drag & Drop hochladen" : "Drag & drop image/scan"}
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="food-upload"
+                />
+                <label htmlFor="food-upload">
+                  <Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white">
+                    <span>
+                      <Upload className="w-3 h-3 mr-1" />
+                      {isGerman ? "Hochladen" : "Upload"}
+                    </span>
+                  </Button>
+                </label>
+              </div>
             )}
           </div>
         </Card>
 
         {/* Manual Input */}
         {showManualInput && (
-          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6 mb-6">
-            <Label className="mb-2 block text-zinc-300">{isGerman ? "Lebensmittel Name" : "Food Name"}</Label>
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+            <Label className="mb-2 block text-zinc-300 text-sm">{isGerman ? "Lebensmittel Name" : "Food Name"}</Label>
             <Input
               value={manualFoodName}
               onChange={(e) => setManualFoodName(e.target.value)}
-              placeholder={isGerman ? "z.B. Banane, Hähnchenbrust, Reis..." : "e.g. Banana, Chicken Breast, Rice..."}
-              className="mb-4 bg-zinc-800 border-zinc-600 text-white"
+              placeholder={isGerman ? "z.B. Banane, Hähnchenbrust..." : "e.g. Banana, Chicken..."}
+              className="mb-3 bg-zinc-800/50 border-zinc-600 text-white"
             />
             <Button 
               onClick={() => analyzeFood(manualFoodName)} 
               disabled={!manualFoodName || isScanning}
               className="w-full bg-primary hover:bg-primary/90"
+              size="sm"
             >
               {isScanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {isGerman ? "Analysieren" : "Analyze"}
@@ -187,36 +266,34 @@ const ProNutrition = () => {
         )}
 
         {/* Scan Buttons */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-4">
           <Button 
             onClick={handleBarcodeScan} 
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
-            size="lg"
+            className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5"
             disabled={isScanning}
           >
-            <BarcodeIcon className="w-5 h-5 mr-2" />
+            <BarcodeIcon className="w-4 h-4 mr-2" />
             Barcode
           </Button>
           <Button 
             onClick={handlePhotoScan} 
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
-            size="lg"
+            className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5"
             disabled={isScanning}
           >
-            <Camera className="w-5 h-5 mr-2" />
+            <Camera className="w-4 h-4 mr-2" />
             Foto
           </Button>
         </div>
 
         {/* Scanned Food Display */}
         {scannedFood && (
-          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-4">{scannedFood.name}</h2>
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+            <h2 className="text-xl font-bold text-white mb-3">{scannedFood.name}</h2>
             
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-400">{isGerman ? "Kalorien" : "Calories"}</span>
-                <span className="text-white font-medium">{scannedFood.calories} ㎈</span>
+                <span className="text-white font-medium">{scannedFood.calories} kcal</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Protein</span>
@@ -232,19 +309,14 @@ const ProNutrition = () => {
               </div>
             </div>
 
-            <div className="text-sm text-yellow-500 flex items-center gap-2 mb-6">
-              <span>ⓘ</span>
-              <span>{isGerman ? "Überdosierung möglich" : "Overdose possible"}</span>
-            </div>
-
-            <Button onClick={() => setAddToDayDialogOpen(true)} className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-full py-6" size="lg">
+            <Button onClick={() => setAddToDayDialogOpen(true)} className="w-full bg-zinc-800/80 hover:bg-zinc-700 text-white rounded-full py-5">
               {isGerman ? "Hinzufügen zum Tag" : "Add to Day"}
             </Button>
           </Card>
         )}
 
         {/* Daily Totals */}
-        <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6">
+        <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
           <div className="w-full bg-zinc-700 rounded-full h-2 mb-4">
             <div 
               className="bg-emerald-500 h-2 rounded-full transition-all" 
@@ -252,18 +324,18 @@ const ProNutrition = () => {
             ></div>
           </div>
           
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-3 text-center text-sm">
             <div>
-              <div className="text-xl font-bold text-white">{dailyTotals.calories} kcal</div>
-              <div className="text-sm text-zinc-400">{dailyTotals.protein} g</div>
+              <div className="text-lg font-bold text-white">{dailyTotals.calories}</div>
+              <div className="text-xs text-zinc-400">kcal</div>
             </div>
             <div>
-              <div className="text-lg font-medium text-white">Protein</div>
-              <div className="text-sm text-zinc-400">{dailyTotals.protein} g</div>
+              <div className="text-lg font-medium text-white">{dailyTotals.protein}g</div>
+              <div className="text-xs text-zinc-400">Protein</div>
             </div>
             <div>
-              <div className="text-lg font-medium text-white">{isGerman ? "Kohlenhydrate" : "Carbs"}</div>
-              <div className="text-sm text-zinc-400">{dailyTotals.carbs} g</div>
+              <div className="text-lg font-medium text-white">{dailyTotals.carbs}g</div>
+              <div className="text-xs text-zinc-400">{isGerman ? "Kohlenhydrate" : "Carbs"}</div>
             </div>
           </div>
         </Card>
