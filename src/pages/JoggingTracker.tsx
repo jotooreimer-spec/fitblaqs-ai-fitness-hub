@@ -278,51 +278,100 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* Map View */}
-        <Card className="gradient-card card-shadow border-white/10 p-4 mb-6 relative overflow-hidden">
-          <div className="relative h-64 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg overflow-hidden">
-            {/* Simplified Map Background */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 200">
-              {/* Roads */}
-              <path d="M 0,100 L 300,100" stroke="#fff" strokeWidth="8" fill="none" />
-              <path d="M 150,0 L 150,200" stroke="#fff" strokeWidth="8" fill="none" />
-              <path d="M 50,50 L 250,150" stroke="#fff" strokeWidth="6" fill="none" />
-              <path d="M 250,50 L 50,150" stroke="#fff" strokeWidth="6" fill="none" />
+        {/* Map View - Like Reference Image */}
+        <Card className="gradient-card card-shadow border-white/10 p-0 mb-6 relative overflow-hidden rounded-2xl">
+          <div className="relative h-80 bg-gradient-to-br from-[#f5e6d3] to-[#e8d5c4] overflow-hidden">
+            {/* Map Background with Streets */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice">
+              {/* Background */}
+              <rect width="400" height="320" fill="#f5e6d3" />
               
-              {/* Green areas */}
-              <rect x="20" y="20" width="40" height="30" fill="#90EE90" rx="5" />
-              <rect x="240" y="20" width="40" height="30" fill="#90EE90" rx="5" />
-              <rect x="130" y="150" width="40" height="30" fill="#90EE90" rx="5" />
+              {/* Main Streets */}
+              <path d="M 0,160 L 400,160" stroke="#fff" strokeWidth="12" fill="none" />
+              <path d="M 0,80 L 400,80" stroke="#fff" strokeWidth="8" fill="none" />
+              <path d="M 0,240 L 400,240" stroke="#fff" strokeWidth="8" fill="none" />
+              <path d="M 80,0 L 80,320" stroke="#fff" strokeWidth="8" fill="none" />
+              <path d="M 200,0 L 200,320" stroke="#fff" strokeWidth="10" fill="none" />
+              <path d="M 320,0 L 320,320" stroke="#fff" strokeWidth="8" fill="none" />
               
-              {/* Route Path */}
-              {routePath && (
-                <path d={routePath} stroke="#8B5CF6" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Diagonal Streets */}
+              <path d="M 0,0 L 200,160 L 400,0" stroke="#fff" strokeWidth="6" fill="none" />
+              <path d="M 0,320 L 200,160 L 400,320" stroke="#fff" strokeWidth="6" fill="none" />
+              
+              {/* Green Park Areas */}
+              <rect x="30" y="30" width="60" height="40" fill="#90EE90" rx="8" />
+              <rect x="310" y="30" width="60" height="40" fill="#90EE90" rx="8" />
+              <rect x="30" y="250" width="60" height="40" fill="#90EE90" rx="8" />
+              <rect x="310" y="250" width="60" height="40" fill="#90EE90" rx="8" />
+              <rect x="170" y="200" width="60" height="35" fill="#90EE90" rx="8" />
+              
+              {/* Route Path - Purple Line */}
+              {routePoints.length > 1 ? (
+                <path 
+                  d={`M ${routePoints.map(p => `${p.x},${p.y}`).join(' L ')}`} 
+                  stroke="#8B5CF6" 
+                  strokeWidth="5" 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  strokeDasharray="none"
+                />
+              ) : (
+                <path 
+                  d="M 200,280 L 200,200 L 120,160 L 120,80 L 200,40" 
+                  stroke="#8B5CF6" 
+                  strokeWidth="5" 
+                  fill="none" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  opacity="0.3"
+                />
               )}
               
-              {/* Start Marker */}
-              {routePoints.length > 0 && (
-                <g transform={`translate(${routePoints[0].x - 10}, ${routePoints[0].y - 25})`}>
-                  <path d="M10,0 C4.5,0 0,4.5 0,10 C0,17.5 10,25 10,25 C10,25 20,17.5 20,10 C20,4.5 15.5,0 10,0 Z" fill="#EF4444" />
-                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">A</text>
-                </g>
-              )}
+              {/* Start Marker A */}
+              <g transform={routePoints.length > 0 ? `translate(${routePoints[0].x - 15}, ${routePoints[0].y - 40})` : "translate(185, 240)"}>
+                <ellipse cx="15" cy="40" rx="6" ry="3" fill="rgba(0,0,0,0.3)" />
+                <path d="M15,0 C6.7,0 0,6.7 0,15 C0,26.25 15,40 15,40 C15,40 30,26.25 30,15 C30,6.7 23.3,0 15,0 Z" fill="#EF4444" />
+                <circle cx="15" cy="15" r="8" fill="white" />
+                <text x="15" y="19" textAnchor="middle" fill="#EF4444" fontSize="12" fontWeight="bold">A</text>
+              </g>
               
-              {/* End Marker */}
+              {/* End Marker B */}
               {routePoints.length > 1 && (
-                <g transform={`translate(${routePoints[routePoints.length - 1].x - 10}, ${routePoints[routePoints.length - 1].y - 25})`}>
-                  <path d="M10,0 C4.5,0 0,4.5 0,10 C0,17.5 10,25 10,25 C10,25 20,17.5 20,10 C20,4.5 15.5,0 10,0 Z" fill="#EF4444" />
-                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">B</text>
+                <g transform={`translate(${routePoints[routePoints.length - 1].x - 15}, ${routePoints[routePoints.length - 1].y - 40})`}>
+                  <ellipse cx="15" cy="40" rx="6" ry="3" fill="rgba(0,0,0,0.3)" />
+                  <path d="M15,0 C6.7,0 0,6.7 0,15 C0,26.25 15,40 15,40 C15,40 30,26.25 30,15 C30,6.7 23.3,0 15,0 Z" fill="#EF4444" />
+                  <circle cx="15" cy="15" r="8" fill="white" />
+                  <text x="15" y="19" textAnchor="middle" fill="#EF4444" fontSize="12" fontWeight="bold">B</text>
                 </g>
               )}
             </svg>
             
-            {/* Stats Overlay */}
-            <div className="absolute top-4 right-4 bg-slate-800/90 rounded-lg p-3 text-white">
-              <div className="flex items-center gap-2 mb-1">
-                <MapPin className="w-4 h-4" />
+            {/* Stats Info Box - Top Right */}
+            <div className="absolute top-4 right-4 bg-slate-800/95 rounded-xl p-4 text-white shadow-xl backdrop-blur-sm">
+              <div className="flex items-center gap-2 mb-2 border-b border-white/20 pb-2">
+                <div className="bg-blue-500 p-1.5 rounded">
+                  <MapPin className="w-4 h-4" />
+                </div>
               </div>
-              <div className="text-2xl font-bold">{currentDistance.toFixed(1)}km</div>
-              <div className="text-lg">{currentSpeed.toFixed(0)} km/h</div>
+              <div className="text-3xl font-bold tracking-tight">{currentDistance.toFixed(1)}<span className="text-lg ml-1">km</span></div>
+              <div className="text-xl font-semibold text-blue-300">{currentSpeed.toFixed(0)} km/h</div>
+            </div>
+
+            {/* Bottom Action Buttons */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-3">
+              <Button 
+                onClick={toggle}
+                className={`rounded-full px-6 py-2 font-bold shadow-lg ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+              >
+                {isActive ? 'STOP' : 'GO'}
+              </Button>
+              <Button 
+                variant="outline"
+                className="rounded-full px-6 py-2 font-bold bg-yellow-400 hover:bg-yellow-500 text-black border-0 shadow-lg"
+              >
+                MAPS
+              </Button>
             </div>
           </div>
         </Card>
