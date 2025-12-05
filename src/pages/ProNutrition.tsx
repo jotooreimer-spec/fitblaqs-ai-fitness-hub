@@ -5,10 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Camera, Barcode, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, Plus, Loader2, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+
+// Barcode Icon
+const BarcodeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="4" width="2" height="16" />
+    <rect x="7" y="4" width="1" height="16" />
+    <rect x="10" y="4" width="2" height="16" />
+    <rect x="14" y="4" width="1" height="16" />
+    <rect x="17" y="4" width="2" height="16" />
+    <rect x="21" y="4" width="1" height="16" />
+  </svg>
+);
 
 interface ScannedFood {
   name: string;
@@ -96,12 +108,10 @@ const ProNutrition = () => {
   };
 
   const handleBarcodeScan = () => {
-    // For demo, prompt for food name since we can't actually scan
     setShowManualInput(true);
   };
 
   const handlePhotoScan = () => {
-    // For demo, prompt for food name since we can't actually take a photo
     setShowManualInput(true);
   };
 
@@ -124,33 +134,31 @@ const ProNutrition = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 gradient-male">
-      <div className="max-w-screen-xl mx-auto p-6">
+    <div className="min-h-screen pb-24 bg-black">
+      <div className="max-w-screen-xl mx-auto p-4">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")}>
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6 text-white" />
           </Button>
-          <div>
-            <h1 className="text-4xl font-bold">Mahlzeit scannen</h1>
-            <p className="text-muted-foreground">
-              {isGerman ? "Scanne deine Mahlzeit" : "Scan your meal"}
-            </p>
-          </div>
+          <h1 className="text-xl font-semibold text-white">Mahlzeit scannen</h1>
+          <Button variant="ghost" size="icon">
+            <HelpCircle className="w-6 h-6 text-white" />
+          </Button>
         </div>
 
         {/* Scan Area */}
-        <Card className="gradient-card card-shadow border-white/10 p-8 mb-6">
-          <div className="border-2 border-dashed border-white/20 rounded-xl p-12 text-center">
+        <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-8 mb-6">
+          <div className="border-2 border-dashed border-zinc-600 rounded-2xl p-12 text-center min-h-[200px] flex items-center justify-center">
             {isScanning ? (
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <p className="text-muted-foreground text-lg">
+                <p className="text-zinc-400 text-lg">
                   {isGerman ? "Analysiere..." : "Analyzing..."}
                 </p>
               </div>
             ) : (
-              <p className="text-muted-foreground text-lg">
+              <p className="text-zinc-400 text-lg">
                 {isGerman ? "Richte Barcode / Produkt in den Rahmen aus" : "Align barcode / product in frame"}
               </p>
             )}
@@ -159,18 +167,18 @@ const ProNutrition = () => {
 
         {/* Manual Input */}
         {showManualInput && (
-          <Card className="gradient-card card-shadow border-white/10 p-6 mb-6">
-            <Label className="mb-2 block">{isGerman ? "Lebensmittel Name" : "Food Name"}</Label>
+          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6 mb-6">
+            <Label className="mb-2 block text-zinc-300">{isGerman ? "Lebensmittel Name" : "Food Name"}</Label>
             <Input
               value={manualFoodName}
               onChange={(e) => setManualFoodName(e.target.value)}
               placeholder={isGerman ? "z.B. Banane, Hähnchenbrust, Reis..." : "e.g. Banana, Chicken Breast, Rice..."}
-              className="mb-4"
+              className="mb-4 bg-zinc-800 border-zinc-600 text-white"
             />
             <Button 
               onClick={() => analyzeFood(manualFoodName)} 
               disabled={!manualFoodName || isScanning}
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90"
             >
               {isScanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {isGerman ? "Analysieren" : "Analyze"}
@@ -179,20 +187,19 @@ const ProNutrition = () => {
         )}
 
         {/* Scan Buttons */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex gap-3 mb-6">
           <Button 
             onClick={handleBarcodeScan} 
-            className="flex-1"
+            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
             size="lg"
             disabled={isScanning}
           >
-            <Barcode className="w-5 h-5 mr-2" />
+            <BarcodeIcon className="w-5 h-5 mr-2" />
             Barcode
           </Button>
           <Button 
             onClick={handlePhotoScan} 
-            variant="outline"
-            className="flex-1"
+            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
             size="lg"
             disabled={isScanning}
           >
@@ -203,96 +210,95 @@ const ProNutrition = () => {
 
         {/* Scanned Food Display */}
         {scannedFood && (
-          <Card className="gradient-card card-shadow border-white/10 p-6 mb-6">
-            <h2 className="text-2xl font-bold mb-4">{scannedFood.name}</h2>
+          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-4">{scannedFood.name}</h2>
             
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{isGerman ? "Kalorien" : "Calories"}</span>
-                <span className="font-bold">{scannedFood.calories} ㎈</span>
+                <span className="text-zinc-400">{isGerman ? "Kalorien" : "Calories"}</span>
+                <span className="text-white font-medium">{scannedFood.calories} ㎈</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Protein</span>
-                <span className="font-bold">{scannedFood.protein} g</span>
+                <span className="text-zinc-400">Protein</span>
+                <span className="text-white font-medium">{scannedFood.protein} g</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Fett</span>
-                <span className="font-bold">{scannedFood.fat} g</span>
+                <span className="text-zinc-400">Fett</span>
+                <span className="text-white font-medium">{scannedFood.fat} g</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{isGerman ? "Kohlenhydrate" : "Carbs"}</span>
-                <span className="font-bold">{scannedFood.carbs} g</span>
+                <span className="text-zinc-400">{isGerman ? "Kohlenhydrate" : "Carbs"}</span>
+                <span className="text-white font-medium">{scannedFood.carbs} g</span>
               </div>
             </div>
 
-            <div className="text-sm text-yellow-400 flex items-center gap-2 mb-6">
+            <div className="text-sm text-yellow-500 flex items-center gap-2 mb-6">
               <span>ⓘ</span>
               <span>{isGerman ? "Überdosierung möglich" : "Overdose possible"}</span>
             </div>
 
-            <Button onClick={() => setAddToDayDialogOpen(true)} className="w-full" size="lg">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button onClick={() => setAddToDayDialogOpen(true)} className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-full py-6" size="lg">
               {isGerman ? "Hinzufügen zum Tag" : "Add to Day"}
             </Button>
           </Card>
         )}
 
         {/* Daily Totals */}
-        <Card className="gradient-card card-shadow border-white/10 p-6">
-          <div className="w-full bg-green-500/30 rounded-full h-3 mb-4">
+        <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6">
+          <div className="w-full bg-zinc-700 rounded-full h-2 mb-4">
             <div 
-              className="bg-green-500 h-3 rounded-full transition-all" 
+              className="bg-emerald-500 h-2 rounded-full transition-all" 
               style={{ width: `${Math.min((dailyTotals.calories / 2500) * 100, 100)}%` }}
             ></div>
           </div>
           
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold">{dailyTotals.calories} kcal</div>
-              <div className="text-sm text-muted-foreground">{dailyTotals.protein} g</div>
+              <div className="text-xl font-bold text-white">{dailyTotals.calories} kcal</div>
+              <div className="text-sm text-zinc-400">{dailyTotals.protein} g</div>
             </div>
             <div>
-              <div className="text-lg font-bold">Protein</div>
-              <div className="text-sm text-muted-foreground">{dailyTotals.protein} g</div>
+              <div className="text-lg font-medium text-white">Protein</div>
+              <div className="text-sm text-zinc-400">{dailyTotals.protein} g</div>
             </div>
             <div>
-              <div className="text-lg font-bold">{isGerman ? "Kohlenhydrate" : "Carbs"}</div>
-              <div className="text-sm text-muted-foreground">{dailyTotals.carbs} g</div>
+              <div className="text-lg font-medium text-white">{isGerman ? "Kohlenhydrate" : "Carbs"}</div>
+              <div className="text-sm text-zinc-400">{dailyTotals.carbs} g</div>
             </div>
           </div>
         </Card>
 
         {/* Add to Day Dialog */}
         <Dialog open={addToDayDialogOpen} onOpenChange={setAddToDayDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
             <DialogHeader>
-              <DialogTitle>{isGerman ? "Kategorie wählen" : "Choose Category"}</DialogTitle>
+              <DialogTitle className="text-white">{isGerman ? "Kategorie wählen" : "Choose Category"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <Button 
                 onClick={() => handleAddToDay("Healthy & Power")} 
-                className="w-full justify-start"
+                className="w-full justify-start bg-zinc-800 hover:bg-zinc-700 text-white"
                 variant="outline"
               >
                 🥗 Healthy & Power
               </Button>
               <Button 
                 onClick={() => handleAddToDay("Gesundheitssicherheit")} 
-                className="w-full justify-start"
+                className="w-full justify-start bg-zinc-800 hover:bg-zinc-700 text-white"
                 variant="outline"
               >
                 💊 {isGerman ? "Gesundheitssicherheit" : "Health Safety"}
               </Button>
               <Button 
                 onClick={() => handleAddToDay("Ernährung")} 
-                className="w-full justify-start"
+                className="w-full justify-start bg-zinc-800 hover:bg-zinc-700 text-white"
                 variant="outline"
               >
                 🍽️ {isGerman ? "Ernährung" : "Nutrition"}
               </Button>
               <Button 
                 onClick={() => handleAddToDay("Tageskalorien")} 
-                className="w-full justify-start"
+                className="w-full justify-start bg-zinc-800 hover:bg-zinc-700 text-white"
                 variant="outline"
               >
                 🔥 {isGerman ? "Tageskalorien" : "Daily Calories"}
