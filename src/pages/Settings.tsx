@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -27,11 +27,19 @@ const Settings = () => {
   const [notificationsDialogOpen, setNotificationsDialogOpen] = useState(false);
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [platformDialogOpen, setPlatformDialogOpen] = useState(false);
   
   // Settings states
   const [pushNotifications, setPushNotifications] = useState(true);
   const [updateNotifications, setUpdateNotifications] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState("de");
+  
+  // Platform settings
+  const [instagramConnected, setInstagramConnected] = useState(false);
+  const [tiktokConnected, setTiktokConnected] = useState(false);
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [tiktokUrl, setTiktokUrl] = useState("");
   
   // Edit form
   const [editForm, setEditForm] = useState({
@@ -149,6 +157,38 @@ const Settings = () => {
     toast.success(isGerman ? "Sprache geändert" : "Language changed");
   };
 
+  const handleNotificationToggle = (type: 'push' | 'update', value: boolean) => {
+    if (type === 'push') {
+      setPushNotifications(value);
+      toast.success(value 
+        ? (isGerman ? "Push-Benachrichtigungen aktiviert" : "Push notifications enabled")
+        : (isGerman ? "Push-Benachrichtigungen deaktiviert" : "Push notifications disabled")
+      );
+    } else {
+      setUpdateNotifications(value);
+      toast.success(value 
+        ? (isGerman ? "Update-Benachrichtigungen aktiviert" : "Update notifications enabled")
+        : (isGerman ? "Update-Benachrichtigungen deaktiviert" : "Update notifications disabled")
+      );
+    }
+  };
+
+  const handlePlatformConnect = (platform: 'instagram' | 'tiktok') => {
+    if (platform === 'instagram') {
+      setInstagramConnected(!instagramConnected);
+      toast.success(instagramConnected 
+        ? (isGerman ? "Instagram getrennt" : "Instagram disconnected")
+        : (isGerman ? "Instagram verbunden" : "Instagram connected")
+      );
+    } else {
+      setTiktokConnected(!tiktokConnected);
+      toast.success(tiktokConnected 
+        ? (isGerman ? "TikTok getrennt" : "TikTok disconnected")
+        : (isGerman ? "TikTok verbunden" : "TikTok connected")
+      );
+    }
+  };
+
   const languages = [
     { code: "de", name: "Deutsch 🇩🇪" },
     { code: "en", name: "English 🇬🇧" },
@@ -182,6 +222,12 @@ const Settings = () => {
       onClick: () => setProfileDialogOpen(true),
     },
     {
+      icon: CreditCard,
+      title: isGerman ? "Abo & Zahlung" : "Subscription & Payment",
+      description: isGerman ? "Pro Athlete & Nutrition Abos" : "Pro Athlete & Nutrition subscriptions",
+      onClick: () => setSubscriptionDialogOpen(true),
+    },
+    {
       icon: Bell,
       title: isGerman ? "Benachrichtigungen" : "Notifications",
       description: isGerman ? "Push & Update Benachrichtigungen" : "Push & Update notifications",
@@ -192,6 +238,12 @@ const Settings = () => {
       title: isGerman ? "Sprache" : "Language",
       description: languages.find(l => l.code === selectedLanguage)?.name || "Deutsch 🇩🇪",
       onClick: () => setLanguageDialogOpen(true),
+    },
+    {
+      icon: Share2,
+      title: isGerman ? "Platform Einstellung" : "Platform Settings",
+      description: isGerman ? "Instagram & TikTok verbinden" : "Connect Instagram & TikTok",
+      onClick: () => setPlatformDialogOpen(true),
     },
     {
       icon: Shield,
@@ -343,6 +395,47 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Subscription Dialog */}
+      <Dialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              {isGerman ? "Abo & Zahlung" : "Subscription & Payment"}
+              <Button variant="ghost" size="icon" onClick={() => setSubscriptionDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Card className="p-4 border-primary/50">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold">Pro Athlete</h3>
+                <span className="text-2xl font-bold">€19,99/mo</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                {isGerman ? "KI-Trainingspläne, Social Media Upload" : "AI training plans, Social media upload"}
+              </p>
+              <Button onClick={() => navigate("/pro-subscription")} className="w-full">
+                {isGerman ? "Mehr erfahren" : "Learn more"}
+              </Button>
+            </Card>
+            
+            <Card className="p-4 border-green-500/50">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold">Pro Nutrition</h3>
+                <span className="text-2xl font-bold">€14,99/mo</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                {isGerman ? "Food Tracker, Barcode Scanner, KI-Analyse" : "Food tracker, Barcode scanner, AI analysis"}
+              </p>
+              <Button onClick={() => navigate("/pro-subscription")} className="w-full bg-green-600 hover:bg-green-700">
+                {isGerman ? "Mehr erfahren" : "Learn more"}
+              </Button>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Notifications Dialog */}
       <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -360,14 +453,14 @@ const Settings = () => {
                 <div className="font-medium">{isGerman ? "Push-Benachrichtigungen" : "Push Notifications"}</div>
                 <div className="text-sm text-muted-foreground">{isGerman ? "Erinnerungen erhalten" : "Receive reminders"}</div>
               </div>
-              <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
+              <Switch checked={pushNotifications} onCheckedChange={(v) => handleNotificationToggle('push', v)} />
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">{isGerman ? "Update-Benachrichtigungen" : "Update Notifications"}</div>
                 <div className="text-sm text-muted-foreground">{isGerman ? "Über neue Features informiert werden" : "Get notified about new features"}</div>
               </div>
-              <Switch checked={updateNotifications} onCheckedChange={setUpdateNotifications} />
+              <Switch checked={updateNotifications} onCheckedChange={(v) => handleNotificationToggle('update', v)} />
             </div>
           </div>
         </DialogContent>
@@ -398,6 +491,81 @@ const Settings = () => {
                 {lang.name}
               </Button>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Platform Settings Dialog */}
+      <Dialog open={platformDialogOpen} onOpenChange={setPlatformDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              {isGerman ? "Platform Einstellung" : "Platform Settings"}
+              <Button variant="ghost" size="icon" onClick={() => setPlatformDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Instagram */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
+                  <span className="text-white text-xl">📷</span>
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Instagram</div>
+                  <div className="text-sm text-muted-foreground">
+                    {instagramConnected ? (isGerman ? "Verbunden" : "Connected") : (isGerman ? "Nicht verbunden" : "Not connected")}
+                  </div>
+                </div>
+                <Button 
+                  variant={instagramConnected ? "destructive" : "default"}
+                  size="sm"
+                  onClick={() => handlePlatformConnect('instagram')}
+                >
+                  {instagramConnected ? "Disconnect" : "Connect"}
+                </Button>
+              </div>
+              <div>
+                <Label>Instagram URL</Label>
+                <Input 
+                  placeholder="https://instagram.com/username"
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* TikTok */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                  <span className="text-white text-xl">🎵</span>
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">TikTok</div>
+                  <div className="text-sm text-muted-foreground">
+                    {tiktokConnected ? (isGerman ? "Verbunden" : "Connected") : (isGerman ? "Nicht verbunden" : "Not connected")}
+                  </div>
+                </div>
+                <Button 
+                  variant={tiktokConnected ? "destructive" : "default"}
+                  size="sm"
+                  onClick={() => handlePlatformConnect('tiktok')}
+                >
+                  {tiktokConnected ? "Disconnect" : "Connect"}
+                </Button>
+              </div>
+              <div>
+                <Label>TikTok URL</Label>
+                <Input 
+                  placeholder="https://tiktok.com/@username"
+                  value={tiktokUrl}
+                  onChange={(e) => setTiktokUrl(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

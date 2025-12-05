@@ -8,13 +8,15 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Nutrition from "./pages/Nutrition";
-
 import JoggingTracker from "./pages/JoggingTracker";
 import CalendarPage from "./pages/CalendarPage";
 import Settings from "./pages/Settings";
 import TrainingDetail from "./pages/TrainingDetail";
 import WeightTracker from "./pages/WeightTracker";
 import ExerciseCategory from "./pages/ExerciseCategory";
+import ProAthleteSubscription from "./pages/ProAthleteSubscription";
+import ProAthlete from "./pages/ProAthlete";
+import ProNutrition from "./pages/ProNutrition";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,10 +36,12 @@ const App = () => (
           <Route path="/exercise/:category" element={<ExerciseCategory />} />
           <Route path="/weight-tracker" element={<WeightTracker />} />
           <Route path="/nutrition" element={<Nutrition />} />
-          
           <Route path="/jogging-tracker" element={<JoggingTracker />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/pro-subscription" element={<ProAthleteSubscription />} />
+          <Route path="/pro-athlete" element={<ProAthlete />} />
+          <Route path="/pro-nutrition" element={<ProNutrition />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

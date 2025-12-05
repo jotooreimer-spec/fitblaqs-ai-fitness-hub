@@ -1,15 +1,17 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Dumbbell, Apple, MapPin, Calendar, Settings, Scale } from "lucide-react";
+import { Dumbbell, Apple, MapPin, Calendar, Settings, Scale, Star } from "lucide-react";
 
 const BottomNav = () => {
-  const location = useLocation();
+  const location = useNavigate();
   const navigate = useNavigate();
+  const loc = useLocation();
 
   const navItems = [
     { icon: Dumbbell, label: "Training", path: "/dashboard" },
     { icon: Apple, label: "Nutrition", path: "/nutrition" },
     { icon: MapPin, label: "Jogging", path: "/jogging-tracker" },
     { icon: Scale, label: "Weight", path: "/weight-tracker" },
+    { icon: Star, label: "Pro", path: "/pro-subscription" },
     { icon: Calendar, label: "Performance", path: "/calendar" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
@@ -19,20 +21,20 @@ const BottomNav = () => {
       <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto px-4">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = loc.pathname === item.path;
           
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 transition-all duration-300 ${
+              className={`flex flex-col items-center gap-1 px-2 py-2 transition-all duration-300 ${
                 isActive 
                   ? "text-primary scale-110" 
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className={`w-6 h-6 ${isActive ? "glow" : ""}`} />
-              <span className="text-xs font-medium">{item.label}</span>
+              <Icon className={`w-5 h-5 ${isActive ? "glow" : ""}`} />
+              <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           );
         })}
