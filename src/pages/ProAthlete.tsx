@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { ArrowLeft, Dumbbell, Upload, X, Loader2, HelpCircle } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
+import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
 
 // Instagram SVG Icon
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -36,8 +37,8 @@ const ProAthlete = () => {
   const [socialMediaDialogOpen, setSocialMediaDialogOpen] = useState(false);
   const [trainingPlan, setTrainingPlan] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Pro Athlete Form
   const [athleteForm, setAthleteForm] = useState({
     body_type: "",
     weight: "",
@@ -54,7 +55,6 @@ const ProAthlete = () => {
     goal: ""
   });
 
-  // Social Media Form
   const [socialForm, setSocialForm] = useState({
     platform: "all",
     audio_quality: "high",
@@ -83,6 +83,26 @@ const ProAthlete = () => {
       setUploadedFile(url);
     }
   };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+      const url = URL.createObjectURL(file);
+      setUploadedFile(url);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   const generateTrainingPlan = async () => {
     setIsGenerating(true);
@@ -177,38 +197,53 @@ const ProAthlete = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-black">
-      <div className="max-w-screen-xl mx-auto p-4">
+    <div className="min-h-screen pb-24 relative">
+      {/* Background Image */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${proSubscriptionBg})` }}
+      />
+      <div className="fixed inset-0 bg-black/70" />
+
+      <div className="relative z-10 max-w-screen-xl mx-auto p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")}>
-            <ArrowLeft className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")} className="text-white">
+            <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-xl font-semibold text-white">Mahlzeit scannen</h1>
-          <Button variant="ghost" size="icon">
-            <HelpCircle className="w-6 h-6 text-white" />
+          <h1 className="text-lg font-semibold text-white">Pro Athlete</h1>
+          <Button variant="ghost" size="icon" className="text-white">
+            <HelpCircle className="w-6 h-6" />
           </Button>
         </div>
 
-        {/* Upload/Scan Area */}
-        <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-8 mb-6">
-          <div className="border-2 border-dashed border-zinc-600 rounded-2xl p-12 text-center min-h-[200px] flex items-center justify-center">
+        {/* Upload/Scan Area - Smaller */}
+        <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+          <div 
+            className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[120px] flex items-center justify-center transition-colors ${
+              isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
             {uploadedFile ? (
               <div className="relative w-full">
-                <img src={uploadedFile} alt="Uploaded" className="max-h-48 mx-auto rounded-lg" />
+                <img src={uploadedFile} alt="Uploaded" className="max-h-24 mx-auto rounded-lg" />
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute top-0 right-0"
+                  className="absolute top-0 right-0 w-6 h-6"
                   onClick={() => setUploadedFile(null)}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3 h-3" />
                 </Button>
               </div>
             ) : (
               <div>
-                <p className="text-zinc-400 text-lg mb-4">
-                  {isGerman ? "Richte Barcode / Produkt in den Rahmen aus" : "Align barcode / product in frame"}
+                <Upload className="w-8 h-8 mx-auto mb-2 text-zinc-400" />
+                <p className="text-zinc-400 text-sm mb-2">
+                  {isGerman ? "Bild/Video per Drag & Drop hochladen" : "Drag & drop image/video"}
                 </p>
                 <input
                   type="file"
@@ -218,10 +253,10 @@ const ProAthlete = () => {
                   id="file-upload"
                 />
                 <label htmlFor="file-upload">
-                  <Button asChild variant="outline" className="bg-zinc-800 border-zinc-600 text-white">
+                  <Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white">
                     <span>
-                      <Upload className="w-4 h-4 mr-2" />
-                      {isGerman ? "Bild/Video hochladen" : "Upload"}
+                      <Upload className="w-3 h-3 mr-1" />
+                      {isGerman ? "Hochladen" : "Upload"}
                     </span>
                   </Button>
                 </label>
@@ -231,19 +266,17 @@ const ProAthlete = () => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-4">
           <Button 
             onClick={() => setProAthleteDialogOpen(true)} 
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
-            size="lg"
+            className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5"
           >
-            <Dumbbell className="w-5 h-5 mr-2" />
+            <Dumbbell className="w-4 h-4 mr-2" />
             Pro-Athlete
           </Button>
           <Button 
             onClick={() => setSocialMediaDialogOpen(true)} 
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white border-0 rounded-full py-6"
-            size="lg"
+            className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5"
           >
             Social Media Upl.
           </Button>
@@ -251,13 +284,13 @@ const ProAthlete = () => {
 
         {/* Training Plan Display */}
         {trainingPlan ? (
-          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Trainingsplan</h2>
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+            <h2 className="text-lg font-bold text-white mb-3">Trainingsplan</h2>
             
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-zinc-400">Goal</span>
-                <span className="text-white font-medium">{trainingPlan.goal_kcal} kcl</span>
+                <span className="text-white font-medium">{trainingPlan.goal_kcal} kcal</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Regeneration</span>
@@ -265,36 +298,26 @@ const ProAthlete = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Workout Week</span>
-                <span className="text-white font-medium">Sets</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Category</span>
-                <span className="text-white font-medium">Aktivität</span>
+                <span className="text-white font-medium">{trainingPlan.workout_week}</span>
               </div>
             </div>
 
-            <div className="text-sm text-yellow-500 flex items-center gap-2 mb-6">
-              <span>ⓘ</span>
-              <span>{isGerman ? "Überdosierung möglich" : "Overdose possible"}</span>
-            </div>
-
-            <Button className="w-full bg-zinc-800 hover:bg-zinc-700 text-white rounded-full py-6 mb-6">
+            <Button className="w-full bg-zinc-800/80 hover:bg-zinc-700 text-white rounded-full py-5 mb-4">
               Trainingsplan
             </Button>
 
-            {/* Stats Footer */}
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-3 gap-3 text-center text-sm">
               <div>
-                <div className="text-xl font-bold text-white">{trainingPlan.goal_kcal} kcl</div>
-                <div className="text-sm text-zinc-400">1.08 g</div>
+                <div className="text-lg font-bold text-white">{trainingPlan.goal_kcal}</div>
+                <div className="text-xs text-zinc-400">kcal</div>
               </div>
               <div>
-                <div className="text-lg font-medium text-white">Regeneration</div>
-                <div className="text-sm text-zinc-400">1.08 g</div>
+                <div className="text-sm font-medium text-white">Regeneration</div>
+                <div className="text-xs text-zinc-400">{trainingPlan.regeneration}</div>
               </div>
               <div>
-                <div className="text-lg font-medium text-white">Regeneration</div>
-                <div className="text-sm text-zinc-400">1.08 g</div>
+                <div className="text-sm font-medium text-white">Workout</div>
+                <div className="text-xs text-zinc-400">{trainingPlan.workout_week}</div>
               </div>
             </div>
 
@@ -303,9 +326,9 @@ const ProAthlete = () => {
             </div>
           </Card>
         ) : (
-          <Card className="bg-zinc-900 border-zinc-700 rounded-3xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Trainingsplan</h2>
-            <p className="text-zinc-400 text-center py-8">
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+            <h2 className="text-lg font-bold text-white mb-3">Trainingsplan</h2>
+            <p className="text-zinc-400 text-center py-6 text-sm">
               {isGerman ? "Klicke auf 'Pro-Athlete' um deinen Plan zu erstellen" : "Click 'Pro-Athlete' to create your plan"}
             </p>
           </Card>
@@ -462,7 +485,7 @@ const ProAthlete = () => {
             <div className="space-y-4">
               {uploadedFile && (
                 <div className="rounded-lg overflow-hidden mb-4">
-                  <img src={uploadedFile} alt="Preview" className="w-full max-h-48 object-cover" />
+                  <img src={uploadedFile} alt="Preview" className="w-full max-h-32 object-cover" />
                 </div>
               )}
 
@@ -471,11 +494,7 @@ const ProAthlete = () => {
                 <Select value={socialForm.platform} onValueChange={(v) => setSocialForm({ ...socialForm, platform: v })}>
                   <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white"><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-zinc-800 border-zinc-600">
-                    <SelectItem value="all">
-                      <div className="flex items-center gap-2">
-                        <span>All Platforms</span>
-                      </div>
-                    </SelectItem>
+                    <SelectItem value="all">All Platforms</SelectItem>
                     <SelectItem value="instagram">
                       <div className="flex items-center gap-2">
                         <InstagramIcon className="w-4 h-4" />

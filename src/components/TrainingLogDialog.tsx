@@ -20,9 +20,37 @@ interface TrainingLogDialogProps {
   onSuccess: () => void;
 }
 
+// Exercise categories
+const lowerBodyExercises = [
+  "Squats", "Lunges", "Leg Press", "Leg Extension", "Leg Curl",
+  "Standing Calf Raise", "Seated Calf Raise", "Single Leg Calf Raise",
+  "Calf Press", "Donkey Calf Raises", "Classic Squat", "Goblet Squat",
+  "Bulgarian Split Squat", "Sumo Squat", "Front Squat", "Hip Thrust",
+  "Glute Bridge", "Kickbacks", "Side Leg Raises", "Donkey Kicks"
+];
+
+const upperBodyExercises = [
+  "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Bench Press",
+  "Incline Dumbbell Press", "Close Grip Bench Press", "Reverse Grip Bench Press",
+  "Smith Machine Bench Press", "Chest Press Machine", "Floor Press", "Chest Fly",
+  "Push-ups", "Cable Chest Press", "Pull-ups", "Deadlift", "Rows", "Lat Pulldown",
+  "Reverse Flys", "Shoulder Press", "Lateral Raises", "Front Raises", "Arnold Press",
+  "Face Pulls", "Tricep Pushdown", "Dips", "Overhead Tricep Extension", "Tricep Kickbacks",
+  "Diamond Push-ups", "Bicep Curls", "Hammer Curls", "Concentration Curls",
+  "Preacher Curls", "21s Bicep Exercise"
+];
+
+const middleBodyExercises = [
+  "Forearm Plank", "Side Plank", "Mountain Climbers", "Russian Twists",
+  "Dead Bug", "Crunches", "Hanging Leg Raise", "Toe Touches",
+  "Bicycle Crunches", "V-ups", "Hollow Body Hold", "Flutter Kicks",
+  "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
+];
+
 export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess }: TrainingLogDialogProps) => {
   const { toast } = useToast();
-  const [category, setCategory] = useState("");
+  const [bodyPart, setBodyPart] = useState("");
+  const [exercise, setExercise] = useState("");
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [weight, setWeight] = useState("0");
@@ -31,8 +59,21 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
 
+  const getExercises = () => {
+    switch (bodyPart) {
+      case "lower_body":
+        return lowerBodyExercises;
+      case "upper_body":
+        return upperBodyExercises;
+      case "middle_body":
+        return middleBodyExercises;
+      default:
+        return [];
+    }
+  };
+
   const handleSave = async () => {
-    if (!category || !sets || !reps) {
+    if (!bodyPart || !exercise || !sets || !reps) {
       toast({
         title: isGerman ? "Fehler" : "Error",
         description: isGerman ? "Bitte alle Felder ausfüllen" : "Please fill all fields",
@@ -41,16 +82,14 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       return;
     }
 
-    // Create a custom exercise entry
-    const { data: exercise, error: exerciseError } = await supabase
+    const { data: exerciseData, error: exerciseError } = await supabase
       .from('exercises')
       .select('id')
-      .eq('name_de', category)
+      .eq('name_en', exercise)
       .maybeSingle();
 
-    let exerciseId = exercise?.id;
+    let exerciseId = exerciseData?.id;
 
-    // If exercise doesn't exist, we'll use a placeholder
     if (!exerciseId) {
       const { data: firstExercise } = await supabase
         .from('exercises')
@@ -61,7 +100,6 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       exerciseId = firstExercise?.id;
     }
 
-    // Combine date with start time
     const completedAt = new Date(date);
     const [startHour, startMin] = startTime.split(':').map(Number);
     completedAt.setHours(startHour, startMin, 0, 0);
@@ -76,7 +114,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
         weight: parseFloat(weight),
         unit: unit,
         completed_at: completedAt.toISOString(),
-        notes: `${category} | ${startTime}-${endTime}` // Store category and times in notes
+        notes: `${exercise} (${bodyPart}) | ${startTime}-${endTime}`
       });
 
     if (error) {
@@ -93,7 +131,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       description: isGerman ? "Training wurde eingetragen" : "Training was logged"
     });
 
-    setCategory("");
+    setBodyPart("");
+    setExercise("");
     setSets("3");
     setReps("10");
     setWeight("0");
@@ -106,19 +145,39 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isGerman ? "Training eintragen" : "Log Training"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Body Part Selection */}
           <div>
-            <Label htmlFor="category">{isGerman ? "Kategorie/Übung" : "Category/Exercise"}</Label>
-            <Input
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder={isGerman ? "z.B. Bankdrücken" : "e.g. Bench Press"}
-            />
+            <Label>{isGerman ? "Körperbereich" : "Body Part"}</Label>
+            <Select value={bodyPart} onValueChange={(v) => { setBodyPart(v); setExercise(""); }}>
+              <SelectTrigger>
+                <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lower_body">{isGerman ? "Unterkörper (Beine, Waden, Squats, Po)" : "Lower Body (Legs, Calves, Squats, Glutes)"}</SelectItem>
+                <SelectItem value="upper_body">{isGerman ? "Oberkörper (Brust, Schulter, Trizeps, Bizeps)" : "Upper Body (Chest, Shoulders, Triceps, Biceps)"}</SelectItem>
+                <SelectItem value="middle_body">{isGerman ? "Core (Bauch, Rücken)" : "Middle Body (Core)"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Exercise Selection */}
+          <div>
+            <Label>{isGerman ? "Übung" : "Exercise"}</Label>
+            <Select value={exercise} onValueChange={setExercise} disabled={!bodyPart}>
+              <SelectTrigger>
+                <SelectValue placeholder={isGerman ? "Übung wählen..." : "Select exercise..."} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {getExercises().map((ex) => (
+                  <SelectItem key={ex} value={ex}>{ex}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
