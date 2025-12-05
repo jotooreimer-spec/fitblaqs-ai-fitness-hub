@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Dumbbell, Share2, Upload, Camera, X } from "lucide-react";
+import { ArrowLeft, Dumbbell, Share2, Upload, Camera, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -73,40 +73,86 @@ const ProAthlete = () => {
   const generateTrainingPlan = async () => {
     setIsGenerating(true);
     
-    // Simulate AI training plan generation
-    setTimeout(() => {
-      const weight = parseFloat(athleteForm.weight) || 70;
-      const targetWeight = parseFloat(athleteForm.target_weight) || weight;
-      const bmr = weight * 24; // Simplified BMR
-      const tdee = bmr * (athleteForm.activity_level === "very_active" ? 1.9 : athleteForm.activity_level === "active" ? 1.55 : 1.2);
+    try {
+      const bodyTypeMap: Record<string, string> = {
+        fat: "Fett",
+        muscular: "Muskulös", 
+        slim: "Schlank",
+        defined: "Definiert"
+      };
       
-      const calorieGoal = targetWeight < weight ? tdee - 500 : targetWeight > weight ? tdee + 300 : tdee;
+      const goalMap: Record<string, string> = {
+        fat_loss: "Fettabbau",
+        muscle: "Muskelaufbau",
+        maintain: "Erhalt",
+        conditioning: "Kondition",
+        special: "Spezialziel"
+      };
       
+      const activityMap: Record<string, string> = {
+        inactive: "Inaktiv",
+        active: "Aktiv",
+        very_active: "Sehr aktiv"
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-training-plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          bodyType: bodyTypeMap[athleteForm.body_type] || athleteForm.body_type,
+          weight: `${athleteForm.weight} ${athleteForm.weight_unit}`,
+          targetWeight: `${athleteForm.target_weight} ${athleteForm.target_weight_unit}`,
+          age: athleteForm.age,
+          height: `${athleteForm.height} ${athleteForm.height_unit}`,
+          healthStatus: athleteForm.health_status ? athleteForm.health_notes : null,
+          activityLevel: activityMap[athleteForm.activity_level] || athleteForm.activity_level,
+          trainingFrequency: athleteForm.training_frequency,
+          goal: goalMap[athleteForm.goal] || athleteForm.goal
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Fehler bei der Generierung");
+      }
+
+      const data = await response.json();
+      
+      // Format the AI response into our display format
+      const aiPlan = data.trainingPlan;
       const plan = {
-        duration: "8 Wochen",
-        goal_kcal: Math.round(calorieGoal),
-        regeneration: "1.08 g",
-        workout_week: `${athleteForm.training_frequency || 4} Sets`,
-        category: athleteForm.goal === "muscle" ? "Muskelaufbau" : athleteForm.goal === "fat_loss" ? "Fettabbau" : "Erhalt",
-        exercises: [
-          { name: "Kniebeugen", sets: 4, reps: 12, weight: Math.round(weight * 0.6) },
-          { name: "Bankdrücken", sets: 4, reps: 10, weight: Math.round(weight * 0.5) },
-          { name: "Kreuzheben", sets: 3, reps: 8, weight: Math.round(weight * 0.8) },
-          { name: "Schulterdrücken", sets: 3, reps: 12, weight: Math.round(weight * 0.3) },
-        ],
-        rest_time: "60-90 Sekunden",
-        sleep_recommendation: "7-8 Stunden"
+        duration: aiPlan.duration || "8 Wochen",
+        goal_kcal: aiPlan.nutrition?.dailyCalories || 2000,
+        regeneration: aiPlan.recovery?.sleepHours || "7-8 Stunden",
+        workout_week: `${athleteForm.training_frequency || 4}x`,
+        category: goalMap[athleteForm.goal] || "Muskelaufbau",
+        weeklyPlan: aiPlan.weeklyPlan || [],
+        nutrition: aiPlan.nutrition || {},
+        recovery: aiPlan.recovery || {},
+        progression: aiPlan.progression || "2.5-5% wöchentliche Steigerung",
+        rawContent: aiPlan.rawContent
       };
       
       setTrainingPlan(plan);
-      setIsGenerating(false);
       setProAthleteDialogOpen(false);
       
       toast({
         title: isGerman ? "Trainingsplan erstellt" : "Training plan created",
         description: isGerman ? "Dein KI-Trainingsplan wurde generiert" : "Your AI training plan has been generated"
       });
-    }, 2000);
+    } catch (error) {
+      console.error("Error generating training plan:", error);
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: error instanceof Error ? error.message : "Trainingsplan konnte nicht erstellt werden",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSocialMediaUpload = () => {
@@ -198,49 +244,76 @@ const ProAthlete = () => {
         {/* Training Plan Display */}
         {trainingPlan && (
           <Card className="gradient-card card-shadow border-white/10 p-6">
-            <h2 className="text-2xl font-bold mb-6">Trainingsplan</h2>
+            <h2 className="text-2xl font-bold mb-6">Trainingsplan - {trainingPlan.duration}</h2>
             
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Goal</span>
-                <span className="font-bold">{trainingPlan.goal_kcal} kcl</span>
+                <span className="text-muted-foreground">Tägliche Kalorien</span>
+                <span className="font-bold">{trainingPlan.goal_kcal} kcal</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Regeneration</span>
+                <span className="text-muted-foreground">Schlaf</span>
                 <span className="font-bold">{trainingPlan.regeneration}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Workout Week</span>
+                <span className="text-muted-foreground">Training/Woche</span>
                 <span className="font-bold">{trainingPlan.workout_week}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Category</span>
+                <span className="text-muted-foreground">Ziel</span>
                 <span className="font-bold">{trainingPlan.category}</span>
               </div>
             </div>
 
-            <div className="text-sm text-yellow-400 flex items-center gap-2 mb-6">
-              <span>ⓘ</span>
-              <span>{isGerman ? "Überdosierung möglich" : "Overdose possible"}</span>
-            </div>
+            {/* Nutrition Info */}
+            {trainingPlan.nutrition && (
+              <div className="bg-primary/10 rounded-lg p-4 mb-6">
+                <h3 className="font-bold mb-3">Ernährungsempfehlung</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-bold">{trainingPlan.nutrition.protein || "150g"}</div>
+                    <div className="text-xs text-muted-foreground">Protein</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold">{trainingPlan.nutrition.carbs || "250g"}</div>
+                    <div className="text-xs text-muted-foreground">Kohlenhydrate</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold">{trainingPlan.nutrition.fats || "80g"}</div>
+                    <div className="text-xs text-muted-foreground">Fette</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <Button className="w-full mb-6" size="lg">
-              Trainingsplan
-            </Button>
+            {/* Weekly Plan Preview */}
+            {trainingPlan.weeklyPlan && trainingPlan.weeklyPlan.length > 0 && (
+              <div className="space-y-3 mb-6">
+                <h3 className="font-bold">Wochenplan</h3>
+                {trainingPlan.weeklyPlan.slice(0, 3).map((day: any, index: number) => (
+                  <div key={index} className="bg-muted/20 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">{day.day}</span>
+                      <span className="text-sm text-muted-foreground">{day.type}</span>
+                    </div>
+                    {day.exercises && day.exercises.slice(0, 2).map((ex: any, i: number) => (
+                      <div key={i} className="text-sm text-muted-foreground">
+                        {ex.name} - {ex.sets}x{ex.reps}
+                      </div>
+                    ))}
+                    {day.exercises && day.exercises.length > 2 && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        +{day.exercises.length - 2} weitere Übungen
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold">{trainingPlan.goal_kcal} kcl</div>
-                <div className="text-sm text-muted-foreground">{trainingPlan.regeneration}</div>
-              </div>
-              <div>
-                <div className="text-lg font-bold">Regeneration</div>
-                <div className="text-sm text-muted-foreground">{trainingPlan.regeneration}</div>
-              </div>
-              <div>
-                <div className="text-lg font-bold">Regeneration</div>
-                <div className="text-sm text-muted-foreground">{trainingPlan.regeneration}</div>
-              </div>
+            <div className="text-sm text-green-400 flex items-center gap-2 mb-6">
+              <span>✓</span>
+              <span>{trainingPlan.progression}</span>
             </div>
 
             <div className="w-full bg-primary/20 rounded-full h-2 mt-4">
@@ -383,7 +456,8 @@ const ProAthlete = () => {
               </div>
 
               <Button onClick={generateTrainingPlan} className="w-full" disabled={isGenerating}>
-                {isGenerating ? (isGerman ? "Generiere..." : "Generating...") : (isGerman ? "Trainingsplan erstellen" : "Create Training Plan")}
+                {isGenerating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isGenerating ? (isGerman ? "Generiere KI-Plan..." : "Generating AI Plan...") : (isGerman ? "Trainingsplan erstellen" : "Create Training Plan")}
               </Button>
             </div>
           </DialogContent>
