@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -23,6 +23,11 @@ interface ChartDataPoint {
   speed: number;
 }
 
+interface RoutePoint {
+  x: number;
+  y: number;
+}
+
 const JoggingTracker = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,6 +38,7 @@ const JoggingTracker = () => {
   const [userWeight, setUserWeight] = useState(70);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [currentSpeed, setCurrentSpeed] = useState(0);
+  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const speedRef = useRef(0);
 
   useEffect(() => {
@@ -114,6 +120,17 @@ const JoggingTracker = () => {
               time: Math.floor(newSeconds / 60), 
               speed: parseFloat(newSpeed.toFixed(1)) 
             }]);
+            
+            // Add route point for map
+            setRoutePoints(prev => {
+              const lastPoint = prev[prev.length - 1] || { x: 150, y: 280 };
+              const angle = (Math.random() - 0.3) * Math.PI / 2 - Math.PI / 4;
+              const distance = 5 + Math.random() * 10;
+              return [...prev, {
+                x: lastPoint.x + Math.cos(angle) * distance,
+                y: lastPoint.y - Math.abs(Math.sin(angle) * distance)
+              }];
+            });
           }
           
           return newSeconds;
@@ -135,6 +152,7 @@ const JoggingTracker = () => {
     setIsActive(false);
     setChartData([]);
     setCurrentSpeed(0);
+    setRoutePoints([]);
     speedRef.current = 0;
   };
 
@@ -234,6 +252,11 @@ const JoggingTracker = () => {
   const currentDistance = calculateDistance();
   const currentCalories = calculateCalories(currentDistance);
 
+  // Generate SVG path from route points
+  const routePath = routePoints.length > 1 
+    ? `M ${routePoints.map(p => `${p.x},${p.y}`).join(' L ')}`
+    : '';
+
   return (
     <div className="min-h-screen pb-24 gradient-male">
       <div className="max-w-screen-xl mx-auto p-6">
@@ -254,6 +277,55 @@ const JoggingTracker = () => {
             </p>
           </div>
         </div>
+
+        {/* Map View */}
+        <Card className="gradient-card card-shadow border-white/10 p-4 mb-6 relative overflow-hidden">
+          <div className="relative h-64 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg overflow-hidden">
+            {/* Simplified Map Background */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 200">
+              {/* Roads */}
+              <path d="M 0,100 L 300,100" stroke="#fff" strokeWidth="8" fill="none" />
+              <path d="M 150,0 L 150,200" stroke="#fff" strokeWidth="8" fill="none" />
+              <path d="M 50,50 L 250,150" stroke="#fff" strokeWidth="6" fill="none" />
+              <path d="M 250,50 L 50,150" stroke="#fff" strokeWidth="6" fill="none" />
+              
+              {/* Green areas */}
+              <rect x="20" y="20" width="40" height="30" fill="#90EE90" rx="5" />
+              <rect x="240" y="20" width="40" height="30" fill="#90EE90" rx="5" />
+              <rect x="130" y="150" width="40" height="30" fill="#90EE90" rx="5" />
+              
+              {/* Route Path */}
+              {routePath && (
+                <path d={routePath} stroke="#8B5CF6" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+              
+              {/* Start Marker */}
+              {routePoints.length > 0 && (
+                <g transform={`translate(${routePoints[0].x - 10}, ${routePoints[0].y - 25})`}>
+                  <path d="M10,0 C4.5,0 0,4.5 0,10 C0,17.5 10,25 10,25 C10,25 20,17.5 20,10 C20,4.5 15.5,0 10,0 Z" fill="#EF4444" />
+                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">A</text>
+                </g>
+              )}
+              
+              {/* End Marker */}
+              {routePoints.length > 1 && (
+                <g transform={`translate(${routePoints[routePoints.length - 1].x - 10}, ${routePoints[routePoints.length - 1].y - 25})`}>
+                  <path d="M10,0 C4.5,0 0,4.5 0,10 C0,17.5 10,25 10,25 C10,25 20,17.5 20,10 C20,4.5 15.5,0 10,0 Z" fill="#EF4444" />
+                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">B</text>
+                </g>
+              )}
+            </svg>
+            
+            {/* Stats Overlay */}
+            <div className="absolute top-4 right-4 bg-slate-800/90 rounded-lg p-3 text-white">
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="text-2xl font-bold">{currentDistance.toFixed(1)}km</div>
+              <div className="text-lg">{currentSpeed.toFixed(0)} km/h</div>
+            </div>
+          </div>
+        </Card>
 
         {/* Live Line Chart */}
         <Card className="gradient-card card-shadow border-white/10 p-6 mb-6">

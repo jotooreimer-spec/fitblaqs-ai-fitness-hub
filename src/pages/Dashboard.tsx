@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import upperbodyImg from "@/assets/upperbody.png";
 import middlebodyImg from "@/assets/middlebody.png";
 import lowerbodyImg from "@/assets/lowerbody.png";
+import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -194,11 +195,14 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen pb-24 gradient-male">
       <div className="max-w-screen-xl mx-auto p-6">
-        {/* Header */}
+        {/* Header with Logo */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            {isGerman ? `Start your Workout Today, ${userData.name}` : `Start your Workout Today, ${userData.name}`}
-          </h1>
+          <div className="flex items-center gap-4 mb-4">
+            <img src={fitblaqsLogo} alt="FitBlaqs" className="w-12 h-12 object-contain" />
+            <h1 className="text-4xl font-bold">
+              {isGerman ? `Start your Workout Today, ${userData.name}` : `Start your Workout Today, ${userData.name}`}
+            </h1>
+          </div>
           <p className="text-muted-foreground">
             {isGerman ? "Wähle deine Trainingseinheit" : "Choose your training session"}
           </p>
