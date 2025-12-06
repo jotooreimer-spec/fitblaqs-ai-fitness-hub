@@ -5,7 +5,6 @@ import DashboardStats from "@/components/DashboardStats";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { TrainingLogDialog } from "@/components/TrainingLogDialog";
 import { TrainingHistory } from "@/components/TrainingHistory";
-import { ChallengesBox } from "@/components/ChallengesBox";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -96,7 +95,7 @@ const Dashboard = () => {
       const progress = Math.min(((count || 0) / 30) * 100, 100);
       setMonthlyProgress(progress);
 
-      // Load today's nutrition data
+      // Load today's nutrition data - Start at 0, only count actual entries
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -118,6 +117,9 @@ const Dashboard = () => {
           return acc;
         }, { calories: 0, protein: 0, water: 0 });
         setTodayNutrition(totals);
+      } else {
+        // Start at 0 when no entries
+        setTodayNutrition({ calories: 0, protein: 0, water: 0 });
       }
     });
 
@@ -230,22 +232,12 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Performance Overview & Challenges Row */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Statistics Dashboard */}
+        {/* Statistics Dashboard */}
+        <div className="mb-8">
           {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
-          
-          {/* Challenges Box */}
-          {userId && (
-            <ChallengesBox 
-              isGerman={isGerman} 
-              userId={userId} 
-              currentWeight={profileData?.weight || 0} 
-            />
-          )}
         </div>
 
-        {/* Quick Nutrition Overview */}
+        {/* Quick Nutrition Overview - Starts at 0 */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <h3 className="text-lg font-bold text-white">{isGerman ? "Heute Ernährung" : "Today's Nutrition"}</h3>
@@ -363,7 +355,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Workout Activity Progress */}
+        {/* Workout Activity Progress - Monthly */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
           <h3 className="text-lg font-bold mb-4 text-white">{isGerman ? "Workout Aktivitäten" : "Workout Activities"}</h3>
           <div className="space-y-2">
@@ -372,6 +364,11 @@ const Dashboard = () => {
               <span className="font-bold text-white">{Math.round(monthlyProgress)}%</span>
             </div>
             <Progress value={monthlyProgress} className="h-3" />
+            <div className="flex justify-between text-xs text-white/40">
+              <span>0</span>
+              <span>15</span>
+              <span>30 {isGerman ? "Tage" : "days"}</span>
+            </div>
           </div>
         </Card>
 

@@ -47,19 +47,14 @@ const middleBodyExercises = [
   "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
 ];
 
-const fullBodyExercises = [
-  "Burpees", "Clean and Press", "Thrusters", "Kettlebell Swings",
-  "Turkish Get-ups", "Man Makers", "Devil Press", "Bear Crawls",
-  "Box Jumps", "Battle Ropes", "Jumping Jacks", "High Knees",
-  "Mountain Climbers Full", "Squat to Press", "Lunge with Twist",
-  "Deadlift to Row", "Renegade Rows", "Slam Ball", "Wall Balls",
-  "Sled Push", "Farmer's Walk", "Tire Flips"
-];
+// Fullbody exercises - Empty array, user can add custom exercises
+const fullBodyExercises: string[] = [];
 
 export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess }: TrainingLogDialogProps) => {
   const { toast } = useToast();
   const [bodyPart, setBodyPart] = useState("");
   const [exercise, setExercise] = useState("");
+  const [customExercise, setCustomExercise] = useState("");
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [weight, setWeight] = useState("0");
@@ -84,7 +79,9 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   };
 
   const handleSave = async () => {
-    if (!bodyPart || !exercise || !sets || !reps) {
+    const exerciseName = bodyPart === "fullbody" ? customExercise : exercise;
+    
+    if (!bodyPart || (!exerciseName && bodyPart !== "fullbody") || (bodyPart === "fullbody" && !customExercise) || !sets || !reps) {
       toast({
         title: isGerman ? "Fehler" : "Error",
         description: isGerman ? "Bitte alle Felder ausfüllen" : "Please fill all fields",
@@ -96,7 +93,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     const { data: exerciseData, error: exerciseError } = await supabase
       .from('exercises')
       .select('id')
-      .eq('name_en', exercise)
+      .eq('name_en', exerciseName)
       .maybeSingle();
 
     let exerciseId = exerciseData?.id;
@@ -125,7 +122,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
         weight: parseFloat(weight),
         unit: unit,
         completed_at: completedAt.toISOString(),
-        notes: `${exercise} (${bodyPart}) | ${startTime}-${endTime}`
+        notes: `${exerciseName} (${bodyPart}) | ${startTime}-${endTime}`
       });
 
     if (error) {
@@ -144,6 +141,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
 
     setBodyPart("");
     setExercise("");
+    setCustomExercise("");
     setSets("3");
     setReps("10");
     setWeight("0");
@@ -153,6 +151,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     onOpenChange(false);
     onSuccess();
   };
+
+  const isFullbody = bodyPart === "fullbody";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,7 +164,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
           {/* Body Part Selection */}
           <div>
             <Label>{isGerman ? "Körperbereich" : "Body Part"}</Label>
-            <Select value={bodyPart} onValueChange={(v) => { setBodyPart(v); setExercise(""); }}>
+            <Select value={bodyPart} onValueChange={(v) => { setBodyPart(v); setExercise(""); setCustomExercise(""); }}>
               <SelectTrigger>
                 <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
               </SelectTrigger>
@@ -172,25 +172,39 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
                 <SelectItem value="lower_body">{isGerman ? "Unterkörper (Beine, Waden, Squats, Po)" : "Lower Body (Legs, Calves, Squats, Glutes)"}</SelectItem>
                 <SelectItem value="upper_body">{isGerman ? "Oberkörper (Brust, Schulter, Trizeps, Bizeps)" : "Upper Body (Chest, Shoulders, Triceps, Biceps)"}</SelectItem>
                 <SelectItem value="middle_body">{isGerman ? "Core (Bauch, Rücken)" : "Middle Body (Core)"}</SelectItem>
-                <SelectItem value="fullbody">{isGerman ? "Ganzkörper (Fullbody)" : "Fullbody"}</SelectItem>
+                <SelectItem value="fullbody">{isGerman ? "Ganzkörper (Eigene Übungen)" : "Fullbody (Custom Exercises)"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Exercise Selection */}
-          <div>
-            <Label>{isGerman ? "Übung" : "Exercise"}</Label>
-            <Select value={exercise} onValueChange={setExercise} disabled={!bodyPart}>
-              <SelectTrigger>
-                <SelectValue placeholder={isGerman ? "Übung wählen..." : "Select exercise..."} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {getExercises().map((ex) => (
-                  <SelectItem key={ex} value={ex}>{ex}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Exercise Selection or Custom Input */}
+          {isFullbody ? (
+            <div>
+              <Label>{isGerman ? "Eigene Übung" : "Custom Exercise"}</Label>
+              <Input
+                value={customExercise}
+                onChange={(e) => setCustomExercise(e.target.value)}
+                placeholder={isGerman ? "z.B. Burpees, Kettlebell Swings..." : "e.g. Burpees, Kettlebell Swings..."}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {isGerman ? "Schreibe deine eigene Übung" : "Write your own exercise"}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <Label>{isGerman ? "Übung" : "Exercise"}</Label>
+              <Select value={exercise} onValueChange={setExercise} disabled={!bodyPart}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isGerman ? "Übung wählen..." : "Select exercise..."} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {getExercises().map((ex) => (
+                    <SelectItem key={ex} value={ex}>{ex}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div>
