@@ -5,11 +5,18 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Dumbbell, Utensils, Check, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
+import StripeButton from "@/components/StripeButton";
+import { useSubscription } from "@/hooks/useSubscription";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
+
+const STRIPE_PUBLISHABLE_KEY = "pk_live_51SP7CORy3F0vfI5a7TkNcz07kjDX4GQcXqEy1dIZrT5eI3rCvGhTUdIsmPU364zknxrG5jLvxBG9r9fs3zR2p4UO00uo7D0rsP";
+const PRO_ATHLETE_BUTTON_ID = "buy_btn_1SbMy3Ry3F0vfI5aSQ4lBfvA";
+const PRO_NUTRITION_BUTTON_ID = "buy_btn_1SbMKWRy3F0vfI5aBnGAXBRg";
 
 const ProAthleteSubscription = () => {
   const navigate = useNavigate();
   const [isGerman, setIsGerman] = useState(true);
+  const { hasProAthlete, hasProNutrition, loading } = useSubscription();
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -22,11 +29,11 @@ const ProAthleteSubscription = () => {
     });
   }, [navigate]);
 
-  const handleProAthleteSubscribe = () => {
+  const handleProAthleteAccess = () => {
     navigate("/pro-athlete");
   };
 
-  const handleProNutritionSubscribe = () => {
+  const handleProNutritionAccess = () => {
     navigate("/pro-nutrition");
   };
 
@@ -89,9 +96,26 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <Button onClick={handleProAthleteSubscribe} className="w-full" size="lg">
-              Payment
-            </Button>
+            {hasProAthlete ? (
+              <Button onClick={handleProAthleteAccess} className="w-full" size="lg">
+                {isGerman ? "Zugang" : "Access"}
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <StripeButton 
+                  buyButtonId={PRO_ATHLETE_BUTTON_ID}
+                  publishableKey={STRIPE_PUBLISHABLE_KEY}
+                />
+                <a 
+                  href="https://buy.stripe.com/3cI4gB0KK4QZ6CIetj2Fa01" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-center text-sm text-white/60 hover:text-white underline"
+                >
+                  {isGerman ? "Alternativ: Direktlink" : "Alternative: Direct Link"}
+                </a>
+              </div>
+            )}
           </Card>
 
           {/* Pro Athlete Nutrition */}
@@ -134,9 +158,26 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <Button onClick={handleProNutritionSubscribe} className="w-full bg-green-600 hover:bg-green-700" size="lg">
-              Payment
-            </Button>
+            {hasProNutrition ? (
+              <Button onClick={handleProNutritionAccess} className="w-full bg-green-600 hover:bg-green-700" size="lg">
+                {isGerman ? "Zugang" : "Access"}
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <StripeButton 
+                  buyButtonId={PRO_NUTRITION_BUTTON_ID}
+                  publishableKey={STRIPE_PUBLISHABLE_KEY}
+                />
+                <a 
+                  href="https://buy.stripe.com/6oU5kF654erz0ek3OF2Fa00" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block text-center text-sm text-white/60 hover:text-white underline"
+                >
+                  {isGerman ? "Alternativ: Direktlink" : "Alternative: Direct Link"}
+                </a>
+              </div>
+            )}
           </Card>
         </div>
       </div>

@@ -161,6 +161,48 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          end_date: string | null
+          id: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          start_date: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weight_logs: {
         Row: {
           created_at: string
@@ -257,6 +299,8 @@ export type Database = {
         | "bizeps"
         | "bauch"
       meal_type: "breakfast" | "lunch" | "dinner" | "snack"
+      subscription_plan: "pro_athlete" | "pro_nutrition"
+      subscription_status: "active" | "cancelled" | "expired" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -399,6 +443,8 @@ export const Constants = {
         "bauch",
       ],
       meal_type: ["breakfast", "lunch", "dinner", "snack"],
+      subscription_plan: ["pro_athlete", "pro_nutrition"],
+      subscription_status: ["active", "cancelled", "expired", "pending"],
     },
   },
 } as const
