@@ -36,6 +36,15 @@ export const NutritionLogDialog = ({
   const [waterUnit, setWaterUnit] = useState("ml");
   const [protein, setProtein] = useState("");
   const [proteinUnit, setProteinUnit] = useState("g");
+  // New extended nutrition fields
+  const [aminoacids, setAminoacids] = useState("");
+  const [aminoacidsUnit, setAminoacidsUnit] = useState("g");
+  const [minerals, setMinerals] = useState("");
+  const [mineralsUnit, setMineralsUnit] = useState("mg");
+  const [fiber, setFiber] = useState("");
+  const [fiberUnit, setFiberUnit] = useState("g");
+  const [sugar, setSugar] = useState("");
+  const [sugarUnit, setSugarUnit] = useState("g");
   // Supplements specific fields
   const [amount, setAmount] = useState("");
   const [amountUnit, setAmountUnit] = useState("g");
@@ -95,12 +104,24 @@ export const NutritionLogDialog = ({
     let notes = "";
 
     if (category === "supplements") {
-      notes = `Menge: ${amount || 0}${amountUnit}, Wasser: ${water || 0}${waterUnit}, Flüssigkeit: ${liquid || 0}${liquidUnit}`;
+      notes = `Menge: ${amount || 0}${amountUnit}, Wasser: ${water || 0}${waterUnit}, Flüssigkeit: ${liquid || 0}${liquidUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+    } else if (category === "vegetarian" || category === "vegan") {
+      // Vegetarian/Vegan: Fats → Mineralstoffe, Protein → Ballaststoffe
+      proteinInG = fiber ? convertToGrams(parseFloat(fiber), fiberUnit) : 0;
+      fatsInG = minerals ? convertToGrams(parseFloat(minerals), mineralsUnit) : 0;
+      carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
+      notes = `Water: ${water || 0}${waterUnit}, Vitamin: ${vitamin || 0}${vitaminUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}`;
+    } else if (category === "protein") {
+      // Protein Detail: Carbs → Eisen, Water → Aminosäuren
+      proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
+      carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
+      fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
+      notes = `Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Iron: ${carbs || 0}${carbsUnit}, Calcium: ${vitamin || 0}${vitaminUnit}`;
     } else {
       proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
-      notes = `Water: ${water || 0}${waterUnit}, Vitamin: ${vitamin || 0}${vitaminUnit}`;
+      notes = `Water: ${water || 0}${waterUnit}, Vitamin: ${vitamin || 0}${vitaminUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
     }
 
     const { error } = await supabase
@@ -137,11 +158,34 @@ export const NutritionLogDialog = ({
     setFats("");
     setWater("");
     setProtein("");
+    setAminoacids("");
+    setMinerals("");
+    setFiber("");
+    setSugar("");
     setAmount("");
     setLiquid("");
     onOpenChange(false);
     onSuccess();
   };
+
+  // Get category-specific field labels
+  const getFieldLabels = () => {
+    if (category === "vegetarian" || category === "vegan") {
+      return {
+        fats: isGerman ? "Mineralstoffe" : "Minerals",
+        protein: isGerman ? "Ballaststoffe" : "Fiber"
+      };
+    }
+    if (category === "protein") {
+      return {
+        carbs: isGerman ? "Eisen" : "Iron",
+        water: isGerman ? "Aminosäuren" : "Amino Acids"
+      };
+    }
+    return {};
+  };
+
+  const fieldLabels = getFieldLabels();
 
   if (!category) return null;
 
@@ -234,6 +278,30 @@ export const NutritionLogDialog = ({
                     <SelectItem value="ml">ml</SelectItem>
                     <SelectItem value="dz">dz</SelectItem>
                     <SelectItem value="liter">liter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Sugar field for supplements */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="sugar">Sugar</Label>
+                <Input
+                  id="sugar"
+                  type="number"
+                  value={sugar}
+                  onChange={(e) => setSugar(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>&nbsp;</Label>
+                <Select value={sugarUnit} onValueChange={setSugarUnit}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="g">g</SelectItem>
+                    <SelectItem value="mg">mg</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

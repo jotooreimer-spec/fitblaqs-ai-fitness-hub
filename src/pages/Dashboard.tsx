@@ -5,6 +5,7 @@ import DashboardStats from "@/components/DashboardStats";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { TrainingLogDialog } from "@/components/TrainingLogDialog";
 import { TrainingHistory } from "@/components/TrainingHistory";
+import { ChallengesBox } from "@/components/ChallengesBox";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Edit } from "lucide-react";
+import { Edit, Dumbbell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import upperbodyImg from "@/assets/upperbody-bg.png";
 import middlebodyImg from "@/assets/middlebody.png";
@@ -38,6 +39,7 @@ const Dashboard = () => {
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
   const [refreshHistory, setRefreshHistory] = useState(0);
   const [monthlyProgress, setMonthlyProgress] = useState(0);
+  const [todayNutrition, setTodayNutrition] = useState({ calories: 0, protein: 0, water: 0 });
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -93,6 +95,30 @@ const Dashboard = () => {
 
       const progress = Math.min(((count || 0) / 30) * 100, 100);
       setMonthlyProgress(progress);
+
+      // Load today's nutrition data
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const { data: nutritionData } = await supabase
+        .from("nutrition_logs")
+        .select("calories, protein, notes")
+        .eq("user_id", user.id)
+        .gte("completed_at", today.toISOString())
+        .lt("completed_at", tomorrow.toISOString());
+
+      if (nutritionData && nutritionData.length > 0) {
+        const totals = nutritionData.reduce((acc, log) => {
+          acc.calories += log.calories || 0;
+          acc.protein += log.protein || 0;
+          const waterMatch = log.notes?.match(/Water: ([\d.]+)/);
+          if (waterMatch) acc.water += parseFloat(waterMatch[1]) || 0;
+          return acc;
+        }, { calories: 0, protein: 0, water: 0 });
+        setTodayNutrition(totals);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -161,6 +187,11 @@ const Dashboard = () => {
       image: lowerbodyImg,
       title: "Lower Body",
       description: isGerman ? "Beine, Po, Waden" : "Legs, Glutes, Calves",
+    },
+    { 
+      image: dashboardBg,
+      title: "Fullbody",
+      description: isGerman ? "Ganzkörper Training" : "Full Body Workout",
     }
   ];
 
@@ -191,7 +222,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-4 mb-4">
             <img src={fitblaqsLogo} alt="FitBlaqs" className="w-12 h-12 object-contain" />
             <h1 className="text-4xl font-bold text-white">
-              {isGerman ? `Start your Workout Today, ${userData.name}` : `Start your Workout Today, ${userData.name}`}
+              {isGerman ? `Starte dein Training, ${userData.name}` : `Start your Workout, ${userData.name}`}
             </h1>
           </div>
           <p className="text-white/70">
@@ -199,8 +230,42 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Statistics Dashboard */}
-        {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
+        {/* Performance Overview & Challenges Row */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-8">
+          {/* Statistics Dashboard */}
+          {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
+          
+          {/* Challenges Box */}
+          {userId && (
+            <ChallengesBox 
+              isGerman={isGerman} 
+              userId={userId} 
+              currentWeight={profileData?.weight || 0} 
+            />
+          )}
+        </div>
+
+        {/* Quick Nutrition Overview */}
+        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-bold text-white">{isGerman ? "Heute Ernährung" : "Today's Nutrition"}</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="cursor-pointer hover:scale-105 transition-all" onClick={() => navigate("/nutrition")}>
+              <div className="text-sm text-white/60 mb-1">{isGerman ? "Kalorien" : "Calories"}</div>
+              <div className="text-2xl font-bold text-orange-400">{todayNutrition.calories}</div>
+              <div className="text-xs text-white/50">kcal</div>
+            </div>
+            <div className="cursor-pointer hover:scale-105 transition-all" onClick={() => navigate("/nutrition")}>
+              <div className="text-sm text-white/60 mb-1">Protein</div>
+              <div className="text-2xl font-bold text-green-400">{Math.round(todayNutrition.protein)}g</div>
+            </div>
+            <div className="cursor-pointer hover:scale-105 transition-all" onClick={() => navigate("/nutrition")}>
+              <div className="text-sm text-white/60 mb-1">{isGerman ? "Wasser" : "Water"}</div>
+              <div className="text-2xl font-bold text-blue-400">{(todayNutrition.water / 1000).toFixed(1)}L</div>
+            </div>
+          </div>
+        </Card>
 
         {/* Profile Card */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
@@ -278,17 +343,20 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Training Modules */}
+        {/* Training Modules - Now includes Fullbody */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingsmodule" : "Training Modules"}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {trainingModules.map((module, index) => (
-              <Card key={index} onClick={() => setIsTrainingDialogOpen(true)} className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-64">
+              <Card key={index} onClick={() => setIsTrainingDialogOpen(true)} className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48 md:h-56">
                 <img src={module.image} alt={module.title} className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                  <h3 className="text-xl font-bold mb-1">{module.title}</h3>
-                  <p className="text-sm text-white/80">{module.description}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Dumbbell className="w-4 h-4 text-primary" />
+                    <h3 className="text-lg font-bold">{module.title}</h3>
+                  </div>
+                  <p className="text-xs text-white/80">{module.description}</p>
                 </div>
               </Card>
             ))}
@@ -307,7 +375,7 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Training History - ohne Add Button */}
+        {/* Training History */}
         <div>
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingsverlauf" : "Training History"}</h2>
           <TrainingHistory userId={userId} isGerman={isGerman} refreshTrigger={refreshHistory} />

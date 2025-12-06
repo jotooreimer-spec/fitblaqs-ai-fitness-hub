@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import { ChallengesBox } from "@/components/ChallengesBox";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ const CalendarPage = () => {
   const [isGerman, setIsGerman] = useState(true);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [userId, setUserId] = useState<string>("");
+  const [userWeight, setUserWeight] = useState(0);
   const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [] });
   const [weeklyChartData, setWeeklyChartData] = useState<any[]>([]);
 
@@ -33,6 +35,17 @@ const CalendarPage = () => {
       const metadata = session.user.user_metadata;
       setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
+
+      // Load user weight for challenges
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("weight")
+        .eq("user_id", session.user.id)
+        .single();
+      
+      if (profile?.weight) {
+        setUserWeight(profile.weight);
+      }
 
       loadMonthData(session.user.id, new Date());
     });
@@ -132,6 +145,13 @@ const CalendarPage = () => {
           <h1 className="text-4xl font-bold mb-2 text-white">Performance</h1>
           <p className="text-white/60">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
         </div>
+
+        {/* Challenges Box at top */}
+        {userId && (
+          <div className="mb-6">
+            <ChallengesBox isGerman={isGerman} userId={userId} currentWeight={userWeight} />
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Side */}
