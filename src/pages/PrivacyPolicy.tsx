@@ -13,97 +13,95 @@ const PrivacyPolicy = () => {
         className="mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Zurück
+        Back
       </Button>
 
       <div className="max-w-3xl mx-auto prose prose-invert">
-        <h1 className="text-3xl font-bold mb-6">Datenschutzerklärung / Privacy Policy</h1>
+        <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
         
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">1. Verantwortlicher</h2>
+          <h2 className="text-xl font-semibold mb-4">1. Data Controller</h2>
           <p className="text-muted-foreground">
-            FitBlaqs GmbH<br />
-            Fitness Street 123<br />
-            10115 Berlin, Deutschland<br />
-            E-Mail: privacy@fitblaqs.com
+            FitBlaq Company<br />
+            Email: Supportservice@Fitblaq.com
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">2. Erhebung und Verarbeitung personenbezogener Daten</h2>
+          <h2 className="text-xl font-semibold mb-4">2. Collection and Processing of Personal Data</h2>
           <p className="text-muted-foreground mb-4">
-            Wir erheben und verarbeiten folgende personenbezogene Daten:
+            We collect and process the following personal data:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Kontoinformationen (Name, E-Mail-Adresse, Passwort)</li>
-            <li>Profilinformationen (Größe, Gewicht, Körpertyp, Athleten-Level)</li>
-            <li>Trainingsdaten (Übungen, Sätze, Wiederholungen, Gewichte)</li>
-            <li>Ernährungsdaten (Mahlzeiten, Kalorien, Makronährstoffe)</li>
-            <li>Jogging-Daten (Distanz, Dauer, verbrannte Kalorien)</li>
-            <li>Gewichtsverlauf</li>
-            <li>Hochgeladene Bilder und Videos</li>
+            <li>Account information (name, email address, password)</li>
+            <li>Profile information (height, weight, body type, athlete level)</li>
+            <li>Training data (exercises, sets, repetitions, weights)</li>
+            <li>Nutrition data (meals, calories, macronutrients)</li>
+            <li>Jogging data (distance, duration, calories burned)</li>
+            <li>Weight history</li>
+            <li>Uploaded images and videos</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">3. Zweck der Datenverarbeitung</h2>
+          <h2 className="text-xl font-semibold mb-4">3. Purpose of Data Processing</h2>
           <p className="text-muted-foreground">
-            Ihre Daten werden ausschließlich zur Bereitstellung unserer Fitness-App-Dienste verwendet, einschließlich:
+            Your data is used exclusively to provide our fitness app services, including:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Personalisierte Trainingspläne</li>
-            <li>Ernährungsanalyse und -empfehlungen</li>
-            <li>Fortschrittsverfolgung</li>
-            <li>KI-gestützte Körperanalyse</li>
+            <li>Personalized training plans</li>
+            <li>Nutrition analysis and recommendations</li>
+            <li>Progress tracking</li>
+            <li>AI-powered body analysis</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">4. Datensicherheit</h2>
+          <h2 className="text-xl font-semibold mb-4">4. Data Security</h2>
           <p className="text-muted-foreground">
-            Alle Daten werden mit modernsten Verschlüsselungstechnologien übertragen (TLS/SSL) und sicher in verschlüsselten Datenbanken gespeichert. Der Zugriff auf Ihre Daten ist streng auf autorisiertes Personal beschränkt.
+            All data is transmitted using state-of-the-art encryption technologies (TLS/SSL) and stored securely in encrypted databases. Access to your data is strictly limited to authorized personnel.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">5. Ihre Rechte</h2>
+          <h2 className="text-xl font-semibold mb-4">5. Your Rights</h2>
           <p className="text-muted-foreground mb-4">
-            Nach der DSGVO haben Sie folgende Rechte:
+            You have the following rights:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li><strong>Auskunftsrecht:</strong> Sie können Auskunft über Ihre gespeicherten Daten verlangen</li>
-            <li><strong>Berichtigungsrecht:</strong> Sie können unrichtige Daten korrigieren lassen</li>
-            <li><strong>Löschungsrecht:</strong> Sie können die Löschung Ihrer Daten verlangen</li>
-            <li><strong>Recht auf Datenübertragbarkeit:</strong> Sie können Ihre Daten in einem gängigen Format erhalten</li>
-            <li><strong>Widerspruchsrecht:</strong> Sie können der Verarbeitung widersprechen</li>
+            <li><strong>Right of access:</strong> You can request information about your stored data</li>
+            <li><strong>Right to rectification:</strong> You can have incorrect data corrected</li>
+            <li><strong>Right to erasure:</strong> You can request the deletion of your data</li>
+            <li><strong>Right to data portability:</strong> You can receive your data in a common format</li>
+            <li><strong>Right to object:</strong> You can object to the processing</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">6. Speicherdauer</h2>
+          <h2 className="text-xl font-semibold mb-4">6. Data Retention</h2>
           <p className="text-muted-foreground">
-            Ihre Daten werden so lange gespeichert, wie Sie ein aktives Konto haben. Nach Kontolöschung werden alle personenbezogenen Daten innerhalb von 30 Tagen gelöscht. Pro Athlete Daten werden nach 5 Tagen automatisch gelöscht und neu generiert.
+            Your data is stored as long as you have an active account. After account deletion, all personal data will be deleted within 30 days. Pro Athlete data is automatically deleted and regenerated after 5 days.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">7. Cookies und Tracking</h2>
+          <h2 className="text-xl font-semibold mb-4">7. Cookies and Tracking</h2>
           <p className="text-muted-foreground">
-            Wir verwenden nur technisch notwendige Cookies für die Authentifizierung und Sitzungsverwaltung. Es werden keine Tracking- oder Werbe-Cookies verwendet.
+            We only use technically necessary cookies for authentication and session management. No tracking or advertising cookies are used.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">8. Kontakt</h2>
+          <h2 className="text-xl font-semibold mb-4">8. Contact</h2>
           <p className="text-muted-foreground">
-            Bei Fragen zum Datenschutz kontaktieren Sie uns unter:<br />
-            E-Mail: privacy@fitblaqs.com<br />
-            Telefon: +49 30 12345678
+            For privacy inquiries, contact us at:<br />
+            FitBlaq Company<br />
+            Email: Supportservice@Fitblaq.com
           </p>
         </section>
 
         <p className="text-sm text-muted-foreground mt-8">
-          Letzte Aktualisierung: Dezember 2024
+          Last updated: December 2024
         </p>
       </div>
     </div>

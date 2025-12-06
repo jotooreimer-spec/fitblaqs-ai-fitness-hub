@@ -13,140 +13,129 @@ const TermsOfService = () => {
         className="mb-6"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Zurück
+        Back
       </Button>
 
       <div className="max-w-3xl mx-auto prose prose-invert">
-        <h1 className="text-3xl font-bold mb-6">Allgemeine Geschäftsbedingungen (AGB) / Terms of Service</h1>
+        <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
         
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">1. Geltungsbereich</h2>
+          <h2 className="text-xl font-semibold mb-4">1. Scope</h2>
           <p className="text-muted-foreground">
-            Diese Allgemeinen Geschäftsbedingungen gelten für die Nutzung der FitBlaqs Fitness-App und aller damit verbundenen Dienste. Mit der Registrierung akzeptieren Sie diese Bedingungen.
+            These Terms of Service apply to the use of the FitBlaqs fitness app and all related services. By registering, you accept these terms.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">2. Leistungsbeschreibung</h2>
+          <h2 className="text-xl font-semibold mb-4">2. Service Description</h2>
           <p className="text-muted-foreground mb-4">
-            FitBlaqs bietet folgende Dienste:
+            FitBlaqs offers the following services:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Trainings-Tracking und -Planung</li>
-            <li>Ernährungs-Tracking</li>
-            <li>Jogging-Tracker mit Statistiken</li>
-            <li>Gewichtsverfolgung</li>
-            <li>Performance-Kalender</li>
-            <li>Pro Athlete: KI-gestützte Trainingspläne (kostenpflichtig)</li>
-            <li>Pro Nutrition: KI-gestützte Ernährungsanalyse (kostenpflichtig)</li>
+            <li>Training tracking and planning</li>
+            <li>Nutrition tracking</li>
+            <li>Jogging tracker with statistics</li>
+            <li>Weight tracking</li>
+            <li>Performance calendar</li>
+            <li>Pro Athlete: AI-powered training plans (paid)</li>
+            <li>Pro Nutrition: AI-powered nutrition analysis (paid)</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">3. Registrierung und Konto</h2>
+          <h2 className="text-xl font-semibold mb-4">3. Registration and Account</h2>
           <p className="text-muted-foreground">
-            Für die Nutzung ist eine Registrierung erforderlich. Sie sind für die Sicherheit Ihrer Zugangsdaten verantwortlich. Falsche Angaben können zur Kontosperrung führen.
+            Registration is required for use. You are responsible for the security of your login credentials. False information may result in account suspension.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">4. Pro Athlete Abonnement</h2>
+          <h2 className="text-xl font-semibold mb-4">4. Pro Athlete Subscription</h2>
           <p className="text-muted-foreground mb-4">
-            <strong>Preis:</strong> €19,99 für 12 Monate<br />
-            <strong>Kündigungsfrist:</strong> Kündigung nach 6 Monaten möglich<br />
-            <strong>Leistungen:</strong>
+            <strong>Price:</strong> €19.99 for 12 months<br />
+            <strong>Cancellation:</strong> Can be cancelled after 6 months via email<br />
+            <strong>Features:</strong>
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>KI-generierte personalisierte Trainingspläne</li>
-            <li>KI-Körperanalyse basierend auf Fotos</li>
-            <li>Social Media Integration (Instagram, TikTok)</li>
-            <li>Automatische Datenspeicherung für 5 Tage</li>
+            <li>AI-generated personalized training plans</li>
+            <li>AI body analysis based on photos</li>
+            <li>Automatic data storage for 5 days</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">5. Pro Nutrition Abonnement</h2>
+          <h2 className="text-xl font-semibold mb-4">5. Pro Nutrition Subscription</h2>
           <p className="text-muted-foreground mb-4">
-            <strong>Preis:</strong> €14,99 für 12 Monate<br />
-            <strong>Kündigungsfrist:</strong> Kündigung nach 6 Monaten möglich<br />
-            <strong>Leistungen:</strong>
+            <strong>Price:</strong> €14.99 for 12 months<br />
+            <strong>Cancellation:</strong> Can be cancelled after 6 months via email<br />
+            <strong>Features:</strong>
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>KI-gestützte Nahrungsmittelanalyse per Foto</li>
-            <li>Food Tracker mit manueller Eingabe</li>
-            <li>Automatische Nährwertberechnung</li>
-            <li>Automatische Datenspeicherung für 5 Tage</li>
+            <li>AI-powered food analysis via photo</li>
+            <li>Food tracker with manual input</li>
+            <li>Automatic nutritional value calculation</li>
+            <li>Automatic data storage for 5 days</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">6. Zahlungsbedingungen</h2>
+          <h2 className="text-xl font-semibold mb-4">6. Payment Terms</h2>
           <p className="text-muted-foreground">
-            Die Zahlung erfolgt im Voraus für den gewählten Zeitraum. Bei Nichtzahlung wird der Zugang zu Premium-Funktionen gesperrt. Rückerstattungen sind nur in den ersten 14 Tagen möglich.
+            Payment is made in advance for the selected period. Non-payment will result in suspension of access to premium features. Refunds are only possible within the first 14 days.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">7. Nutzungsrechte und -pflichten</h2>
+          <h2 className="text-xl font-semibold mb-4">7. Usage Rights and Obligations</h2>
           <p className="text-muted-foreground mb-4">
-            Sie dürfen:
+            You may:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Die App für persönliche Fitnesszwecke nutzen</li>
-            <li>Ihre Daten exportieren</li>
-            <li>Inhalte für soziale Medien teilen</li>
+            <li>Use the app for personal fitness purposes</li>
+            <li>Export your data</li>
+            <li>Share content on social media</li>
           </ul>
           <p className="text-muted-foreground mt-4">
-            Sie dürfen nicht:
+            You may not:
           </p>
           <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Die App kommerziell weitervertreiben</li>
-            <li>Den Dienst für illegale Zwecke nutzen</li>
-            <li>Andere Nutzer belästigen oder schädigen</li>
+            <li>Commercially redistribute the app</li>
+            <li>Use the service for illegal purposes</li>
+            <li>Harass or harm other users</li>
           </ul>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">8. Haftungsausschluss</h2>
+          <h2 className="text-xl font-semibold mb-4">8. Disclaimer</h2>
           <p className="text-muted-foreground">
-            FitBlaqs ersetzt keine professionelle medizinische Beratung. Die KI-generierten Trainingspläne und Ernährungsempfehlungen dienen nur zu Informationszwecken. Bei gesundheitlichen Bedenken konsultieren Sie einen Arzt.
+            FitBlaqs does not replace professional medical advice. AI-generated training plans and nutrition recommendations are for informational purposes only. Consult a doctor if you have health concerns.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">9. Kündigung</h2>
+          <h2 className="text-xl font-semibold mb-4">9. Cancellation</h2>
           <p className="text-muted-foreground">
-            Sie können Ihr Konto jederzeit in den Einstellungen löschen. Bei Verstößen gegen diese AGB behalten wir uns das Recht vor, Konten zu sperren oder zu löschen.
+            You can delete your account at any time in the settings. Subscriptions can be cancelled after 6 months via email to Supportservice@Fitblaq.com. We reserve the right to suspend or delete accounts for violations of these terms.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">10. Änderungen der AGB</h2>
+          <h2 className="text-xl font-semibold mb-4">10. Changes to Terms</h2>
           <p className="text-muted-foreground">
-            Wir behalten uns das Recht vor, diese AGB zu ändern. Wesentliche Änderungen werden per E-Mail mitgeteilt. Die weitere Nutzung nach Änderungen gilt als Zustimmung.
+            We reserve the right to change these terms. Significant changes will be communicated via email. Continued use after changes constitutes acceptance.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">11. Anwendbares Recht</h2>
+          <h2 className="text-xl font-semibold mb-4">11. Contact</h2>
           <p className="text-muted-foreground">
-            Es gilt das Recht der Bundesrepublik Deutschland. Gerichtsstand ist Berlin.
-          </p>
-        </section>
-
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">12. Kontakt</h2>
-          <p className="text-muted-foreground">
-            FitBlaqs GmbH<br />
-            Fitness Street 123<br />
-            10115 Berlin, Deutschland<br />
-            E-Mail: legal@fitblaqs.com<br />
-            Telefon: +49 30 12345678
+            FitBlaq Company<br />
+            Email: Supportservice@Fitblaq.com
           </p>
         </section>
 
         <p className="text-sm text-muted-foreground mt-8">
-          Letzte Aktualisierung: Dezember 2024
+          Last updated: December 2024
         </p>
       </div>
     </div>
