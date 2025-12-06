@@ -47,6 +47,15 @@ const middleBodyExercises = [
   "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
 ];
 
+const fullBodyExercises = [
+  "Burpees", "Clean and Press", "Thrusters", "Kettlebell Swings",
+  "Turkish Get-ups", "Man Makers", "Devil Press", "Bear Crawls",
+  "Box Jumps", "Battle Ropes", "Jumping Jacks", "High Knees",
+  "Mountain Climbers Full", "Squat to Press", "Lunge with Twist",
+  "Deadlift to Row", "Renegade Rows", "Slam Ball", "Wall Balls",
+  "Sled Push", "Farmer's Walk", "Tire Flips"
+];
+
 export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess }: TrainingLogDialogProps) => {
   const { toast } = useToast();
   const [bodyPart, setBodyPart] = useState("");
@@ -67,6 +76,8 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
         return upperBodyExercises;
       case "middle_body":
         return middleBodyExercises;
+      case "fullbody":
+        return fullBodyExercises;
       default:
         return [];
     }
@@ -161,6 +172,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
                 <SelectItem value="lower_body">{isGerman ? "Unterkörper (Beine, Waden, Squats, Po)" : "Lower Body (Legs, Calves, Squats, Glutes)"}</SelectItem>
                 <SelectItem value="upper_body">{isGerman ? "Oberkörper (Brust, Schulter, Trizeps, Bizeps)" : "Upper Body (Chest, Shoulders, Triceps, Biceps)"}</SelectItem>
                 <SelectItem value="middle_body">{isGerman ? "Core (Bauch, Rücken)" : "Middle Body (Core)"}</SelectItem>
+                <SelectItem value="fullbody">{isGerman ? "Ganzkörper (Fullbody)" : "Fullbody"}</SelectItem>
               </SelectContent>
             </Select>
           </div>

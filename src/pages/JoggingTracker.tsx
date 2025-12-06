@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, ZoomIn, ZoomOut, MapPin, Flag, Timer } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, ZoomIn, ZoomOut, MapPin, Flag, Timer, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -20,9 +20,10 @@ interface JoggingLog {
   completed_at: string;
 }
 
-interface RoutePoint {
-  x: number;
-  y: number;
+interface GeoPosition {
+  lat: number;
+  lng: number;
+  timestamp: number;
 }
 
 const JoggingTracker = () => {
@@ -33,13 +34,20 @@ const JoggingTracker = () => {
   const [isActive, setIsActive] = useState(false);
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
-  const [routePoints, setRoutePoints] = useState<RoutePoint[]>([]);
   const [mapZoom, setMapZoom] = useState(1);
   const [timerDialogOpen, setTimerDialogOpen] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [targetTime, setTargetTime] = useState<number | null>(null);
-  const [runnerPosition, setRunnerPosition] = useState({ x: 150, y: 200 });
+  
+  // GPS Tracking State
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [positions, setPositions] = useState<GeoPosition[]>([]);
+  const [currentSpeed, setCurrentSpeed] = useState(0);
+  const [currentDistance, setCurrentDistance] = useState(0);
+  const [currentPace, setCurrentPace] = useState("0:00");
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -70,7 +78,10 @@ const JoggingTracker = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      stopGpsTracking();
+    };
   }, [navigate]);
 
   const loadLogs = async () => {
@@ -89,6 +100,85 @@ const JoggingTracker = () => {
     }
   };
 
+  // Calculate distance between two GPS coordinates using Haversine formula
+  const calculateDistanceBetweenPoints = (pos1: GeoPosition, pos2: GeoPosition): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+    const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Start GPS tracking
+  const startGpsTracking = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsError(isGerman ? "GPS nicht verfügbar" : "GPS not available");
+      return;
+    }
+
+    setGpsEnabled(true);
+    setGpsError(null);
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const newPos: GeoPosition = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          timestamp: position.timestamp
+        };
+
+        setPositions(prev => {
+          const updated = [...prev, newPos];
+          
+          // Calculate total distance
+          if (updated.length >= 2) {
+            let totalDist = 0;
+            for (let i = 1; i < updated.length; i++) {
+              totalDist += calculateDistanceBetweenPoints(updated[i-1], updated[i]);
+            }
+            setCurrentDistance(totalDist);
+          }
+
+          // Calculate current speed (km/h)
+          if (position.coords.speed !== null && position.coords.speed >= 0) {
+            setCurrentSpeed(position.coords.speed * 3.6); // m/s to km/h
+          } else if (updated.length >= 2) {
+            const lastTwo = updated.slice(-2);
+            const dist = calculateDistanceBetweenPoints(lastTwo[0], lastTwo[1]);
+            const timeDiff = (lastTwo[1].timestamp - lastTwo[0].timestamp) / 1000 / 3600; // hours
+            if (timeDiff > 0) {
+              setCurrentSpeed(dist / timeDiff);
+            }
+          }
+
+          return updated;
+        });
+      },
+      (error) => {
+        console.error("GPS Error:", error);
+        setGpsError(error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }, [isGerman]);
+
+  // Stop GPS tracking
+  const stopGpsTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setGpsEnabled(false);
+  }, []);
+
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
@@ -100,22 +190,17 @@ const JoggingTracker = () => {
           // Check if target time reached
           if (targetTime && newSeconds >= targetTime) {
             setIsActive(false);
+            stopGpsTracking();
             autoSaveJoggingLog(newSeconds);
           }
           
-          // Update runner position
-          if (newSeconds % 2 === 0) {
-            setRoutePoints(prevPoints => {
-              const lastPoint = prevPoints[prevPoints.length - 1] || { x: 150, y: 200 };
-              const angle = (Math.random() - 0.3) * Math.PI / 2 - Math.PI / 4;
-              const distance = 5 + Math.random() * 10;
-              const newPoint = {
-                x: lastPoint.x + Math.cos(angle) * distance,
-                y: lastPoint.y - Math.abs(Math.sin(angle) * distance)
-              };
-              setRunnerPosition(newPoint);
-              return [...prevPoints, newPoint];
-            });
+          // Calculate pace (min/km)
+          if (currentDistance > 0) {
+            const minutesElapsed = newSeconds / 60;
+            const paceMinutes = minutesElapsed / currentDistance;
+            const paceMin = Math.floor(paceMinutes);
+            const paceSec = Math.round((paceMinutes - paceMin) * 60);
+            setCurrentPace(`${paceMin}:${paceSec.toString().padStart(2, '0')}`);
           }
           
           return newSeconds;
@@ -126,15 +211,15 @@ const JoggingTracker = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, targetTime]);
+  }, [isActive, targetTime, currentDistance, stopGpsTracking]);
 
   const autoSaveJoggingLog = async (totalSeconds: number) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const durationMinutes = Math.floor(totalSeconds / 60);
-    const distanceKm = calculateDistance();
-    const estimatedCalories = calculateCalories(distanceKm);
+    const distanceKm = currentDistance > 0 ? currentDistance : calculateFallbackDistance(totalSeconds);
+    const estimatedCalories = calculateCalories(distanceKm, totalSeconds);
 
     const { error } = await supabase
       .from("jogging_logs")
@@ -152,24 +237,34 @@ const JoggingTracker = () => {
     }
   };
 
-  const toggle = () => setIsActive(!isActive);
+  const toggle = () => {
+    if (!isActive) {
+      startGpsTracking();
+    } else {
+      stopGpsTracking();
+    }
+    setIsActive(!isActive);
+  };
   
   const reset = () => {
     setSeconds(0);
     setIsActive(false);
-    setRoutePoints([]);
-    setRunnerPosition({ x: 150, y: 200 });
+    setPositions([]);
+    setCurrentDistance(0);
+    setCurrentSpeed(0);
+    setCurrentPace("0:00");
     setTargetTime(null);
+    stopGpsTracking();
   };
 
-  const calculateDistance = () => {
-    const hours = seconds / 3600;
+  const calculateFallbackDistance = (totalSeconds: number) => {
+    const hours = totalSeconds / 3600;
     const avgSpeed = 10; // 10 km/h average
     return avgSpeed * hours;
   };
 
-  const calculateCalories = (distanceKm: number) => {
-    const hours = seconds / 3600;
+  const calculateCalories = (distanceKm: number, totalSeconds: number) => {
+    const hours = totalSeconds / 3600;
     const MET = 10;
     return Math.round(MET * userWeight * hours);
   };
@@ -184,8 +279,8 @@ const JoggingTracker = () => {
     if (!session) return;
 
     const durationMinutes = Math.floor(seconds / 60);
-    const distanceKm = calculateDistance();
-    const estimatedCalories = calculateCalories(distanceKm);
+    const distanceKm = currentDistance > 0 ? currentDistance : calculateFallbackDistance(seconds);
+    const estimatedCalories = calculateCalories(distanceKm, seconds);
 
     const { error } = await supabase
       .from("jogging_logs")
@@ -234,10 +329,38 @@ const JoggingTracker = () => {
     }
   };
 
-  const currentDistance = calculateDistance();
-  const currentCalories = calculateCalories(currentDistance);
-  const startPoint = routePoints.length > 0 ? routePoints[0] : { x: 150, y: 200 };
-  const endPoint = routePoints.length > 1 ? routePoints[routePoints.length - 1] : null;
+  const estimatedCalories = calculateCalories(currentDistance > 0 ? currentDistance : calculateFallbackDistance(seconds), seconds);
+  
+  // Calculate map viewport based on positions
+  const getMapBounds = () => {
+    if (positions.length === 0) return { minLat: 0, maxLat: 1, minLng: 0, maxLng: 1 };
+    const lats = positions.map(p => p.lat);
+    const lngs = positions.map(p => p.lng);
+    return {
+      minLat: Math.min(...lats),
+      maxLat: Math.max(...lats),
+      minLng: Math.min(...lngs),
+      maxLng: Math.max(...lngs)
+    };
+  };
+
+  // Convert GPS positions to SVG coordinates
+  const positionsToSvg = () => {
+    if (positions.length < 2) return "";
+    const bounds = getMapBounds();
+    const padding = 0.0001;
+    const width = Math.max(bounds.maxLng - bounds.minLng, padding);
+    const height = Math.max(bounds.maxLat - bounds.minLat, padding);
+    
+    return positions.map((pos, i) => {
+      const x = 20 + ((pos.lng - bounds.minLng) / width) * 260;
+      const y = 140 - ((pos.lat - bounds.minLat) / height) * 120;
+      return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+    }).join(' ');
+  };
+
+  const firstPos = positions[0];
+  const lastPos = positions[positions.length - 1];
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -253,13 +376,28 @@ const JoggingTracker = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-white">Jogging Tracker</h1>
-            <p className="text-white/60 text-sm">{isGerman ? "Verfolge deine Läufe" : "Track your runs"}</p>
+            <p className="text-white/60 text-sm flex items-center gap-2">
+              {gpsEnabled ? (
+                <>
+                  <Navigation className="w-4 h-4 text-green-400 animate-pulse" />
+                  <span className="text-green-400">GPS {isGerman ? "aktiv" : "active"}</span>
+                </>
+              ) : (
+                <span>{isGerman ? "GPS startet automatisch" : "GPS starts automatically"}</span>
+              )}
+            </p>
           </div>
         </div>
 
-        {/* Smaller Map View */}
+        {gpsError && (
+          <Card className="bg-red-500/20 border-red-500/50 p-3 mb-4">
+            <p className="text-red-400 text-sm">{gpsError}</p>
+          </Card>
+        )}
+
+        {/* Map View with GPS Route */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-0 mb-4 relative overflow-hidden rounded-2xl">
-          <div className="relative h-40 bg-gradient-to-br from-[#f5e6d3] to-[#e8d5c4] overflow-hidden">
+          <div className="relative h-44 bg-gradient-to-br from-[#e8f5e9] to-[#c8e6c9] overflow-hidden">
             {/* Zoom Controls */}
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
               <Button size="icon" variant="secondary" className="w-7 h-7 bg-white/90" onClick={() => setMapZoom(prev => Math.min(prev + 0.25, 2))}>
@@ -271,57 +409,75 @@ const JoggingTracker = () => {
             </div>
 
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" style={{ transform: `scale(${mapZoom})`, transformOrigin: 'center' }}>
-              <rect width="300" height="160" fill="#f5e6d3" />
+              {/* Map background with streets */}
+              <rect width="300" height="160" fill="#e8f5e9" />
               <path d="M 0,80 L 300,80" stroke="#fff" strokeWidth="8" fill="none" />
               <path d="M 0,40 L 300,40" stroke="#fff" strokeWidth="5" fill="none" />
               <path d="M 0,120 L 300,120" stroke="#fff" strokeWidth="5" fill="none" />
               <path d="M 75,0 L 75,160" stroke="#fff" strokeWidth="5" fill="none" />
               <path d="M 150,0 L 150,160" stroke="#fff" strokeWidth="6" fill="none" />
               <path d="M 225,0 L 225,160" stroke="#fff" strokeWidth="5" fill="none" />
-              <rect x="20" y="15" width="35" height="20" fill="#90EE90" rx="5" />
-              <rect x="240" y="15" width="35" height="20" fill="#90EE90" rx="5" />
               
-              {routePoints.length > 1 && (
-                <path d={`M ${routePoints.map(p => `${p.x},${p.y}`).join(' L ')}`} stroke="#8B5CF6" strokeWidth="3" fill="none" strokeLinecap="round" />
+              {/* Parks/Green areas */}
+              <rect x="20" y="15" width="40" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
+              <rect x="240" y="15" width="40" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
+              <rect x="130" y="125" width="45" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
+              
+              {/* GPS Route Path */}
+              {positions.length > 1 && (
+                <path d={positionsToSvg()} stroke="#8B5CF6" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
               )}
               
-              {/* Start Marker */}
-              <g transform={`translate(${startPoint.x - 8}, ${startPoint.y - 20})`}>
-                <path d="M8,0 C3.5,0 0,3.5 0,8 C0,14 8,22 8,22 C8,22 16,14 16,8 C16,3.5 12.5,0 8,0 Z" fill="#22C55E" />
-                <circle cx="8" cy="8" r="4" fill="white" />
-              </g>
+              {/* Default path when no GPS */}
+              {positions.length <= 1 && !isActive && (
+                <path d="M 40,120 Q 80,100 120,90 T 200,60 T 260,40" stroke="#9CA3AF" strokeWidth="3" fill="none" strokeDasharray="5,5" />
+              )}
               
-              {/* End/Goal Marker */}
-              {endPoint && (
-                <g transform={`translate(${endPoint.x - 8}, ${endPoint.y - 20})`}>
-                  <path d="M8,0 C3.5,0 0,3.5 0,8 C0,14 8,22 8,22 C8,22 16,14 16,8 C16,3.5 12.5,0 8,0 Z" fill="#EF4444" />
-                  <circle cx="8" cy="8" r="4" fill="white" />
+              {/* Start Marker (Green) */}
+              {positions.length > 0 && (
+                <g>
+                  <circle cx={positions.length > 1 ? 40 : 150} cy={positions.length > 1 ? 120 : 80} r="8" fill="#22C55E" stroke="white" strokeWidth="2" />
+                  <text x={positions.length > 1 ? 40 : 150} y={positions.length > 1 ? 84 : 64} textAnchor="middle" fontSize="10" fill="#22C55E" fontWeight="bold">A</text>
                 </g>
               )}
               
-              {/* Running figure */}
+              {/* End Marker (Red) */}
+              {positions.length > 1 && (
+                <g>
+                  <circle cx="260" cy="40" r="8" fill="#EF4444" stroke="white" strokeWidth="2" />
+                  <text x="260" y="24" textAnchor="middle" fontSize="10" fill="#EF4444" fontWeight="bold">B</text>
+                </g>
+              )}
+              
+              {/* Running figure animation */}
               {isActive && (
-                <g transform={`translate(${runnerPosition.x - 6}, ${runnerPosition.y - 12})`}>
-                  <circle cx="6" cy="3" r="3" fill="#3B82F6" />
-                  <path d="M6,6 L6,10 M3,8 L9,8 M6,10 L3,14 M6,10 L9,14" stroke="#3B82F6" strokeWidth="1.5" fill="none" />
+                <g className="animate-pulse">
+                  <circle cx={150 + Math.sin(seconds * 0.5) * 20} cy={80 + Math.cos(seconds * 0.3) * 10} r="6" fill="#3B82F6" />
+                  <path d={`M${150 + Math.sin(seconds * 0.5) * 20},${86 + Math.cos(seconds * 0.3) * 10} l0,8 m-4,-4 l8,0 m-4,4 l-3,5 m3,-5 l3,5`} stroke="#3B82F6" strokeWidth="2" fill="none" />
                 </g>
               )}
             </svg>
             
-            {/* Stats Box */}
-            <div className="absolute top-2 right-2 bg-slate-800/90 rounded-lg p-2 text-white text-xs">
-              <div className="flex items-center gap-1 mb-1">
+            {/* Stats Overlay */}
+            <div className="absolute top-2 right-2 bg-slate-800/95 rounded-lg p-3 text-white">
+              <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span>Start</span>
+                <span className="text-xs">Start</span>
                 <div className="w-2 h-2 rounded-full bg-red-500 ml-2"></div>
-                <span>Ziel</span>
+                <span className="text-xs">{isGerman ? "Ziel" : "Goal"}</span>
               </div>
-              <div className="text-lg font-bold">{currentDistance.toFixed(2)} km</div>
+              <div className="text-2xl font-bold">{currentDistance.toFixed(2)} km</div>
+              <div className="text-xs text-white/60">{currentSpeed.toFixed(1)} km/h</div>
             </div>
 
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-              <Button onClick={toggle} size="sm" className={`rounded-full px-4 font-bold ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}>
-                {isActive ? 'STOP' : 'GO'}
+            {/* Start/Stop Button */}
+            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+              <Button onClick={toggle} size="lg" className={`rounded-full px-8 font-bold shadow-lg ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
+                {isActive ? (
+                  <><Pause className="w-5 h-5 mr-2" /> STOP</>
+                ) : (
+                  <><Play className="w-5 h-5 mr-2" /> GO</>
+                )}
               </Button>
             </div>
           </div>
@@ -356,8 +512,8 @@ const JoggingTracker = () => {
           </div>
         </Card>
 
-        {/* Live Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* Live Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
             <div className="text-xl font-bold text-white">{currentDistance.toFixed(2)} km</div>
@@ -367,8 +523,16 @@ const JoggingTracker = () => {
             <div className="text-xl font-bold text-white">{Math.floor(seconds / 60)} min</div>
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
+            <div className="text-xs text-white/60 mb-1">Speed</div>
+            <div className="text-xl font-bold text-white">{currentSpeed.toFixed(1)} km/h</div>
+          </Card>
+          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
+            <div className="text-xs text-white/60 mb-1">Pace</div>
+            <div className="text-xl font-bold text-white">{currentPace} /km</div>
+          </Card>
+          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">kcal</div>
-            <div className="text-xl font-bold text-white">{currentCalories}</div>
+            <div className="text-xl font-bold text-white">{estimatedCalories}</div>
           </Card>
         </div>
 
