@@ -89,7 +89,7 @@ const Nutrition = () => {
       return;
     }
 
-    toast({ title: isGerman ? "Gelöscht" : "Deleted", description: isGerman ? "Eintrag gelöscht" : "Entry deleted" });
+    toast({ title: isGerman ? "Gelöscht" : "Deleted", description: isGerman ? "Eintrag gelöscht - Werte neu berechnet" : "Entry deleted - Values recalculated" });
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -100,7 +100,7 @@ const Nutrition = () => {
     });
   };
 
-  // Auto-calculate daily totals
+  // Auto-calculate daily totals - Start at 0, only count actual entries
   const calculateDailyTotals = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
@@ -117,13 +117,7 @@ const Nutrition = () => {
       }
     });
 
-    // If no logs, calculate based on weight
-    if (todayLogs.length === 0) {
-      totalCalories = Math.round(userWeight * 28);
-      totalProtein = Math.round(userWeight * 1.6);
-      totalWater = Math.round(userWeight * 35);
-    }
-
+    // Always start at 0 - no default values based on weight
     return { calories: totalCalories, protein: totalProtein, water: totalWater };
   };
 
@@ -132,8 +126,8 @@ const Nutrition = () => {
   const getCategoryName = (mealType: string) => {
     const categories: Record<string, string> = {
       breakfast: isGerman ? "Vegetarisch" : "Vegetarian",
-      lunch: isGerman ? "Fleisch & Protein" : "Meat & Protein",
-      dinner: "Vegan",
+      lunch: "Vegan",
+      dinner: isGerman ? "Fleisch & Protein" : "Meat & Protein",
       snack: "Supplements"
     };
     return categories[mealType] || mealType;
@@ -163,7 +157,7 @@ const Nutrition = () => {
           <p className="text-white/70">{isGerman ? "Wähle deinen Ernährungsplan" : "Choose your nutrition plan"}</p>
         </div>
 
-        {/* Daily Stats - Auto-calculated */}
+        {/* Daily Stats - Starts at 0, auto-calculated from entries */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
@@ -181,7 +175,9 @@ const Nutrition = () => {
             </div>
           </div>
           <p className="text-xs text-white/50 text-center mt-4">
-            {isGerman ? "Auto-berechnet anhand Essensplan & Gewicht" : "Auto-calculated from meal plan & weight"}
+            {todayLogs.length === 0 
+              ? (isGerman ? "Keine Einträge - Füge Mahlzeiten hinzu" : "No entries - Add meals to start") 
+              : (isGerman ? "Auto-berechnet aus Essensplan" : "Auto-calculated from meal plan")}
           </p>
         </Card>
 

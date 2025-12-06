@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import { ChallengesBox } from "@/components/ChallengesBox";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Target, Calendar as CalendarIcon, TrendingDown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 import performanceBg from "@/assets/performance-bg.png";
 
 interface DayData {
@@ -18,12 +24,20 @@ interface DayData {
 
 const CalendarPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isGerman, setIsGerman] = useState(true);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [userId, setUserId] = useState<string>("");
   const [userWeight, setUserWeight] = useState(0);
   const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [] });
-  const [weeklyChartData, setWeeklyChartData] = useState<any[]>([]);
+  const [monthlyChartData, setMonthlyChartData] = useState<any[]>([]);
+  
+  // Challenges state
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
+  const [goalWeight, setGoalWeight] = useState("");
+  const [months, setMonths] = useState("");
+  const [bodyWeight, setBodyWeight] = useState("");
+  const [savedGoal, setSavedGoal] = useState<{ goal: number; months: number; startWeight: number; startDate: string } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -45,6 +59,13 @@ const CalendarPage = () => {
       
       if (profile?.weight) {
         setUserWeight(profile.weight);
+        setBodyWeight(profile.weight.toString());
+      }
+
+      // Load saved challenge
+      const saved = localStorage.getItem(`challenge_${session.user.id}`);
+      if (saved) {
+        setSavedGoal(JSON.parse(saved));
       }
 
       loadMonthData(session.user.id, new Date());
@@ -84,25 +105,29 @@ const CalendarPage = () => {
       .gte("completed_at", monthStart.toISOString())
       .lte("completed_at", monthEnd.toISOString());
 
-    // Build weekly chart data with hours (0-10 scale)
-    const days = isGerman ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const chartData = days.map((day, index) => {
-      const dayWorkouts = workoutData?.filter(w => {
+    // Build monthly chart data with months (Jan-Dec)
+    const monthNames = isGerman 
+      ? ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const currentMonth = selectedDate.getMonth();
+    const chartData = monthNames.slice(0, currentMonth + 1).map((month, index) => {
+      const monthWorkouts = workoutData?.filter(w => {
         const d = new Date(w.completed_at);
-        return d.getDay() === (index === 6 ? 0 : index + 1);
+        return d.getMonth() === index;
       }) || [];
-      const dayJogging = joggingData?.filter(j => {
+      const monthJogging = joggingData?.filter(j => {
         const d = new Date(j.completed_at);
-        return d.getDay() === (index === 6 ? 0 : index + 1);
+        return d.getMonth() === index;
       }) || [];
       
-      const joggingHours = dayJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
-      const workoutHours = dayWorkouts.length * 0.5;
+      const joggingHours = monthJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
+      const workoutHours = monthWorkouts.length * 0.5;
 
-      return { day, hours: Math.min(joggingHours + workoutHours, 10) };
+      return { month, hours: Math.min(joggingHours + workoutHours, 100) };
     });
 
-    setWeeklyChartData(chartData);
+    setMonthlyChartData(chartData);
   };
 
   const loadDayData = async (selectedDate: Date) => {
@@ -128,10 +153,64 @@ const CalendarPage = () => {
     });
   };
 
+  const handleSaveChallenge = () => {
+    if (!goalWeight || !months || !bodyWeight) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: isGerman ? "Bitte alle Felder ausfüllen" : "Please fill all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const challenge = {
+      goal: parseFloat(goalWeight),
+      months: parseInt(months),
+      startWeight: parseFloat(bodyWeight),
+      startDate: new Date().toISOString()
+    };
+
+    localStorage.setItem(`challenge_${userId}`, JSON.stringify(challenge));
+    setSavedGoal(challenge);
+    setIsChallengeDialogOpen(false);
+
+    toast({
+      title: isGerman ? "Challenge gespeichert!" : "Challenge saved!",
+      description: isGerman ? "Viel Erfolg!" : "Good luck!"
+    });
+  };
+
+  const calculateDaysRemaining = () => {
+    if (!savedGoal) return 0;
+    const startDate = new Date(savedGoal.startDate);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + savedGoal.months);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  };
+
+  const calculateWeightRemaining = () => {
+    if (!savedGoal) return 0;
+    return Math.max(0, userWeight - savedGoal.goal);
+  };
+
+  const calculateProgress = () => {
+    if (!savedGoal || !userWeight) return 0;
+    const totalToLose = savedGoal.startWeight - savedGoal.goal;
+    const lost = savedGoal.startWeight - userWeight;
+    if (totalToLose <= 0) return 100;
+    return Math.min(100, Math.max(0, (lost / totalToLose) * 100));
+  };
+
   const hasData = selectedDayData.workouts.length > 0 || selectedDayData.nutrition.length > 0 || selectedDayData.jogging.length > 0 || selectedDayData.weight.length > 0;
 
   // Calculate total training duration for selected day
   const totalDuration = selectedDayData.jogging.reduce((sum, j) => sum + (j.duration || 0), 0) + (selectedDayData.workouts.length * 30);
+
+  const daysRemaining = calculateDaysRemaining();
+  const weightRemaining = calculateWeightRemaining();
+  const progress = calculateProgress();
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -146,12 +225,57 @@ const CalendarPage = () => {
           <p className="text-white/60">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
         </div>
 
-        {/* Challenges Box at top */}
-        {userId && (
-          <div className="mb-6">
-            <ChallengesBox isGerman={isGerman} userId={userId} currentWeight={userWeight} />
+        {/* Challenges Box - Opens dialog like Fullbody */}
+        <Card 
+          className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-6 cursor-pointer hover:scale-[1.02] transition-all"
+          onClick={() => setIsChallengeDialogOpen(true)}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-bold text-white">Challenges</h3>
           </div>
-        )}
+
+          {savedGoal ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Zielgewicht" : "Goal Weight"}</div>
+                  <div className="text-2xl font-bold text-green-400">{savedGoal.goal} kg</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Noch abzunehmen" : "Weight to lose"}</div>
+                  <div className="text-2xl font-bold text-orange-400">{weightRemaining.toFixed(1)} kg</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Tage verbleibend" : "Days remaining"}</div>
+                  <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
+                    <CalendarIcon className="w-4 h-4" />
+                    {daysRemaining}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/60">{isGerman ? "Fortschritt" : "Progress"}</span>
+                  <span className="font-bold text-white">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-3" />
+              </div>
+
+              {userWeight < savedGoal.startWeight && (
+                <div className="flex items-center justify-center gap-2 text-green-400 text-sm">
+                  <TrendingDown className="w-4 h-4" />
+                  <span>{(savedGoal.startWeight - userWeight).toFixed(1)} kg {isGerman ? "verloren" : "lost"}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-white/60 py-4">
+              {isGerman ? "Klicken um Challenge zu starten" : "Click to start a challenge"}
+            </div>
+          )}
+        </Card>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Side */}
@@ -160,20 +284,20 @@ const CalendarPage = () => {
               <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md" />
             </Card>
 
-            {/* Performance Bar Chart - 0-10 hours */}
+            {/* Performance Bar Chart - Monthly */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
               <h3 className="text-lg font-bold mb-4 text-white">Performance</h3>
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={weeklyChartData}>
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} fontSize={12} />
+                  <BarChart data={monthlyChartData}>
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={12} />
                     <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Stunden' : 'Hours']} />
                     <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-xs text-white/60 mt-2">{isGerman ? "Trainingsdauer (Stunden)" : "Training Duration (Hours)"}</div>
+              <div className="text-center text-xs text-white/60 mt-2">{isGerman ? "Trainingsdauer pro Monat (Stunden)" : "Training Duration per Month (Hours)"}</div>
             </Card>
           </div>
 
@@ -238,6 +362,65 @@ const CalendarPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Challenges Dialog */}
+      <Dialog open={isChallengeDialogOpen} onOpenChange={setIsChallengeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isGerman ? "Challenge einstellen" : "Set Challenge"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{isGerman ? "Aktuelles Körpergewicht (kg)" : "Current Body Weight (kg)"}</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={bodyWeight}
+                onChange={(e) => setBodyWeight(e.target.value)}
+                placeholder="75"
+              />
+            </div>
+            <div>
+              <Label>{isGerman ? "Zielgewicht (kg)" : "Goal Weight (kg)"}</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={goalWeight}
+                onChange={(e) => setGoalWeight(e.target.value)}
+                placeholder="65"
+              />
+            </div>
+            <div>
+              <Label>{isGerman ? "Zeitraum (Monate)" : "Duration (Months)"}</Label>
+              <Input
+                type="number"
+                min="1"
+                max="24"
+                value={months}
+                onChange={(e) => setMonths(e.target.value)}
+                placeholder="3"
+              />
+            </div>
+            <Button onClick={handleSaveChallenge} className="w-full">
+              {isGerman ? "Challenge starten" : "Start Challenge"}
+            </Button>
+            {savedGoal && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  localStorage.removeItem(`challenge_${userId}`);
+                  setSavedGoal(null);
+                  setIsChallengeDialogOpen(false);
+                }}
+              >
+                {isGerman ? "Challenge zurücksetzen" : "Reset Challenge"}
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );

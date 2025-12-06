@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, ZoomIn, ZoomOut, MapPin, Flag, Timer, Navigation } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -34,7 +34,6 @@ const JoggingTracker = () => {
   const [isActive, setIsActive] = useState(false);
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
-  const [mapZoom, setMapZoom] = useState(1);
   const [timerDialogOpen, setTimerDialogOpen] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -44,10 +43,11 @@ const JoggingTracker = () => {
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [positions, setPositions] = useState<GeoPosition[]>([]);
-  const [currentSpeed, setCurrentSpeed] = useState(0);
   const [currentDistance, setCurrentDistance] = useState(0);
-  const [currentPace, setCurrentPace] = useState("0:00");
   const watchIdRef = useRef<number | null>(null);
+  
+  // Circle animation angle
+  const [circleAngle, setCircleAngle] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -143,18 +143,6 @@ const JoggingTracker = () => {
             setCurrentDistance(totalDist);
           }
 
-          // Calculate current speed (km/h)
-          if (position.coords.speed !== null && position.coords.speed >= 0) {
-            setCurrentSpeed(position.coords.speed * 3.6); // m/s to km/h
-          } else if (updated.length >= 2) {
-            const lastTwo = updated.slice(-2);
-            const dist = calculateDistanceBetweenPoints(lastTwo[0], lastTwo[1]);
-            const timeDiff = (lastTwo[1].timestamp - lastTwo[0].timestamp) / 1000 / 3600; // hours
-            if (timeDiff > 0) {
-              setCurrentSpeed(dist / timeDiff);
-            }
-          }
-
           return updated;
         });
       },
@@ -194,24 +182,18 @@ const JoggingTracker = () => {
             autoSaveJoggingLog(newSeconds);
           }
           
-          // Calculate pace (min/km)
-          if (currentDistance > 0) {
-            const minutesElapsed = newSeconds / 60;
-            const paceMinutes = minutesElapsed / currentDistance;
-            const paceMin = Math.floor(paceMinutes);
-            const paceSec = Math.round((paceMinutes - paceMin) * 60);
-            setCurrentPace(`${paceMin}:${paceSec.toString().padStart(2, '0')}`);
-          }
-          
           return newSeconds;
         });
+        
+        // Animate the circle
+        setCircleAngle(prev => (prev + 3) % 360);
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, targetTime, currentDistance, stopGpsTracking]);
+  }, [isActive, targetTime, stopGpsTracking]);
 
   const autoSaveJoggingLog = async (totalSeconds: number) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -251,8 +233,7 @@ const JoggingTracker = () => {
     setIsActive(false);
     setPositions([]);
     setCurrentDistance(0);
-    setCurrentSpeed(0);
-    setCurrentPace("0:00");
+    setCircleAngle(0);
     setTargetTime(null);
     stopGpsTracking();
   };
@@ -331,36 +312,30 @@ const JoggingTracker = () => {
 
   const estimatedCalories = calculateCalories(currentDistance > 0 ? currentDistance : calculateFallbackDistance(seconds), seconds);
   
-  // Calculate map viewport based on positions
-  const getMapBounds = () => {
-    if (positions.length === 0) return { minLat: 0, maxLat: 1, minLng: 0, maxLng: 1 };
-    const lats = positions.map(p => p.lat);
-    const lngs = positions.map(p => p.lng);
-    return {
-      minLat: Math.min(...lats),
-      maxLat: Math.max(...lats),
-      minLng: Math.min(...lngs),
-      maxLng: Math.max(...lngs)
-    };
-  };
-
   // Convert GPS positions to SVG coordinates
   const positionsToSvg = () => {
     if (positions.length < 2) return "";
-    const bounds = getMapBounds();
+    const lats = positions.map(p => p.lat);
+    const lngs = positions.map(p => p.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
     const padding = 0.0001;
-    const width = Math.max(bounds.maxLng - bounds.minLng, padding);
-    const height = Math.max(bounds.maxLat - bounds.minLat, padding);
+    const width = Math.max(maxLng - minLng, padding);
+    const height = Math.max(maxLat - minLat, padding);
     
     return positions.map((pos, i) => {
-      const x = 20 + ((pos.lng - bounds.minLng) / width) * 260;
-      const y = 140 - ((pos.lat - bounds.minLat) / height) * 120;
+      const x = 50 + ((pos.lng - minLng) / width) * 200;
+      const y = 150 - ((pos.lat - minLat) / height) * 100;
       return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
     }).join(' ');
   };
 
-  const firstPos = positions[0];
-  const lastPos = positions[positions.length - 1];
+  // Calculate animated circle position
+  const circleRadius = 120;
+  const circleX = 150 + Math.cos((circleAngle - 90) * Math.PI / 180) * circleRadius;
+  const circleY = 150 + Math.sin((circleAngle - 90) * Math.PI / 180) * circleRadius;
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -376,12 +351,9 @@ const JoggingTracker = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-white">Jogging Tracker</h1>
-            <p className="text-white/60 text-sm flex items-center gap-2">
+            <p className="text-white/60 text-sm">
               {gpsEnabled ? (
-                <>
-                  <Navigation className="w-4 h-4 text-green-400 animate-pulse" />
-                  <span className="text-green-400">GPS {isGerman ? "aktiv" : "active"}</span>
-                </>
+                <span className="text-green-400">GPS {isGerman ? "aktiv" : "active"}</span>
               ) : (
                 <span>{isGerman ? "GPS startet automatisch" : "GPS starts automatically"}</span>
               )}
@@ -395,125 +367,120 @@ const JoggingTracker = () => {
           </Card>
         )}
 
-        {/* Map View with GPS Route */}
-        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-0 mb-4 relative overflow-hidden rounded-2xl">
-          <div className="relative h-44 bg-gradient-to-br from-[#e8f5e9] to-[#c8e6c9] overflow-hidden">
-            {/* Zoom Controls */}
-            <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-              <Button size="icon" variant="secondary" className="w-7 h-7 bg-white/90" onClick={() => setMapZoom(prev => Math.min(prev + 0.25, 2))}>
-                <ZoomIn className="w-3 h-3" />
-              </Button>
-              <Button size="icon" variant="secondary" className="w-7 h-7 bg-white/90" onClick={() => setMapZoom(prev => Math.max(prev - 0.25, 0.5))}>
-                <ZoomOut className="w-3 h-3" />
-              </Button>
-            </div>
-
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" style={{ transform: `scale(${mapZoom})`, transformOrigin: 'center' }}>
-              {/* Map background with streets */}
-              <rect width="300" height="160" fill="#e8f5e9" />
-              <path d="M 0,80 L 300,80" stroke="#fff" strokeWidth="8" fill="none" />
-              <path d="M 0,40 L 300,40" stroke="#fff" strokeWidth="5" fill="none" />
-              <path d="M 0,120 L 300,120" stroke="#fff" strokeWidth="5" fill="none" />
-              <path d="M 75,0 L 75,160" stroke="#fff" strokeWidth="5" fill="none" />
-              <path d="M 150,0 L 150,160" stroke="#fff" strokeWidth="6" fill="none" />
-              <path d="M 225,0 L 225,160" stroke="#fff" strokeWidth="5" fill="none" />
+        {/* Circular Map View - Like Adidas Running App */}
+        <Card className="bg-gradient-to-br from-green-900/80 to-green-700/60 backdrop-blur-sm border-white/10 p-0 mb-4 relative overflow-hidden rounded-3xl">
+          <div className="relative h-80 flex items-center justify-center">
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">
+              {/* Background gradient */}
+              <defs>
+                <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#2d5016" />
+                  <stop offset="100%" stopColor="#1a3409" />
+                </radialGradient>
+                <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#22c55e" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
+              </defs>
               
-              {/* Parks/Green areas */}
-              <rect x="20" y="15" width="40" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
-              <rect x="240" y="15" width="40" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
-              <rect x="130" y="125" width="45" height="25" fill="#4CAF50" rx="5" opacity="0.6" />
+              <rect width="300" height="300" fill="url(#mapBg)" />
               
-              {/* GPS Route Path */}
-              {positions.length > 1 && (
-                <path d={positionsToSvg()} stroke="#8B5CF6" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              )}
+              {/* Grid lines for map effect */}
+              {[...Array(10)].map((_, i) => (
+                <line key={`h${i}`} x1="0" y1={i * 30} x2="300" y2={i * 30} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              ))}
+              {[...Array(10)].map((_, i) => (
+                <line key={`v${i}`} x1={i * 30} y1="0" x2={i * 30} y2="300" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              ))}
               
-              {/* Default path when no GPS */}
-              {positions.length <= 1 && !isActive && (
-                <path d="M 40,120 Q 80,100 120,90 T 200,60 T 260,40" stroke="#9CA3AF" strokeWidth="3" fill="none" strokeDasharray="5,5" />
-              )}
+              {/* Circular track outline */}
+              <circle cx="150" cy="150" r="120" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="20" />
               
-              {/* Start Marker (Green) */}
-              {positions.length > 0 && (
-                <g>
-                  <circle cx={positions.length > 1 ? 40 : 150} cy={positions.length > 1 ? 120 : 80} r="8" fill="#22C55E" stroke="white" strokeWidth="2" />
-                  <text x={positions.length > 1 ? 40 : 150} y={positions.length > 1 ? 84 : 64} textAnchor="middle" fontSize="10" fill="#22C55E" fontWeight="bold">A</text>
-                </g>
-              )}
-              
-              {/* End Marker (Red) */}
-              {positions.length > 1 && (
-                <g>
-                  <circle cx="260" cy="40" r="8" fill="#EF4444" stroke="white" strokeWidth="2" />
-                  <text x="260" y="24" textAnchor="middle" fontSize="10" fill="#EF4444" fontWeight="bold">B</text>
-                </g>
-              )}
-              
-              {/* Running figure animation */}
+              {/* Progress arc - animated when running */}
               {isActive && (
-                <g className="animate-pulse">
-                  <circle cx={150 + Math.sin(seconds * 0.5) * 20} cy={80 + Math.cos(seconds * 0.3) * 10} r="6" fill="#3B82F6" />
-                  <path d={`M${150 + Math.sin(seconds * 0.5) * 20},${86 + Math.cos(seconds * 0.3) * 10} l0,8 m-4,-4 l8,0 m-4,4 l-3,5 m3,-5 l3,5`} stroke="#3B82F6" strokeWidth="2" fill="none" />
+                <circle 
+                  cx="150" 
+                  cy="150" 
+                  r="120" 
+                  fill="none" 
+                  stroke="url(#routeGradient)" 
+                  strokeWidth="8" 
+                  strokeLinecap="round"
+                  strokeDasharray={`${circleAngle * 2.1} 756`}
+                  transform="rotate(-90 150 150)"
+                />
+              )}
+              
+              {/* GPS Route Path if available */}
+              {positions.length > 1 && (
+                <path d={positionsToSvg()} stroke="#22c55e" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+              
+              {/* Runner indicator - animated circle */}
+              {isActive && (
+                <g>
+                  <circle cx={circleX} cy={circleY} r="12" fill="#22c55e" className="animate-pulse" />
+                  <circle cx={circleX} cy={circleY} r="6" fill="white" />
                 </g>
               )}
+              
+              {/* Start marker */}
+              <circle cx="150" cy="30" r="8" fill="#22c55e" stroke="white" strokeWidth="2" />
+              <text x="150" y="20" textAnchor="middle" fontSize="10" fill="white" fontWeight="bold">A</text>
             </svg>
             
-            {/* Stats Overlay */}
-            <div className="absolute top-2 right-2 bg-slate-800/95 rounded-lg p-3 text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span className="text-xs">Start</span>
-                <div className="w-2 h-2 rounded-full bg-red-500 ml-2"></div>
-                <span className="text-xs">{isGerman ? "Ziel" : "Goal"}</span>
-              </div>
-              <div className="text-2xl font-bold">{currentDistance.toFixed(2)} km</div>
-              <div className="text-xs text-white/60">{currentSpeed.toFixed(1)} km/h</div>
+            {/* Center stats display */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
+              <div className="text-6xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
+              <div className="text-3xl font-semibold text-green-400">{currentDistance.toFixed(2)} km</div>
+              {targetTime && (
+                <div className="text-sm text-white/60 mt-2">
+                  {isGerman ? "Ziel:" : "Target:"} {formatTime(targetTime)}
+                </div>
+              )}
             </div>
-
-            {/* Start/Stop Button */}
-            <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
-              <Button onClick={toggle} size="lg" className={`rounded-full px-8 font-bold shadow-lg ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}>
+            
+            {/* GO/STOP Button at bottom */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+              <Button 
+                onClick={toggle} 
+                size="lg" 
+                className={`rounded-full px-10 py-6 font-bold text-lg shadow-lg transition-all ${
+                  isActive 
+                    ? 'bg-red-500 hover:bg-red-600' 
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
                 {isActive ? (
-                  <><Pause className="w-5 h-5 mr-2" /> STOP</>
+                  <><Pause className="w-6 h-6 mr-2" /> STOP</>
                 ) : (
-                  <><Play className="w-5 h-5 mr-2" /> GO</>
+                  <><Play className="w-6 h-6 mr-2" /> GO</>
                 )}
               </Button>
             </div>
           </div>
         </Card>
 
-        {/* Timer Display */}
-        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-4">
-          <div className="text-center">
-            <div className="text-5xl font-bold mb-4 tabular-nums text-white">{formatTime(seconds)}</div>
-            {targetTime && (
-              <div className="text-sm text-white/60 mb-3">
-                {isGerman ? "Ziel:" : "Target:"} {formatTime(targetTime)}
-              </div>
-            )}
-            <div className="flex gap-2 justify-center flex-wrap">
-              <Button variant="default" size="lg" onClick={toggle} className="w-16">
-                {isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              </Button>
-              <Button variant="outline" size="lg" onClick={reset} className="w-16">
-                <RotateCcw className="w-5 h-5" />
-              </Button>
-              <Button variant="outline" size="lg" onClick={() => setTimerDialogOpen(true)} className="w-16">
-                <Timer className="w-5 h-5" />
-              </Button>
-              <Button variant="default" size="lg" className="w-16" disabled={seconds < 60} onClick={saveJoggingLog}>
-                <Save className="w-5 h-5" />
-              </Button>
-              <Button variant="destructive" size="lg" onClick={reset} className="w-16">
-                <Trash2 className="w-5 h-5" />
-              </Button>
-            </div>
+        {/* Control Buttons */}
+        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-4">
+          <div className="flex gap-2 justify-center flex-wrap">
+            <Button variant="outline" size="lg" onClick={reset} className="w-14">
+              <RotateCcw className="w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => setTimerDialogOpen(true)} className="w-14">
+              <Timer className="w-5 h-5" />
+            </Button>
+            <Button variant="default" size="lg" className="w-14" disabled={seconds < 60} onClick={saveJoggingLog}>
+              <Save className="w-5 h-5" />
+            </Button>
+            <Button variant="destructive" size="lg" onClick={reset} className="w-14">
+              <Trash2 className="w-5 h-5" />
+            </Button>
           </div>
         </Card>
 
-        {/* Live Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        {/* Live Stats - Only Distance, Time, kcal */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
             <div className="text-xl font-bold text-white">{currentDistance.toFixed(2)} km</div>
@@ -521,14 +488,6 @@ const JoggingTracker = () => {
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Zeit" : "Time"}</div>
             <div className="text-xl font-bold text-white">{Math.floor(seconds / 60)} min</div>
-          </Card>
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">Speed</div>
-            <div className="text-xl font-bold text-white">{currentSpeed.toFixed(1)} km/h</div>
-          </Card>
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">Pace</div>
-            <div className="text-xl font-bold text-white">{currentPace} /km</div>
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">kcal</div>
