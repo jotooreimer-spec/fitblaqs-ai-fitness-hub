@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, HelpCircle, Upload, X, Utensils, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
 import BottomNav from "@/components/BottomNav";
 import proNutritionBg from "@/assets/pro-nutrition-bg.png";
 
@@ -24,6 +25,8 @@ const ProNutrition = () => {
   const [manualForm, setManualForm] = useState({ name: "", vitamin: "", fiber: "", minerals: "", protein: "", carbs: "", unit: "g" });
   const [dailyTotals, setDailyTotals] = useState({ calories: 1776, protein: 108, carbs: 215 });
 
+  const { hasProNutrition, loading: subscriptionLoading } = useSubscription("pro_nutrition");
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { navigate("/login"); return; }
@@ -31,6 +34,12 @@ const ProNutrition = () => {
       setIsGerman(metadata.language === "de");
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (!subscriptionLoading && !hasProNutrition) {
+      navigate("/pro-subscription");
+    }
+  }, [subscriptionLoading, hasProNutrition, navigate]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
