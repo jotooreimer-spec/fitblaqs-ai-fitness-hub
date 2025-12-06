@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Dumbbell, Upload, X, Loader2, HelpCircle, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
 import BottomNav from "@/components/BottomNav";
 import proAthleteBg from "@/assets/pro-athlete-bg.png";
-
 const ProAthlete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,6 +33,8 @@ const ProAthlete = () => {
     activity_level: "", training_frequency: "", goal: ""
   });
 
+  const { hasProAthlete, loading: subscriptionLoading } = useSubscription("pro_athlete");
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { navigate("/login"); return; }
@@ -40,6 +42,12 @@ const ProAthlete = () => {
       setIsGerman(metadata.language === "de");
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (!subscriptionLoading && !hasProAthlete) {
+      navigate("/pro-subscription");
+    }
+  }, [subscriptionLoading, hasProAthlete, navigate]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

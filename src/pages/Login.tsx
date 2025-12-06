@@ -7,8 +7,9 @@ import { Card } from "@/components/ui/card";
 import logo from "@/assets/fitblaqs-logo.png";
 import loginBg from "@/assets/login-bg.jpg";
 import { toast } from "sonner";
-import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
+import { signInWithEmail } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { loginSchema, getValidationErrors } from "@/lib/validations";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isGerman, setIsGerman] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,13 +37,20 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      setErrors(getValidationErrors(result.error));
+      return;
+    }
+
     setLoading(true);
 
     try {
       await signInWithEmail(email, password);
       toast.success(isGerman ? "Anmeldung erfolgreich!" : "Login successful!");
     } catch (error: any) {
-      console.error("Login error:", error);
       toast.error(
         isGerman 
           ? "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Daten." 
@@ -62,18 +71,15 @@ const Login = () => {
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60" />
       
       <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-white/10 p-8 relative z-10">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <img src={logo} alt="FitBlaqs" className="w-24 h-24 mb-4" />
           <h1 className="text-3xl font-bold">{isGerman ? "Anmelden" : "Login"}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email */}
           <div>
             <Label>E-Mail</Label>
             <Input 
@@ -81,11 +87,12 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              required
+              maxLength={255}
+              className={errors.email ? "border-destructive" : ""}
             />
+            {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
           </div>
 
-          {/* Password */}
           <div>
             <Label>{isGerman ? "Passwort" : "Password"}</Label>
             <Input 
@@ -93,11 +100,12 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required
+              maxLength={100}
+              className={errors.password ? "border-destructive" : ""}
             />
+            {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
           </div>
 
-          {/* Submit */}
           <div className="flex flex-col gap-4 pt-4">
             <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
               {loading ? (isGerman ? "Lädt..." : "Loading...") : (isGerman ? "Anmelden" : "Login")}
