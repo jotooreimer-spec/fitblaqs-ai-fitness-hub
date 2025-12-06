@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Save, Trash2 } from "lucide-react";
+import { Save, Trash2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -14,6 +14,7 @@ interface WorkoutLog {
   unit: string | null;
   completed_at: string;
   notes: string | null;
+  saved_to_calendar?: boolean;
   exercises: {
     name_de: string;
     name_en: string;
@@ -29,6 +30,7 @@ interface TrainingHistoryProps {
 export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHistoryProps) => {
   const { toast } = useToast();
   const [workouts, setWorkouts] = useState<WorkoutLog[]>([]);
+  const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadWorkouts();
@@ -60,6 +62,19 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
     }
 
     setWorkouts(data || []);
+  };
+
+  const handleSaveToCalendar = async (workout: WorkoutLog) => {
+    // The workout is already saved in the database with completed_at date
+    // This just marks it as "saved to calendar" visually
+    setSavedItems(prev => new Set(prev).add(workout.id));
+    
+    toast({
+      title: isGerman ? "Gespeichert" : "Saved",
+      description: isGerman 
+        ? `Training wurde im Kalender unter ${format(new Date(workout.completed_at), "dd.MM.yyyy")} gespeichert` 
+        : `Training saved to calendar on ${format(new Date(workout.completed_at), "dd.MM.yyyy")}`
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -97,46 +112,51 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
 
   return (
     <div className="space-y-4">
-      {workouts.map((workout) => (
-        <Card key={workout.id} className="gradient-card card-shadow border-white/10 p-4">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h3 className="font-bold text-lg mb-1">
-                {workout.notes || (isGerman ? (workout.exercises?.name_de || "Training") : (workout.exercises?.name_en || "Training"))}
-              </h3>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div className="flex gap-4">
-                  <span>{isGerman ? "Sätze:" : "Sets:"} {workout.sets}</span>
-                  <span>{isGerman ? "Wdh.:" : "Reps:"} {workout.reps}</span>
-                  {workout.weight && (
-                    <span>{isGerman ? "Gewicht:" : "Weight:"} {workout.weight} {workout.unit || 'kg'}</span>
-                  )}
-                </div>
-                <div className="text-xs">
-                  {format(new Date(workout.completed_at), "dd.MM.yyyy")}
+      {workouts.map((workout) => {
+        const isSaved = savedItems.has(workout.id);
+        return (
+          <Card key={workout.id} className="gradient-card card-shadow border-white/10 p-4">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="font-bold text-lg mb-1">
+                  {workout.notes || (isGerman ? (workout.exercises?.name_de || "Training") : (workout.exercises?.name_en || "Training"))}
+                </h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div className="flex gap-4">
+                    <span>{isGerman ? "Sätze:" : "Sets:"} {workout.sets}</span>
+                    <span>{isGerman ? "Wdh.:" : "Reps:"} {workout.reps}</span>
+                    {workout.weight && (
+                      <span>{isGerman ? "Gewicht:" : "Weight:"} {workout.weight} {workout.unit || 'kg'}</span>
+                    )}
+                  </div>
+                  <div className="text-xs">
+                    {format(new Date(workout.completed_at), "dd.MM.yyyy")}
+                  </div>
                 </div>
               </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={isSaved ? "text-green-500 hover:text-green-500" : "text-primary hover:text-primary"}
+                  onClick={() => handleSaveToCalendar(workout)}
+                  disabled={isSaved}
+                >
+                  {isSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(workout.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-primary hover:text-primary"
-              >
-                <Save className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive"
-                onClick={() => handleDelete(workout.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        );
+      })}
     </div>
   );
 };

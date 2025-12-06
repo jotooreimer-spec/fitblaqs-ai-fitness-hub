@@ -574,9 +574,9 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Privacy Dialog */}
+{/* Privacy Dialog */}
       <Dialog open={privacyDialogOpen} onOpenChange={setPrivacyDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
               {isGerman ? "Datenschutz & Sicherheit" : "Privacy & Security"}
@@ -585,22 +585,36 @@ const Settings = () => {
               </Button>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 text-sm">
-            <h3 className="font-bold">{isGerman ? "Datenschutzerklärung" : "Privacy Policy"}</h3>
-            <p>{isGerman ? "FitBlaqs respektiert Ihre Privatsphäre und verpflichtet sich zum Schutz Ihrer persönlichen Daten." : "FitBlaqs respects your privacy and is committed to protecting your personal data."}</p>
-            
-            <h4 className="font-semibold">{isGerman ? "Welche Daten wir sammeln" : "Data We Collect"}</h4>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>{isGerman ? "Kontoinformationen (Name, E-Mail)" : "Account information (name, email)"}</li>
-              <li>{isGerman ? "Gesundheitsdaten (Gewicht, Größe, Trainingsaktivitäten)" : "Health data (weight, height, workout activities)"}</li>
-              <li>{isGerman ? "Nutzungsdaten" : "Usage data"}</li>
-            </ul>
-            
-            <h4 className="font-semibold">{isGerman ? "Datensicherheit" : "Data Security"}</h4>
-            <p>{isGerman ? "Alle Daten werden verschlüsselt übertragen und sicher gespeichert." : "All data is encrypted in transit and stored securely."}</p>
-            
-            <h4 className="font-semibold">{isGerman ? "Ihre Rechte" : "Your Rights"}</h4>
-            <p>{isGerman ? "Sie haben das Recht auf Zugang, Berichtigung und Löschung Ihrer Daten." : "You have the right to access, rectify, and delete your data."}</p>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {isGerman 
+                ? "Hier findest du unsere rechtlichen Dokumente:" 
+                : "Here you can find our legal documents:"}
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setPrivacyDialogOpen(false);
+                  navigate("/privacy");
+                }}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                {isGerman ? "Datenschutzerklärung" : "Privacy Policy"}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setPrivacyDialogOpen(false);
+                  navigate("/terms");
+                }}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                {isGerman ? "AGB / Nutzungsbedingungen" : "Terms of Service"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
