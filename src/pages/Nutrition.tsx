@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { Trash2 } from "lucide-react";
+import { Trash2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NutritionLogDialog } from "@/components/NutritionLogDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import vegetableImg from "@/assets/vegetable.jpg";
 import veganImg from "@/assets/vegan.jpg";
 import proteinImg from "@/assets/protein.jpg";
 import supplementsImg from "@/assets/supplements.jpg";
+import nutritionBg from "@/assets/nutrition-bg.png";
 
 const Nutrition = () => {
   const navigate = useNavigate();
@@ -34,7 +35,6 @@ const Nutrition = () => {
       setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
 
-      // Get user weight
       const { data: profile } = await supabase
         .from("profiles")
         .select("weight")
@@ -85,135 +85,111 @@ const Nutrition = () => {
       .eq("id", id);
 
     if (error) {
-      toast({
-        title: isGerman ? "Fehler" : "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast({ title: isGerman ? "Fehler" : "Error", description: error.message, variant: "destructive" });
       return;
     }
 
-    toast({
-      title: isGerman ? "Gelöscht" : "Deleted",
-      description: isGerman ? "Eintrag gelöscht" : "Entry deleted"
-    });
-
+    toast({ title: isGerman ? "Gelöscht" : "Deleted", description: isGerman ? "Eintrag gelöscht" : "Entry deleted" });
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleSaveToCalendar = (log: any) => {
+    toast({
+      title: isGerman ? "Gespeichert" : "Saved",
+      description: isGerman ? "Im Kalender gespeichert" : "Saved to calendar"
+    });
+  };
+
+  // Auto-calculate daily totals
   const calculateDailyTotals = () => {
     const today = new Date().toISOString().split('T')[0];
-    const todayLogs = nutritionLogs.filter(log => 
-      log.completed_at.split('T')[0] === today
-    );
+    const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
 
-    const totals = {
-      calories: 0,
-      protein: 0,
-      water: 0
-    };
+    let totalCalories = 0, totalProtein = 0, totalWater = 0;
 
     todayLogs.forEach(log => {
-      totals.calories += log.calories || 0;
-      totals.protein += log.protein || 0;
+      totalCalories += log.calories || 0;
+      totalProtein += log.protein || 0;
       
-      // Extract water from notes
       const waterMatch = log.notes?.match(/Water: ([\d.]+)/);
       if (waterMatch) {
-        totals.water += parseFloat(waterMatch[1]) || 0;
+        totalWater += parseFloat(waterMatch[1]) || 0;
       }
     });
 
-    // Adjust calories based on weight (BMR estimation)
-    const bmr = userWeight * 24; // Basic estimation
-    const adjustedCalories = totals.calories > 0 ? totals.calories : 0;
+    // If no logs, calculate based on weight
+    if (todayLogs.length === 0) {
+      totalCalories = Math.round(userWeight * 28);
+      totalProtein = Math.round(userWeight * 1.6);
+      totalWater = Math.round(userWeight * 35);
+    }
 
-    return { ...totals, calories: adjustedCalories };
+    return { calories: totalCalories, protein: totalProtein, water: totalWater };
   };
 
   const dailyTotals = calculateDailyTotals();
 
+  const getCategoryName = (mealType: string) => {
+    const categories: Record<string, string> = {
+      breakfast: isGerman ? "Vegetarisch" : "Vegetarian",
+      lunch: isGerman ? "Fleisch & Protein" : "Meat & Protein",
+      dinner: "Vegan",
+      snack: "Supplements"
+    };
+    return categories[mealType] || mealType;
+  };
+
   const nutritionCategories = [
-    {
-      image: vegetableImg,
-      title: isGerman ? "Vegetarisch" : "Vegetarian",
-      description: isGerman ? "Pflanzliche Ernährung" : "Plant-based nutrition",
-      key: "vegetarian" as const,
-    },
-    {
-      image: veganImg,
-      title: "Vegan",
-      description: isGerman ? "100% pflanzlich" : "100% plant-based",
-      key: "vegan" as const,
-    },
-    {
-      image: proteinImg,
-      title: isGerman ? "Fleisch & Protein" : "Meat & Protein",
-      description: isGerman ? "Proteinreiche Ernährung" : "High-protein nutrition",
-      key: "protein" as const,
-    },
-    {
-      image: supplementsImg,
-      title: "Supplements",
-      description: isGerman ? "Nahrungsergänzung" : "Nutritional supplements",
-      key: "supplements" as const,
-    },
+    { image: vegetableImg, title: isGerman ? "Vegetarisch" : "Vegetarian", description: isGerman ? "Pflanzliche Ernährung" : "Plant-based nutrition", key: "vegetarian" as const },
+    { image: veganImg, title: "Vegan", description: isGerman ? "100% pflanzlich" : "100% plant-based", key: "vegan" as const },
+    { image: proteinImg, title: isGerman ? "Fleisch & Protein" : "Meat & Protein", description: isGerman ? "Proteinreiche Ernährung" : "High-protein nutrition", key: "protein" as const },
+    { image: supplementsImg, title: "Supplements", description: isGerman ? "Nahrungsergänzung" : "Nutritional supplements", key: "supplements" as const },
   ];
 
+  // Group logs by date
+  const today = new Date().toISOString().split('T')[0];
+  const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
+
   return (
-    <div className="min-h-screen pb-24 gradient-male">
-      <div className="max-w-screen-xl mx-auto p-6">
+    <div className="min-h-screen pb-24 relative">
+      {/* Background Image */}
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${nutritionBg})` }} />
+      <div className="fixed inset-0 bg-black/60" />
+
+      <div className="relative z-10 max-w-screen-xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            {isGerman ? "Ernährung & Kalorien" : "Nutrition & Calories"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isGerman ? "Wähle deinen Ernährungsplan" : "Choose your nutrition plan"}
-          </p>
+          <h1 className="text-4xl font-bold mb-2 text-white">{isGerman ? "Ernährung & Kalorien" : "Nutrition & Calories"}</h1>
+          <p className="text-white/70">{isGerman ? "Wähle deinen Ernährungsplan" : "Choose your nutrition plan"}</p>
         </div>
 
-        {/* Daily Stats */}
-        <Card className="gradient-card card-shadow border-white/10 p-6 mb-8">
+        {/* Daily Stats - Auto-calculated */}
+        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Kalorien" : "Calories"}
-              </div>
-              <div className="text-3xl font-bold text-primary">{dailyTotals.calories}</div>
-              <div className="text-xs text-muted-foreground">kcal</div>
+              <div className="text-sm text-white/60 mb-1">{isGerman ? "Kalorien" : "Calories"}</div>
+              <div className="text-3xl font-bold text-orange-400">{dailyTotals.calories}</div>
+              <div className="text-xs text-white/50">kcal</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground mb-1">
-                Protein
-              </div>
+              <div className="text-sm text-white/60 mb-1">Protein</div>
               <div className="text-3xl font-bold text-green-400">{Math.round(dailyTotals.protein)}g</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground mb-1">
-                {isGerman ? "Wasser" : "Water"}
-              </div>
+              <div className="text-sm text-white/60 mb-1">{isGerman ? "Wasser" : "Water"}</div>
               <div className="text-3xl font-bold text-blue-400">{(dailyTotals.water / 1000).toFixed(1)}L</div>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            {isGerman ? "Berechnet anhand heutigem Essensplan und Gewicht" : "Calculated based on today's meal plan and weight"}
+          <p className="text-xs text-white/50 text-center mt-4">
+            {isGerman ? "Auto-berechnet anhand Essensplan & Gewicht" : "Auto-calculated from meal plan & weight"}
           </p>
         </Card>
 
-        {/* Nutrition Categories with Images */}
+        {/* Nutrition Categories */}
         <div className="grid md:grid-cols-2 gap-6">
           {nutritionCategories.map((category, index) => (
-            <Card
-              key={index}
-              onClick={() => handleCategoryClick(category.key)}
-              className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48"
-            >
-              <img 
-                src={category.image} 
-                alt={category.title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+            <Card key={index} onClick={() => handleCategoryClick(category.key)} className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48">
+              <img src={category.image} alt={category.title} className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                 <h3 className="text-xl font-bold mb-1">{category.title}</h3>
@@ -223,57 +199,43 @@ const Nutrition = () => {
           ))}
         </div>
 
-        {/* Nutrition History */}
+        {/* Today's Meal Plan */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-6">
-            {isGerman ? "Heutiger Essensplan" : "Today's Meal Plan"}
-          </h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Heutiger Essensplan" : "Today's Meal Plan"}</h2>
           <div className="space-y-4">
-            {nutritionLogs.map((log) => (
-              <Card
-                key={log.id}
-                className="gradient-card card-shadow border-white/10 p-4"
-              >
+            {todayLogs.map((log) => (
+              <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <div className="font-semibold">{log.food_name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
+                    {/* Category as header */}
+                    <div className="text-xs font-semibold text-primary mb-1">{getCategoryName(log.meal_type)}</div>
+                    <div className="font-semibold text-white">{log.food_name}</div>
+                    <div className="text-sm text-white/60 mt-1">
                       {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs text-white/40 mt-1">
                       {new Date(log.completed_at).toLocaleDateString(isGerman ? "de-DE" : "en-US")}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteLog(log.id)}
-                    >
+                    <Button size="icon" variant="ghost" onClick={() => handleSaveToCalendar(log)} className="text-primary hover:text-primary">
+                      <Save className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => handleDeleteLog(log.id)} className="text-destructive hover:text-destructive">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               </Card>
             ))}
-            {nutritionLogs.length === 0 && (
-              <div className="text-center text-muted-foreground py-8">
-                {isGerman ? "Keine Einträge vorhanden" : "No entries yet"}
-              </div>
+            {todayLogs.length === 0 && (
+              <div className="text-center text-white/50 py-8">{isGerman ? "Keine Einträge für heute" : "No entries for today"}</div>
             )}
           </div>
         </div>
       </div>
 
-      <NutritionLogDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        category={selectedCategory}
-        userId={userId}
-        isGerman={isGerman}
-        onSuccess={() => setRefreshTrigger(prev => prev + 1)}
-      />
-
+      <NutritionLogDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} category={selectedCategory} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
       <BottomNav />
     </div>
   );

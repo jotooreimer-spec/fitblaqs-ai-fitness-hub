@@ -33,10 +33,7 @@ const ProAthleteSubscription = () => {
   return (
     <div className="min-h-screen pb-24 relative">
       {/* Background Image */}
-      <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${proSubscriptionBg})` }}
-      />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${proSubscriptionBg})` }} />
       <div className="fixed inset-0 bg-black/60" />
       
       <div className="relative z-10 max-w-screen-xl mx-auto p-6">
@@ -47,9 +44,7 @@ const ProAthleteSubscription = () => {
           </Button>
           <div>
             <h1 className="text-4xl font-bold text-white">Pro Athlete</h1>
-            <p className="text-white/70">
-              {isGerman ? "Wähle dein Abo" : "Choose your subscription"}
-            </p>
+            <p className="text-white/70">{isGerman ? "Wähle dein Abo" : "Choose your subscription"}</p>
           </div>
         </div>
 
@@ -68,9 +63,7 @@ const ProAthleteSubscription = () => {
             
             <div className="mb-6">
               <div className="text-4xl font-bold text-white mb-1">€19,99<span className="text-lg font-normal text-white/60">/mo</span></div>
-              <p className="text-sm text-white/60">
-                {isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}
-              </p>
+              <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
             </div>
 
             <ul className="space-y-3 mb-6">
@@ -80,7 +73,7 @@ const ProAthleteSubscription = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Share zu Instagram & TikTok" : "Share to Instagram & TikTok"}</span>
+                <span>{isGerman ? "Body Analyse mit KI" : "Body analysis with AI"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -94,14 +87,10 @@ const ProAthleteSubscription = () => {
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "KI-generierte Übungsauswahl" : "AI-generated exercise selection"}</span>
               </li>
-              <li className="flex items-center gap-2 text-white">
-                <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Automatische Speicherung & Updates" : "Automatic saving & updates"}</span>
-              </li>
             </ul>
 
             <Button onClick={handleProAthleteSubscribe} className="w-full" size="lg">
-              {isGerman ? "Pro Athlete freischalten" : "Unlock Pro Athlete"}
+              Payment
             </Button>
           </Card>
 
@@ -119,15 +108,13 @@ const ProAthleteSubscription = () => {
             
             <div className="mb-6">
               <div className="text-4xl font-bold text-white mb-1">€14,99<span className="text-lg font-normal text-white/60">/mo</span></div>
-              <p className="text-sm text-white/60">
-                {isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}
-              </p>
+              <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
             </div>
 
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Ernährungsauswertung & Foodtracker" : "Nutrition analysis & food tracker"}</span>
+                <span>{isGerman ? "Ernährungsauswertung & Food Tracker" : "Nutrition analysis & food tracker"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -139,20 +126,16 @@ const ProAthleteSubscription = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Barcode Scanner" : "Barcode scanner"}</span>
+                <span>Food Tracker</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "Foto Upload Analyse" : "Photo upload analysis"}</span>
               </li>
-              <li className="flex items-center gap-2 text-white">
-                <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Automatische Speicherung & Updates" : "Automatic saving & updates"}</span>
-              </li>
             </ul>
 
             <Button onClick={handleProNutritionSubscribe} className="w-full bg-green-600 hover:bg-green-700" size="lg">
-              {isGerman ? "Pro Nutrition freischalten" : "Unlock Pro Nutrition"}
+              Payment
             </Button>
           </Card>
         </div>

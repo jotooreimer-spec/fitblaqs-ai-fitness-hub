@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import logo from "@/assets/fitblaqs-logo.png";
-import authBackground from "@/assets/auth-background.png";
+import loginBg from "@/assets/login-bg.jpg";
 import { toast } from "sonner";
 import { signInWithGoogle, signInWithEmail } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +56,7 @@ const Login = () => {
     <div 
       className="min-h-screen flex items-center justify-center p-4 relative"
       style={{
-        backgroundImage: `url(${authBackground})`,
+        backgroundImage: `url(${loginBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
