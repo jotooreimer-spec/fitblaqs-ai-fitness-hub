@@ -3,20 +3,21 @@
   "short_name": "FitBlaqs",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A0A",
-  "theme_color": "#8B5CF6",
-  "description": "Professional AI-powered fitness and nutrition tracking app",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "id": "/",
   "icons": [
     {
-      "src": "pwa-192x192.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
-  ],
-  "orientation": "portrait"
+  ]
 }
