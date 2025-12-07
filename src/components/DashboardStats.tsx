@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Activity, Flame, MapPin, Droplets } from "lucide-react";
-import { format, subDays, startOfDay, endOfDay, startOfMonth, getDaysInMonth } from "date-fns";
+import { format, startOfMonth, startOfYear, eachMonthOfInterval } from "date-fns";
 
 interface Props {
   isGerman: boolean;
@@ -17,7 +17,6 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
   const [todayProtein, setTodayProtein] = useState(0);
   const [todayWater, setTodayWater] = useState(0);
   const [totalDistance, setTotalDistance] = useState(0);
-  const [userWeight, setUserWeight] = useState(70);
   const [nutritionBreakdown, setNutritionBreakdown] = useState({
     calories: 0,
     protein: 0,
@@ -26,6 +25,8 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     fats: 0,
     water: 0
   });
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [hasNutritionData, setHasNutritionData] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -35,68 +36,52 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
   const loadStats = async () => {
     const today = new Date();
-    const todayStart = startOfDay(today);
-    const todayEnd = endOfDay(today);
-    const monthStart = startOfMonth(today);
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+    const yearStart = startOfYear(today);
 
-    // Get user weight
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("weight")
-      .eq("user_id", userId)
-      .single();
-
-    if (profile?.weight) {
-      setUserWeight(profile.weight);
-    }
-
-    // Load workout logs for monthly bar chart
+    // Load workout logs for yearly bar chart (by month)
     const { data: workouts } = await supabase
       .from("workout_logs")
       .select("*")
       .eq("user_id", userId)
-      .gte("completed_at", monthStart.toISOString())
+      .gte("completed_at", yearStart.toISOString())
       .order("completed_at", { ascending: true });
 
-    // Load jogging logs for monthly chart
+    // Load jogging logs for yearly chart
     const { data: joggingLogs } = await supabase
       .from("jogging_logs")
       .select("*")
       .eq("user_id", userId)
-      .gte("completed_at", monthStart.toISOString());
+      .gte("completed_at", yearStart.toISOString());
 
-    // Build monthly chart data (Days 0-30)
-    const daysInMonth = getDaysInMonth(today);
-    const dayLabels = [0, 5, 10, 15, 20, 25, 30];
-    const monthNames = isGerman ? 
-      ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] :
-      ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // Build monthly chart data with months (Jan-Dec)
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
-    const chartData = dayLabels.map(day => {
-      const dayWorkouts = workouts?.filter(w => {
-        const d = new Date(w.completed_at).getDate();
-        return d <= day && d > (day - 5);
+    const chartData = monthNames.map((month, index) => {
+      const monthWorkouts = workouts?.filter(w => {
+        const d = new Date(w.completed_at);
+        return d.getMonth() === index;
       }) || [];
       
-      const dayJogging = joggingLogs?.filter(j => {
-        const d = new Date(j.completed_at).getDate();
-        return d <= day && d > (day - 5);
+      const monthJogging = joggingLogs?.filter(j => {
+        const d = new Date(j.completed_at);
+        return d.getMonth() === index;
       }) || [];
 
-      const workoutCount = dayWorkouts.length;
-      const joggingCount = dayJogging.length;
-
       return { 
-        day: day.toString(), 
-        count: workoutCount + joggingCount,
-        month: monthNames[today.getMonth()]
+        month: isGerman ? monthNamesDE[index] : month,
+        count: monthWorkouts.length + monthJogging.length
       };
     });
 
     setMonthlyWorkoutData(chartData);
     setTotalWorkouts((workouts?.length || 0) + (joggingLogs?.length || 0));
 
-    // Load today's nutrition
+    // Load today's nutrition - Start at 0, only count actual entries
     const { data: todayNutrition } = await supabase
       .from("nutrition_logs")
       .select("*")
@@ -105,6 +90,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       .lte("completed_at", todayEnd.toISOString());
 
     if (todayNutrition && todayNutrition.length > 0) {
+      setHasNutritionData(true);
       let totalCals = 0, totalProt = 0, totalVitamin = 0, totalSupplements = 0, totalFats = 0, totalWater = 0;
 
       todayNutrition.forEach(log => {
@@ -137,6 +123,20 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         fats: totalFats,
         water: totalWater
       });
+    } else {
+      // No data - all zeros
+      setHasNutritionData(false);
+      setTodayCalories(0);
+      setTodayProtein(0);
+      setTodayWater(0);
+      setNutritionBreakdown({
+        calories: 0,
+        protein: 0,
+        vitamin: 0,
+        supplements: 0,
+        fats: 0,
+        water: 0
+      });
     }
 
     // Load jogging distance
@@ -153,28 +153,54 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
   // Nutrition pie chart colors
   const NUTRITION_COLORS = {
-    calories: '#F97316', // Orange
-    protein: '#EF4444', // Red
-    vitamin: '#22C55E', // Green
-    supplements: '#A16207', // Brown
-    fats: '#D4A574', // Light brown
-    water: '#3B82F6' // Blue
+    calories: '#F97316',
+    protein: '#EF4444',
+    vitamin: '#22C55E',
+    supplements: '#A16207',
+    fats: '#D4A574',
+    water: '#3B82F6'
   };
 
-  const pieData = [
-    { name: isGerman ? 'Kalorien' : 'Calories', value: nutritionBreakdown.calories || 100, color: NUTRITION_COLORS.calories },
-    { name: 'Protein', value: nutritionBreakdown.protein || 50, color: NUTRITION_COLORS.protein },
-    { name: 'Vitamin', value: nutritionBreakdown.vitamin || 30, color: NUTRITION_COLORS.vitamin },
-    { name: 'Supplements', value: nutritionBreakdown.supplements || 20, color: NUTRITION_COLORS.supplements },
-    { name: isGerman ? 'Fette' : 'Fats', value: nutritionBreakdown.fats || 25, color: NUTRITION_COLORS.fats },
-    { name: isGerman ? 'Wasser' : 'Water', value: nutritionBreakdown.water || 40, color: NUTRITION_COLORS.water },
-  ].filter(item => item.value > 0);
+  // Only show pie data if we have entries, otherwise show zeros
+  const pieData = hasNutritionData ? [
+    { name: isGerman ? 'Kalorien' : 'Calories', value: nutritionBreakdown.calories, color: NUTRITION_COLORS.calories, key: 'calories' },
+    { name: 'Protein', value: nutritionBreakdown.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
+    { name: 'Vitamin', value: nutritionBreakdown.vitamin, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
+    { name: 'Supplements', value: nutritionBreakdown.supplements, color: NUTRITION_COLORS.supplements, key: 'supplements' },
+    { name: isGerman ? 'Fette' : 'Fats', value: nutritionBreakdown.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
+    { name: isGerman ? 'Wasser' : 'Water', value: nutritionBreakdown.water, color: NUTRITION_COLORS.water, key: 'water' },
+  ].filter(item => item.value > 0) : [];
 
   const total = pieData.reduce((sum, item) => sum + item.value, 0);
 
+  // Zero state pie data for display
+  const zeroStatePieData = [
+    { name: isGerman ? 'Kalorien' : 'Calories', value: 1, color: '#374151', key: 'calories' },
+    { name: 'Protein', value: 1, color: '#374151', key: 'protein' },
+    { name: 'Vitamin', value: 1, color: '#374151', key: 'vitamin' },
+    { name: 'Supplements', value: 1, color: '#374151', key: 'supplements' },
+    { name: isGerman ? 'Fette' : 'Fats', value: 1, color: '#374151', key: 'fats' },
+    { name: isGerman ? 'Wasser' : 'Water', value: 1, color: '#374151', key: 'water' },
+  ];
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const percentage = total > 0 ? Math.round((data.value / total) * 100) : 0;
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-semibold" style={{ color: data.color }}>{data.name}</p>
+          <p className="text-sm text-muted-foreground">{percentage}%</p>
+          <p className="text-sm">{data.value.toLocaleString()}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6 mb-8">
-      {/* Quick Stats - Auto-calculated Water & Calories */}
+      {/* Quick Stats - Auto-calculated from Today's Meal Plan */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <div className="flex items-center gap-3 mb-2">
@@ -183,7 +209,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
           </div>
           <div className="text-3xl font-bold">{totalWorkouts}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {isGerman ? "Dieser Monat" : "This month"}
+            {isGerman ? "Dieses Jahr" : "This year"}
           </div>
         </Card>
 
@@ -196,7 +222,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
           </div>
           <div className="text-3xl font-bold">{todayCalories.toLocaleString()}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {isGerman ? "Auto berechnet" : "Auto calculated"}
+            {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
         </Card>
 
@@ -218,66 +244,92 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               {isGerman ? "Wasser" : "Water"}
             </span>
           </div>
-          <div className="text-3xl font-bold">{todayWater > 0 ? todayWater : Math.round(userWeight * 35)} ml</div>
+          <div className="text-3xl font-bold">{todayWater > 0 ? (todayWater / 1000).toFixed(1) : "0"} L</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {isGerman ? "Auto berechnet" : "Auto calculated"}
+            {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
         </Card>
       </div>
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Weight Watcher Pie Chart - Bigger */}
+        {/* Weight Watcher Pie Chart - Shows 0% when no data */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">Weight Watcher</h3>
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={pieData}
+                data={hasNutritionData ? pieData : zeroStatePieData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
                 paddingAngle={3}
                 dataKey="value"
-                label={({ name, value }) => `${Math.round((value / total) * 100)}%`}
+                label={({ name }) => hasNutritionData ? `${Math.round((pieData.find(p => p.name === name)?.value || 0) / total * 100)}%` : '0%'}
+                labelLine={false}
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {(hasNutritionData ? pieData : zeroStatePieData).map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={hasNutritionData ? entry.color : '#374151'}
+                    cursor="pointer"
+                  />
                 ))}
               </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px"
-                }}
-                formatter={(value: number, name: string) => [`${value}`, name]}
-              />
-              <Legend />
+              <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
+          {/* Legend with clickable items */}
+          <div className="flex flex-wrap justify-center gap-3 mt-4">
+            {(hasNutritionData ? pieData : zeroStatePieData).map((item, index) => (
+              <div 
+                key={index}
+                className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-white/10 transition-colors"
+                onMouseEnter={() => setHoveredCategory(item.key)}
+                onMouseLeave={() => setHoveredCategory(null)}
+              >
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: hasNutritionData ? item.color : '#374151' }}
+                />
+                <span className="text-xs text-muted-foreground">{item.name}</span>
+                {hoveredCategory === item.key && (
+                  <span className="text-xs font-bold">
+                    {hasNutritionData ? `${Math.round((item.value / total) * 100)}%` : '0%'}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          {!hasNutritionData && (
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              {isGerman ? "Füge Mahlzeiten hinzu um Werte zu sehen" : "Add meals to see values"}
+            </p>
+          )}
         </Card>
 
-        {/* Workout Activity Bar Chart - Days 0-30 with Months */}
+        {/* Workout Activity Bar Chart - Monthly (Jan-Dec) */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">
             {isGerman ? "Workout Aktivität" : "Workout Activity"}
           </h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={monthlyWorkoutData.length > 0 ? monthlyWorkoutData : [{ day: '0', count: 0 }]}>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={monthlyWorkoutData} margin={{ bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
-                dataKey="day" 
+                dataKey="month" 
                 stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                label={{ value: monthlyWorkoutData[0]?.month || '', position: 'bottom', offset: 0 }}
+                fontSize={11}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                ticks={[0, 5, 10, 15, 20, 25, 30]}
-                domain={[0, 30]}
+                domain={[0, 'auto']}
               />
               <Tooltip 
                 contentStyle={{
@@ -290,8 +342,8 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="text-center text-xs text-muted-foreground mt-2">
-            {isGerman ? "Tage" : "Days"}
+          <div className="text-center text-sm text-muted-foreground mt-2">
+            {isGerman ? "Monatliche Übersicht" : "Monthly Overview"}
           </div>
         </Card>
       </div>
