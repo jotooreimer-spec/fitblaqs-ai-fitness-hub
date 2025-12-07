@@ -211,8 +211,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          ai_api_key: string | null
-          ai_provider: string | null
           athlete_level: string | null
           avatar_url: string | null
           body_type: string | null
@@ -224,8 +222,6 @@ export type Database = {
           weight: number | null
         }
         Insert: {
-          ai_api_key?: string | null
-          ai_provider?: string | null
           athlete_level?: string | null
           avatar_url?: string | null
           body_type?: string | null
@@ -237,8 +233,6 @@ export type Database = {
           weight?: number | null
         }
         Update: {
-          ai_api_key?: string | null
-          ai_provider?: string | null
           athlete_level?: string | null
           avatar_url?: string | null
           body_type?: string | null
