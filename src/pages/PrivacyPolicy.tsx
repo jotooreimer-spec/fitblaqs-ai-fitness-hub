@@ -1,108 +1,130 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { useLanguage } from "@/contexts/LanguageContext";
+import settingsBg from "@/assets/settings-bg.jpg";
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const isGerman = language === "de";
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <Button 
-        variant="ghost" 
-        onClick={() => navigate(-1)}
-        className="mb-6"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
+    <div className="min-h-screen relative">
+      {/* Background */}
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${settingsBg})` }} />
+      <div className="fixed inset-0 bg-black/70" />
 
-      <div className="max-w-3xl mx-auto prose prose-invert">
-        <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
-        
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">1. Data Controller</h2>
-          <p className="text-muted-foreground">
-            FitBlaq Company<br />
-            Email: Supportservice@Fitblaq.com
-          </p>
-        </section>
+      <div className="relative z-10 max-w-4xl mx-auto p-6 pb-24">
+        <div className="flex items-center gap-4 mb-8">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white">
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          <h1 className="text-3xl font-bold text-white">{isGerman ? "Datenschutzerklärung" : "Privacy Policy"}</h1>
+        </div>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">2. Collection and Processing of Personal Data</h2>
-          <p className="text-muted-foreground mb-4">
-            We collect and process the following personal data:
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Account information (name, email address, password)</li>
-            <li>Profile information (height, weight, body type, athlete level)</li>
-            <li>Training data (exercises, sets, repetitions, weights)</li>
-            <li>Nutrition data (meals, calories, macronutrients)</li>
-            <li>Jogging data (distance, duration, calories burned)</li>
-            <li>Weight history</li>
-            <li>Uploaded images and videos</li>
-          </ul>
-        </section>
+        <Card className="bg-black/40 backdrop-blur-md border-white/10 p-8 prose prose-invert max-w-none">
+          {isGerman ? (
+            <>
+              <h2 className="text-white text-2xl font-bold mb-4">Datenschutzerklärung für FitBlaqs</h2>
+              <p className="text-white/80 mb-4"><strong>Zuletzt aktualisiert:</strong> Dezember 2024</p>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">3. Purpose of Data Processing</h2>
-          <p className="text-muted-foreground">
-            Your data is used exclusively to provide our fitness app services, including:
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li>Personalized training plans</li>
-            <li>Nutrition analysis and recommendations</li>
-            <li>Progress tracking</li>
-            <li>AI-powered body analysis</li>
-          </ul>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Verantwortlicher</h3>
+              <p className="text-white/80">FitBlaq Company<br/>E-Mail: Supportservice@Fitblaq.com</p>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">4. Data Security</h2>
-          <p className="text-muted-foreground">
-            All data is transmitted using state-of-the-art encryption technologies (TLS/SSL) and stored securely in encrypted databases. Access to your data is strictly limited to authorized personnel.
-          </p>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Erhobene Daten</h3>
+              <p className="text-white/80 mb-2">Wir erheben folgende personenbezogene Daten:</p>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Kontodaten:</strong> Name, E-Mail-Adresse, Passwort (verschlüsselt)</li>
+                <li><strong>Körperdaten:</strong> Größe, Gewicht, Körpertyp, Athletenlevel</li>
+                <li><strong>Trainingsdaten:</strong> Workout-Logs, Jogging-Aktivitäten, Trainingszeiten</li>
+                <li><strong>Ernährungsdaten:</strong> Mahlzeiten, Kalorien, Makronährstoffe</li>
+                <li><strong>Hochgeladene Bilder:</strong> Profilbilder, Körper- und Essensfotos für KI-Analyse</li>
+                <li><strong>Gerätestandort:</strong> GPS-Daten für Jogging-Tracking (nur bei aktiver Nutzung)</li>
+              </ul>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">5. Your Rights</h2>
-          <p className="text-muted-foreground mb-4">
-            You have the following rights:
-          </p>
-          <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-            <li><strong>Right of access:</strong> You can request information about your stored data</li>
-            <li><strong>Right to rectification:</strong> You can have incorrect data corrected</li>
-            <li><strong>Right to erasure:</strong> You can request the deletion of your data</li>
-            <li><strong>Right to data portability:</strong> You can receive your data in a common format</li>
-            <li><strong>Right to object:</strong> You can object to the processing</li>
-          </ul>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. KI-gestützte Analyse</h3>
+              <p className="text-white/80">Unsere App nutzt KI-Technologie zur Analyse von hochgeladenen Bildern:</p>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Body Analyse:</strong> Schätzung von Körperfettanteil, Muskelmasse, Haltung</li>
+                <li><strong>Essens-Analyse:</strong> Erkennung von Lebensmitteln und Berechnung von Nährwerten</li>
+              </ul>
+              <p className="text-white/80 mt-2">Die Bilder werden über sichere Server verarbeitet und nicht dauerhaft gespeichert.</p>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">6. Data Retention</h2>
-          <p className="text-muted-foreground">
-            Your data is stored as long as you have an active account. After account deletion, all personal data will be deleted within 30 days. Pro Athlete data is automatically deleted and regenerated after 5 days.
-          </p>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Datenverarbeitung & Speicherung</h3>
+              <p className="text-white/80">Ihre Daten werden sicher auf Servern gespeichert. Wir verwenden Ende-zu-Ende-Verschlüsselung für sensible Daten. Pro-Athlete-Daten werden nach 5 Tagen automatisch gelöscht.</p>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">7. Cookies and Tracking</h2>
-          <p className="text-muted-foreground">
-            We only use technically necessary cookies for authentication and session management. No tracking or advertising cookies are used.
-          </p>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Cookies & Lokale Speicherung</h3>
+              <p className="text-white/80">Wir verwenden lokale Speicherung für Authentifizierungs-Token und Benutzereinstellungen.</p>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">8. Contact</h2>
-          <p className="text-muted-foreground">
-            For privacy inquiries, contact us at:<br />
-            FitBlaq Company<br />
-            Email: Supportservice@Fitblaq.com
-          </p>
-        </section>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Drittanbieter-Dienste</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Stripe:</strong> Zahlungsabwicklung für Pro-Abonnements</li>
+                <li><strong>KI-Gateway:</strong> Bildanalyse und Trainingspläne</li>
+              </ul>
 
-        <p className="text-sm text-muted-foreground mt-8">
-          Last updated: December 2024
-        </p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Ihre Rechte</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Auskunft über Ihre gespeicherten Daten</li>
+                <li>Berichtigung unrichtiger Daten</li>
+                <li>Löschung Ihrer Daten</li>
+                <li>Datenübertragbarkeit</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Kontakt</h3>
+              <p className="text-white/80">Bei Fragen: Supportservice@Fitblaq.com</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-white text-2xl font-bold mb-4">Privacy Policy for FitBlaqs</h2>
+              <p className="text-white/80 mb-4"><strong>Last updated:</strong> December 2024</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Data Controller</h3>
+              <p className="text-white/80">FitBlaq Company<br/>Email: Supportservice@Fitblaq.com</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Data We Collect</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Account Data:</strong> Name, email address, password (encrypted)</li>
+                <li><strong>Body Data:</strong> Height, weight, body type, athlete level</li>
+                <li><strong>Training Data:</strong> Workout logs, jogging activities, training times</li>
+                <li><strong>Nutrition Data:</strong> Meals, calories, macronutrients</li>
+                <li><strong>Uploaded Images:</strong> Profile pictures, body and food photos for AI analysis</li>
+                <li><strong>Device Location:</strong> GPS data for jogging tracking (only during active use)</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. AI-Powered Analysis</h3>
+              <p className="text-white/80">Our app uses AI technology to analyze uploaded images:</p>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Body Analysis:</strong> Estimation of body fat percentage, muscle mass, posture</li>
+                <li><strong>Food Analysis:</strong> Food recognition and nutritional value calculation</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Data Processing & Storage</h3>
+              <p className="text-white/80">Your data is stored securely. We use end-to-end encryption for sensitive data. Pro Athlete data is automatically deleted after 5 days.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Cookies & Local Storage</h3>
+              <p className="text-white/80">We use local storage for authentication tokens and user preferences.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Third-Party Services</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li><strong>Stripe:</strong> Payment processing for Pro subscriptions</li>
+                <li><strong>AI Gateway:</strong> Image analysis and training plans</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Your Rights</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Access your stored data</li>
+                <li>Correct inaccurate data</li>
+                <li>Delete your data</li>
+                <li>Data portability</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Contact</h3>
+              <p className="text-white/80">For privacy inquiries: Supportservice@Fitblaq.com</p>
+            </>
+          )}
+        </Card>
       </div>
     </div>
   );
