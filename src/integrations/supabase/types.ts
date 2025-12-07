@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_analysis: {
+        Row: {
+          age_estimate: number | null
+          body_fat_pct: number | null
+          created_at: string
+          fitness_level: number | null
+          gender: string | null
+          health_notes: string | null
+          id: string
+          image_url: string | null
+          muscle_mass_pct: number | null
+          posture: string | null
+          symmetry: string | null
+          training_tips: string | null
+          user_id: string
+          waist_hip_ratio: number | null
+        }
+        Insert: {
+          age_estimate?: number | null
+          body_fat_pct?: number | null
+          created_at?: string
+          fitness_level?: number | null
+          gender?: string | null
+          health_notes?: string | null
+          id?: string
+          image_url?: string | null
+          muscle_mass_pct?: number | null
+          posture?: string | null
+          symmetry?: string | null
+          training_tips?: string | null
+          user_id: string
+          waist_hip_ratio?: number | null
+        }
+        Update: {
+          age_estimate?: number | null
+          body_fat_pct?: number | null
+          created_at?: string
+          fitness_level?: number | null
+          gender?: string | null
+          health_notes?: string | null
+          id?: string
+          image_url?: string | null
+          muscle_mass_pct?: number | null
+          posture?: string | null
+          symmetry?: string | null
+          training_tips?: string | null
+          user_id?: string
+          waist_hip_ratio?: number | null
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           body_part: Database["public"]["Enums"]["body_part"]
@@ -47,6 +98,39 @@ export type Database = {
           image_url?: string | null
           name_de?: string
           name_en?: string
+        }
+        Relationships: []
+      }
+      food_analysis: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          items: Json | null
+          notes: string | null
+          total_calories: number | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          items?: Json | null
+          notes?: string | null
+          total_calories?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          items?: Json | null
+          notes?: string | null
+          total_calories?: number | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -127,6 +211,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_api_key: string | null
+          ai_provider: string | null
           athlete_level: string | null
           avatar_url: string | null
           body_type: string | null
@@ -138,6 +224,8 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          ai_api_key?: string | null
+          ai_provider?: string | null
           athlete_level?: string | null
           avatar_url?: string | null
           body_type?: string | null
@@ -149,6 +237,8 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          ai_api_key?: string | null
+          ai_provider?: string | null
           athlete_level?: string | null
           avatar_url?: string | null
           body_type?: string | null
