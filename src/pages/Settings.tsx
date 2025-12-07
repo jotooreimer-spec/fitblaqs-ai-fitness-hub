@@ -31,8 +31,9 @@ const Settings = () => {
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   
   // Settings states
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [updateNotifications, setUpdateNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(false);
+  const [updateNotifications, setUpdateNotifications] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   
   // Edit form
   const [editForm, setEditForm] = useState({
@@ -45,6 +46,12 @@ const Settings = () => {
   });
 
   useEffect(() => {
+    // Check notification permission on mount
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      setPushNotifications(Notification.permission === 'granted');
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/login");
@@ -140,12 +147,56 @@ const Settings = () => {
     toast.success(t("saved"));
   };
 
-  const handleNotificationToggle = (type: 'push' | 'update', value: boolean) => {
-    if (type === 'push') {
-      setPushNotifications(value);
-    } else {
-      setUpdateNotifications(value);
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      toast.error(language === 'de' ? 'Benachrichtigungen werden nicht unterstützt' : 'Notifications not supported');
+      return false;
     }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      
+      if (permission === 'granted') {
+        // Register service worker for push notifications if available
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          console.log('Service Worker ready for notifications');
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      return false;
+    }
+  };
+
+  const handlePushNotificationToggle = async (value: boolean) => {
+    if (value) {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        setPushNotifications(true);
+        toast.success(language === 'de' ? 'Push-Benachrichtigungen aktiviert' : 'Push notifications enabled');
+        
+        // Show test notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('FitBlaqs', {
+            body: language === 'de' ? 'Benachrichtigungen sind jetzt aktiv!' : 'Notifications are now active!',
+            icon: '/pwa-192x192.png'
+          });
+        }
+      } else {
+        toast.error(language === 'de' ? 'Benachrichtigungen wurden blockiert' : 'Notifications were blocked');
+      }
+    } else {
+      setPushNotifications(false);
+      toast.success(language === 'de' ? 'Push-Benachrichtigungen deaktiviert' : 'Push notifications disabled');
+    }
+  };
+
+  const handleUpdateNotificationToggle = (value: boolean) => {
+    setUpdateNotifications(value);
     toast.success(t("saved"));
   };
 
@@ -379,7 +430,7 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Notifications Dialog */}
+      {/* Notifications Dialog - Now with real PWA functionality */}
       <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -394,16 +445,41 @@ const Settings = () => {
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Push Notifications</div>
-                <div className="text-sm text-muted-foreground">{language === "de" ? "Erinnerungen erhalten" : "Receive reminders"}</div>
+                <div className="text-sm text-muted-foreground">
+                  {language === "de" ? "Erinnerungen erhalten" : "Receive reminders"}
+                </div>
+                {notificationPermission === 'denied' && (
+                  <div className="text-xs text-destructive mt-1">
+                    {language === "de" ? "Blockiert - In Browser-Einstellungen aktivieren" : "Blocked - Enable in browser settings"}
+                  </div>
+                )}
               </div>
-              <Switch checked={pushNotifications} onCheckedChange={(v) => handleNotificationToggle('push', v)} />
+              <Switch 
+                checked={pushNotifications} 
+                onCheckedChange={handlePushNotificationToggle}
+                disabled={notificationPermission === 'denied'}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Update Notifications</div>
-                <div className="text-sm text-muted-foreground">{language === "de" ? "Über neue Features informiert werden" : "Get notified about new features"}</div>
+                <div className="text-sm text-muted-foreground">
+                  {language === "de" ? "Über neue Features informiert werden" : "Get notified about new features"}
+                </div>
               </div>
-              <Switch checked={updateNotifications} onCheckedChange={(v) => handleNotificationToggle('update', v)} />
+              <Switch 
+                checked={updateNotifications} 
+                onCheckedChange={handleUpdateNotificationToggle}
+              />
+            </div>
+            
+            {/* PWA Install hint */}
+            <div className="border-t pt-4 mt-4">
+              <p className="text-xs text-muted-foreground">
+                {language === "de" 
+                  ? "Installiere die App für beste Benachrichtigungserfahrung"
+                  : "Install the app for the best notification experience"}
+              </p>
             </div>
           </div>
         </DialogContent>
@@ -450,35 +526,28 @@ const Settings = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {language === "de" 
-                ? "Hier findest du unsere rechtlichen Dokumente:" 
-                : "Here you can find our legal documents:"}
-            </p>
-            <div className="flex flex-col gap-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => {
-                  setPrivacyDialogOpen(false);
-                  navigate("/privacy");
-                }}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Privacy Policy
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => {
-                  setPrivacyDialogOpen(false);
-                  navigate("/terms");
-                }}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Terms of Service
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              onClick={() => {
+                setPrivacyDialogOpen(false);
+                navigate("/privacy-policy");
+              }}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              {language === "de" ? "Datenschutzerklärung" : "Privacy Policy"}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => {
+                setPrivacyDialogOpen(false);
+                navigate("/terms-of-service");
+              }}
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              {language === "de" ? "Nutzungsbedingungen" : "Terms of Service"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

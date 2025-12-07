@@ -21,107 +21,111 @@ const PrivacyPolicy = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-white">
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-3xl font-bold text-white">{isGerman ? "Datenschutzerklärung" : "Privacy Policy"}</h1>
+          <h1 className="text-3xl font-bold text-white">
+            {isGerman ? "Datenschutzerklärung" : "Privacy Policy"}
+          </h1>
         </div>
 
         <Card className="bg-black/40 backdrop-blur-md border-white/10 p-8 prose prose-invert max-w-none">
           {isGerman ? (
             <>
-              <h2 className="text-white text-2xl font-bold mb-4">Datenschutzerklärung für FitBlaqs</h2>
-              <p className="text-white/80 mb-4"><strong>Zuletzt aktualisiert:</strong> Dezember 2024</p>
+              <h2 className="text-white text-2xl font-bold mb-4">Datenschutzerklärung – FitBlaq</h2>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Verantwortlicher</h3>
               <p className="text-white/80">FitBlaq Company<br/>E-Mail: Supportservice@Fitblaq.com</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Erhobene Daten</h3>
-              <p className="text-white/80 mb-2">Wir erheben folgende personenbezogene Daten:</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Erhebung und Verarbeitung personenbezogener Daten</h3>
+              <p className="text-white/80 mb-2">Wir erheben und verarbeiten folgende personenbezogene Daten:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Kontodaten:</strong> Name, E-Mail-Adresse, Passwort (verschlüsselt)</li>
-                <li><strong>Körperdaten:</strong> Größe, Gewicht, Körpertyp, Athletenlevel</li>
-                <li><strong>Trainingsdaten:</strong> Workout-Logs, Jogging-Aktivitäten, Trainingszeiten</li>
-                <li><strong>Ernährungsdaten:</strong> Mahlzeiten, Kalorien, Makronährstoffe</li>
-                <li><strong>Hochgeladene Bilder:</strong> Profilbilder, Körper- und Essensfotos für KI-Analyse</li>
-                <li><strong>Gerätestandort:</strong> GPS-Daten für Jogging-Tracking (nur bei aktiver Nutzung)</li>
+                <li>Kontoinformationen (Name, E-Mail-Adresse, Passwort)</li>
+                <li>Profilinformationen (Größe, Gewicht, Körpertyp, Sportlevel)</li>
+                <li>Trainingsdaten (Übungen, Sätze, Wiederholungen, Gewichte)</li>
+                <li>Ernährungsdaten (Mahlzeiten, Kalorien, Makronährstoffe)</li>
+                <li>Jogging-Daten (Distanz, Dauer, verbrannte Kalorien)</li>
+                <li>Gewichtshistorie</li>
+                <li>Hochgeladene Bilder und Videos</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. KI-gestützte Analyse</h3>
-              <p className="text-white/80">Unsere App nutzt KI-Technologie zur Analyse von hochgeladenen Bildern:</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Zweck der Datenverarbeitung</h3>
+              <p className="text-white/80">Ihre Daten werden ausschließlich verwendet, um die Fitness-App-Dienste bereitzustellen, darunter:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Body Analyse:</strong> Schätzung von Körperfettanteil, Muskelmasse, Haltung</li>
-                <li><strong>Essens-Analyse:</strong> Erkennung von Lebensmitteln und Berechnung von Nährwerten</li>
-              </ul>
-              <p className="text-white/80 mt-2">Die Bilder werden über sichere Server verarbeitet und nicht dauerhaft gespeichert.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Datenverarbeitung & Speicherung</h3>
-              <p className="text-white/80">Ihre Daten werden sicher auf Servern gespeichert. Wir verwenden Ende-zu-Ende-Verschlüsselung für sensible Daten. Pro-Athlete-Daten werden nach 5 Tagen automatisch gelöscht.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Cookies & Lokale Speicherung</h3>
-              <p className="text-white/80">Wir verwenden lokale Speicherung für Authentifizierungs-Token und Benutzereinstellungen.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Drittanbieter-Dienste</h3>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Stripe:</strong> Zahlungsabwicklung für Pro-Abonnements</li>
-                <li><strong>KI-Gateway:</strong> Bildanalyse und Trainingspläne</li>
+                <li>Personalisierte Trainingspläne</li>
+                <li>Ernährungsanalyse und Empfehlungen</li>
+                <li>Fortschrittsverfolgung</li>
+                <li>KI-gestützte Körperanalyse</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Ihre Rechte</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Datensicherheit</h3>
+              <p className="text-white/80">Alle Daten werden mittels modernster Verschlüsselungstechnologien (TLS/SSL) übertragen und sicher in verschlüsselten Datenbanken gespeichert. Der Zugriff ist streng auf autorisiertes Personal beschränkt.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Ihre Rechte</h3>
+              <p className="text-white/80 mb-2">Sie haben folgende Rechte:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Auskunft über Ihre gespeicherten Daten</li>
-                <li>Berichtigung unrichtiger Daten</li>
-                <li>Löschung Ihrer Daten</li>
-                <li>Datenübertragbarkeit</li>
+                <li><strong>Auskunftsrecht:</strong> Sie können Informationen über Ihre gespeicherten Daten anfordern</li>
+                <li><strong>Recht auf Berichtigung:</strong> Falsche Daten können korrigiert werden</li>
+                <li><strong>Recht auf Löschung:</strong> Sie können die Löschung Ihrer Daten verlangen</li>
+                <li><strong>Recht auf Datenübertragbarkeit:</strong> Sie können Ihre Daten in einem gängigen Format erhalten</li>
+                <li><strong>Widerspruchsrecht:</strong> Sie können der Verarbeitung widersprechen</li>
               </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Speicherdauer</h3>
+              <p className="text-white/80">Ihre Daten werden so lange gespeichert, wie Sie ein aktives Konto haben. Nach der Kontolöschung werden alle personenbezogenen Daten innerhalb von 30 Tagen gelöscht. Pro Athlete-Daten werden automatisch nach 5 Tagen gelöscht und regeneriert.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Cookies und Tracking</h3>
+              <p className="text-white/80">Wir verwenden nur technisch notwendige Cookies für die Authentifizierung und Sitzungsverwaltung. Es werden keine Tracking- oder Werbe-Cookies eingesetzt.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Kontakt</h3>
-              <p className="text-white/80">Bei Fragen: Supportservice@Fitblaq.com</p>
+              <p className="text-white/80">Bei Fragen zum Datenschutz kontaktieren Sie uns bitte:<br/>FitBlaq Company<br/>E-Mail: Supportservice@Fitblaq.com</p>
             </>
           ) : (
             <>
-              <h2 className="text-white text-2xl font-bold mb-4">Privacy Policy for FitBlaqs</h2>
-              <p className="text-white/80 mb-4"><strong>Last updated:</strong> December 2024</p>
+              <h2 className="text-white text-2xl font-bold mb-4">Privacy Policy – FitBlaq</h2>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Data Controller</h3>
               <p className="text-white/80">FitBlaq Company<br/>Email: Supportservice@Fitblaq.com</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Data We Collect</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Collection and Processing of Personal Data</h3>
+              <p className="text-white/80 mb-2">We collect and process the following personal data:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Account Data:</strong> Name, email address, password (encrypted)</li>
-                <li><strong>Body Data:</strong> Height, weight, body type, athlete level</li>
-                <li><strong>Training Data:</strong> Workout logs, jogging activities, training times</li>
-                <li><strong>Nutrition Data:</strong> Meals, calories, macronutrients</li>
-                <li><strong>Uploaded Images:</strong> Profile pictures, body and food photos for AI analysis</li>
-                <li><strong>Device Location:</strong> GPS data for jogging tracking (only during active use)</li>
+                <li>Account information (name, email address, password)</li>
+                <li>Profile information (height, weight, body type, athletic level)</li>
+                <li>Training data (exercises, sets, repetitions, weights)</li>
+                <li>Nutrition data (meals, calories, macronutrients)</li>
+                <li>Jogging data (distance, duration, calories burned)</li>
+                <li>Weight history</li>
+                <li>Uploaded images and videos</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. AI-Powered Analysis</h3>
-              <p className="text-white/80">Our app uses AI technology to analyze uploaded images:</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Purpose of Data Processing</h3>
+              <p className="text-white/80">Your data is used exclusively to provide fitness app services, including:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Body Analysis:</strong> Estimation of body fat percentage, muscle mass, posture</li>
-                <li><strong>Food Analysis:</strong> Food recognition and nutritional value calculation</li>
+                <li>Personalized training plans</li>
+                <li>Nutrition analysis and recommendations</li>
+                <li>Progress tracking</li>
+                <li>AI-powered body analysis</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Data Processing & Storage</h3>
-              <p className="text-white/80">Your data is stored securely. We use end-to-end encryption for sensitive data. Pro Athlete data is automatically deleted after 5 days.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Data Security</h3>
+              <p className="text-white/80">All data is transmitted using state-of-the-art encryption technologies (TLS/SSL) and stored securely in encrypted databases. Access is strictly limited to authorized personnel.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Cookies & Local Storage</h3>
-              <p className="text-white/80">We use local storage for authentication tokens and user preferences.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Third-Party Services</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Your Rights</h3>
+              <p className="text-white/80 mb-2">You have the following rights:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Stripe:</strong> Payment processing for Pro subscriptions</li>
-                <li><strong>AI Gateway:</strong> Image analysis and training plans</li>
+                <li><strong>Right to access:</strong> You can request information about your stored data</li>
+                <li><strong>Right to rectification:</strong> Incorrect data can be corrected</li>
+                <li><strong>Right to erasure:</strong> You can request deletion of your data</li>
+                <li><strong>Right to data portability:</strong> You can receive your data in a common format</li>
+                <li><strong>Right to object:</strong> You can object to processing</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Your Rights</h3>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Access your stored data</li>
-                <li>Correct inaccurate data</li>
-                <li>Delete your data</li>
-                <li>Data portability</li>
-              </ul>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Data Retention</h3>
+              <p className="text-white/80">Your data is stored as long as you have an active account. After account deletion, all personal data will be deleted within 30 days. Pro Athlete data is automatically deleted and regenerated after 5 days.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Cookies and Tracking</h3>
+              <p className="text-white/80">We only use technically necessary cookies for authentication and session management. No tracking or advertising cookies are used.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Contact</h3>
-              <p className="text-white/80">For privacy inquiries: Supportservice@Fitblaq.com</p>
+              <p className="text-white/80">For privacy inquiries, please contact us:<br/>FitBlaq Company<br/>Email: Supportservice@Fitblaq.com</p>
             </>
           )}
         </Card>
