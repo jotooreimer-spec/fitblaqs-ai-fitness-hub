@@ -6,7 +6,7 @@
     <title>FitBlaqs - AI-Powered Fitness & Nutrition</title>
     <meta name="description" content="Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring">
     <meta name="author" content="FitBlaqs" />
-    
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#8B5CF6" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -15,24 +15,35 @@
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="manifest" href="/manifest.json" />
 
-    
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/pwa-192x192.png" />
-    
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="FitBlaqs - AI-Powered Fitness & Nutrition">
-    <meta property="og:description" content="Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring">
-    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/arCq1vlG9AeOgl5ZVehfcZ0FlVE3/social-images/social-1762131289931-0.png">
+    <meta property="og:title" content="FitBlaqs - AI-Powered Fitness & Nutrition" />
+    <meta property="og:description" content="Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring" />
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/arCq1vlG9AeOgl5ZVehfcZ0FlVE3/social-images/social-1762131289931-0.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="FitBlaqs - AI-Powered Fitness & Nutrition">
-    <meta name="twitter:description" content="Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring">
-    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/arCq1vlG9AeOgl5ZVehfcZ0FlVE3/social-images/social-1762131289931-0.png">
+    <meta name="twitter:title" content="FitBlaqs - AI-Powered Fitness & Nutrition" />
+    <meta name="twitter:description" content="Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring" />
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/arCq1vlG9AeOgl5ZVehfcZ0FlVE3/social-images/social-1762131289931-0.png" />
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered:', reg))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+
