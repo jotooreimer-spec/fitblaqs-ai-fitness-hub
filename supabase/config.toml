@@ -6,5 +6,11 @@ verify_jwt = true
 [functions.analyze-food]
 verify_jwt = true
 
+[functions.analyze-body]
+verify_jwt = true
+
+[functions.analyze-food-ai]
+verify_jwt = true
+
 [functions.stripe-webhook]
 verify_jwt = false
