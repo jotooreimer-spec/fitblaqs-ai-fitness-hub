@@ -238,17 +238,20 @@ const JoggingTracker = () => {
     stopGpsTracking();
   };
 
-  const calculateFallbackDistance = (totalSeconds: number) => {
+  // Calculate fallback distance based on average jogging speed
+  const calculateFallbackDistance = useCallback((totalSeconds: number) => {
     const hours = totalSeconds / 3600;
-    const avgSpeed = 10; // 10 km/h average
+    const avgSpeed = 8; // 8 km/h average jogging speed
     return avgSpeed * hours;
-  };
+  }, []);
 
-  const calculateCalories = (distanceKm: number, totalSeconds: number) => {
+  // Calculate calories based on MET value for jogging
+  const calculateCalories = useCallback((distanceKm: number, totalSeconds: number) => {
+    if (totalSeconds === 0) return 0;
     const hours = totalSeconds / 3600;
-    const MET = 10;
+    const MET = 9.8; // MET for jogging at ~8 km/h
     return Math.round(MET * userWeight * hours);
-  };
+  }, [userWeight]);
 
   const saveJoggingLog = async () => {
     if (seconds < 60) {
@@ -310,7 +313,9 @@ const JoggingTracker = () => {
     }
   };
 
-  const estimatedCalories = calculateCalories(currentDistance > 0 ? currentDistance : calculateFallbackDistance(seconds), seconds);
+  // Real-time calculated values
+  const liveDistance = currentDistance > 0 ? currentDistance : calculateFallbackDistance(seconds);
+  const liveCalories = calculateCalories(liveDistance, seconds);
   
   // Convert GPS positions to SVG coordinates
   const positionsToSvg = () => {
@@ -432,7 +437,7 @@ const JoggingTracker = () => {
             {/* Center stats display */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
               <div className="text-6xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
-              <div className="text-3xl font-semibold text-green-400">{currentDistance.toFixed(2)} km</div>
+              <div className="text-3xl font-semibold text-green-400">{liveDistance.toFixed(2)} km</div>
               {targetTime && (
                 <div className="text-sm text-white/60 mt-2">
                   {isGerman ? "Ziel:" : "Target:"} {formatTime(targetTime)}
@@ -483,7 +488,7 @@ const JoggingTracker = () => {
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
-            <div className="text-xl font-bold text-white">{currentDistance.toFixed(2)} km</div>
+            <div className="text-xl font-bold text-white">{liveDistance.toFixed(2)} km</div>
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Zeit" : "Time"}</div>
@@ -491,7 +496,7 @@ const JoggingTracker = () => {
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">kcal</div>
-            <div className="text-xl font-bold text-white">{estimatedCalories}</div>
+            <div className="text-xl font-bold text-white">{liveCalories}</div>
           </Card>
         </div>
 
