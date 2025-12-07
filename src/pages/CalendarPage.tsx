@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
+import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
 import performanceBg from "@/assets/performance-bg.png";
 
 interface DayData {
@@ -31,6 +32,7 @@ const CalendarPage = () => {
   const [userWeight, setUserWeight] = useState(0);
   const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [] });
   const [monthlyChartData, setMonthlyChartData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Challenges state
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
@@ -132,25 +134,30 @@ const CalendarPage = () => {
 
   const loadDayData = async (selectedDate: Date) => {
     if (!userId) return;
+    setIsLoading(true);
 
     const dayStart = new Date(selectedDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(selectedDate);
     dayEnd.setHours(23, 59, 59, 999);
 
-    const [workoutsRes, nutritionRes, joggingRes, weightRes] = await Promise.all([
-      supabase.from("workout_logs").select("*, exercises(name_de, name_en, category)").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-      supabase.from("nutrition_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-      supabase.from("jogging_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-      supabase.from("weight_logs").select("*").eq("user_id", userId).gte("measured_at", dayStart.toISOString()).lte("measured_at", dayEnd.toISOString())
-    ]);
+    try {
+      const [workoutsRes, nutritionRes, joggingRes, weightRes] = await Promise.all([
+        supabase.from("workout_logs").select("*, exercises(name_de, name_en, category)").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
+        supabase.from("nutrition_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
+        supabase.from("jogging_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
+        supabase.from("weight_logs").select("*").eq("user_id", userId).gte("measured_at", dayStart.toISOString()).lte("measured_at", dayEnd.toISOString())
+      ]);
 
-    setSelectedDayData({
-      workouts: workoutsRes.data || [],
-      nutrition: nutritionRes.data || [],
-      jogging: joggingRes.data || [],
-      weight: weightRes.data || []
-    });
+      setSelectedDayData({
+        workouts: workoutsRes.data || [],
+        nutrition: nutritionRes.data || [],
+        jogging: joggingRes.data || [],
+        weight: weightRes.data || []
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveChallenge = () => {
@@ -316,7 +323,9 @@ const CalendarPage = () => {
                 </div>
               </div>
 
-              {!hasData ? (
+              {isLoading ? (
+                <CalendarSkeleton />
+              ) : !hasData ? (
                 <p className="text-white/60 text-center py-8">{isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}</p>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto">

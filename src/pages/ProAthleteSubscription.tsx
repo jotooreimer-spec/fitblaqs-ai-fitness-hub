@@ -52,6 +52,9 @@ const ProAthleteSubscription = () => {
           <div>
             <h1 className="text-4xl font-bold text-white">Pro Athlete</h1>
             <p className="text-white/70">{isGerman ? "Wähle dein Abo" : "Choose your subscription"}</p>
+            <Button variant="outline" className="mt-2" onClick={() => navigate("/pro-subscription")}>
+              {isGerman ? "Zahlung" : "Payment"}
+            </Button>
           </div>
         </div>
 

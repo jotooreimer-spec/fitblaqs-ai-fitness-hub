@@ -6,23 +6,38 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Dumbbell, Upload, X, Loader2, HelpCircle, Scan } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
 import BottomNav from "@/components/BottomNav";
+import { BodyAnalysisSkeleton } from "@/components/AnalysisSkeleton";
+import { compressImage, isValidImageFile } from "@/lib/imageUtils";
 import proAthleteBg from "@/assets/pro-athlete-bg.png";
+
+interface BodyAnalysisResult {
+  gender: string;
+  age_estimate: number;
+  body_fat_pct: number;
+  muscle_mass_pct: number;
+  posture: string;
+  symmetry: string;
+  waist_hip_ratio: number;
+  fitness_level: number;
+  health_notes: string;
+  training_tips: string;
+}
+
 const ProAthlete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isGerman, setIsGerman] = useState(true);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [uploadedFileRaw, setUploadedFileRaw] = useState<File | null>(null);
   const [proAthleteDialogOpen, setProAthleteDialogOpen] = useState(false);
   const [bodyAnalysisDialogOpen, setBodyAnalysisDialogOpen] = useState(false);
   const [trainingPlan, setTrainingPlan] = useState<any>(null);
-  const [bodyAnalysis, setBodyAnalysis] = useState<string | null>(null);
+  const [bodyAnalysis, setBodyAnalysis] = useState<BodyAnalysisResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -53,51 +68,111 @@ const ProAthlete = () => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      setUploadedFile(url);
+    if (file && isValidImageFile(file)) {
+      setUploadedFileRaw(file);
+      setUploadedFile(URL.createObjectURL(file));
+    } else {
+      toast({ title: isGerman ? "Ungültiger Dateityp" : "Invalid file type", variant: "destructive" });
     }
-  }, []);
+  }, [isGerman, toast]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setUploadedFile(URL.createObjectURL(file));
+    if (file && isValidImageFile(file)) {
+      setUploadedFileRaw(file);
+      setUploadedFile(URL.createObjectURL(file));
+    } else if (file) {
+      toast({ title: isGerman ? "Ungültiger Dateityp" : "Invalid file type", variant: "destructive" });
+    }
   };
 
   const generateTrainingPlan = async () => {
     setIsGenerating(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-training-plan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${session.access_token}` 
+        },
         body: JSON.stringify({
-          bodyType: athleteForm.body_type, weight: `${athleteForm.weight} ${athleteForm.weight_unit}`,
-          targetWeight: `${athleteForm.target_weight} ${athleteForm.target_weight_unit}`, age: athleteForm.age,
-          height: `${athleteForm.height} ${athleteForm.height_unit}`, healthStatus: athleteForm.health_status ? athleteForm.health_notes : null,
-          activityLevel: athleteForm.activity_level, trainingFrequency: athleteForm.training_frequency, goal: athleteForm.goal
+          bodyType: athleteForm.body_type, 
+          weight: `${athleteForm.weight} ${athleteForm.weight_unit}`,
+          targetWeight: `${athleteForm.target_weight} ${athleteForm.target_weight_unit}`, 
+          age: athleteForm.age,
+          height: `${athleteForm.height} ${athleteForm.height_unit}`, 
+          healthStatus: athleteForm.health_status ? athleteForm.health_notes : null,
+          activityLevel: athleteForm.activity_level, 
+          trainingFrequency: athleteForm.training_frequency, 
+          goal: athleteForm.goal
         }),
       });
       const data = await response.json();
-      setTrainingPlan({ duration: data.trainingPlan?.duration || "8 Wochen", goal_kcal: data.trainingPlan?.nutrition?.dailyCalories || 2000, regeneration: data.trainingPlan?.recovery?.sleepHours || "7-8h", workout_week: `${athleteForm.training_frequency || 4}x` });
+      setTrainingPlan({ 
+        duration: data.trainingPlan?.duration || "8 Wochen", 
+        goal_kcal: data.trainingPlan?.nutrition?.dailyCalories || 2000, 
+        regeneration: data.trainingPlan?.recovery?.sleepHours || "7-8h", 
+        workout_week: `${athleteForm.training_frequency || 4}x` 
+      });
       setProAthleteDialogOpen(false);
       toast({ title: isGerman ? "Trainingsplan erstellt" : "Training plan created" });
     } catch (error) {
+      console.error("Training plan error:", error);
       toast({ title: isGerman ? "Fehler" : "Error", variant: "destructive" });
-    } finally { setIsGenerating(false); }
+    } finally { 
+      setIsGenerating(false); 
+    }
   };
 
   const analyzeBody = async () => {
-    if (!uploadedFile) { toast({ title: isGerman ? "Bitte Bild hochladen" : "Please upload image", variant: "destructive" }); return; }
+    if (!uploadedFileRaw) { 
+      toast({ title: isGerman ? "Bitte Bild hochladen" : "Please upload image", variant: "destructive" }); 
+      return; 
+    }
     setIsAnalyzing(true);
+    setBodyAnalysisDialogOpen(false);
+    
     try {
-      // Simulated body analysis result
-      const analysis = `1. Geschlecht: Mann (geschätzt)\n2. Alter: 25-30 Jahre\n3. Körperfett: ~15%\n4. Muskeldefinition: 7/10\n5. Haltung: Gute Schulterposition, leichte Beckenkippung\n6. Symmetrie: Ausgeglichen\n7. Körperform-Typ: Athletic/Mesomorph\n8. Fitness-Level: 7/10\n9. Gesundheits-Hinweise: Gute Grundfitness, Mobilität verbessern\n10. Trainings-Empfehlungen: Compound-Übungen, Core-Training\n11. Ernährungstipps: Proteinreich essen, Hydration, Gemüse erhöhen`;
-      setBodyAnalysis(analysis);
-      setBodyAnalysisDialogOpen(false);
+      const compressed = await compressImage(uploadedFileRaw);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-body`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          imageBase64: compressed.base64,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast({ title: isGerman ? "Rate Limit erreicht" : "Rate limit reached", variant: "destructive" });
+        } else if (response.status === 402) {
+          toast({ title: isGerman ? "Credits erschöpft" : "Credits exhausted", variant: "destructive" });
+        } else {
+          toast({ title: isGerman ? "Fehler" : "Error", description: data.error, variant: "destructive" });
+        }
+        return;
+      }
+
+      setBodyAnalysis(data.analysis);
       toast({ title: isGerman ? "Body Analyse abgeschlossen" : "Body analysis complete" });
     } catch (error) {
-      toast({ title: isGerman ? "Fehler" : "Error", variant: "destructive" });
-    } finally { setIsAnalyzing(false); }
+      console.error("Body analysis error:", error);
+      toast({ title: isGerman ? "Fehler bei der Analyse" : "Analysis failed", variant: "destructive" });
+    } finally { 
+      setIsAnalyzing(false); 
+    }
   };
 
   return (
@@ -114,11 +189,16 @@ const ProAthlete = () => {
 
         {/* Upload Area */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
-          <div className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[100px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}>
+          <div 
+            className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[100px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} 
+            onDrop={handleDrop} 
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} 
+            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+          >
             {uploadedFile ? (
               <div className="relative w-full">
                 <img src={uploadedFile} alt="Uploaded" className="max-h-20 mx-auto rounded-lg" />
-                <Button variant="destructive" size="icon" className="absolute top-0 right-0 w-6 h-6" onClick={() => setUploadedFile(null)}><X className="w-3 h-3" /></Button>
+                <Button variant="destructive" size="icon" className="absolute top-0 right-0 w-6 h-6" onClick={() => { setUploadedFile(null); setUploadedFileRaw(null); }}><X className="w-3 h-3" /></Button>
               </div>
             ) : (
               <div>
@@ -136,26 +216,81 @@ const ProAthlete = () => {
           <Button onClick={() => setProAthleteDialogOpen(true)} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
             <Dumbbell className="w-4 h-4 mr-2" />Pro-Athlete
           </Button>
-          <Button onClick={() => setBodyAnalysisDialogOpen(true)} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
+          <Button onClick={() => setBodyAnalysisDialogOpen(true)} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
             <Scan className="w-4 h-4 mr-2" />Body Analyse
           </Button>
         </div>
 
-        {/* Training Plan / Body Analysis Display */}
-        <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
-          <h2 className="text-lg font-bold text-white mb-3">{bodyAnalysis ? "Body Analyse" : "Trainingsplan"}</h2>
-          {bodyAnalysis ? (
-            <pre className="text-sm text-white/80 whitespace-pre-wrap">{bodyAnalysis}</pre>
-          ) : trainingPlan ? (
+        {/* Analysis Loading Skeleton */}
+        {isAnalyzing && <BodyAnalysisSkeleton isGerman={isGerman} />}
+
+        {/* Body Analysis Result */}
+        {bodyAnalysis && !isAnalyzing && (
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+            <h2 className="text-lg font-bold text-white mb-3">Body Analyse</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Geschlecht" : "Gender"}</div>
+                <div className="text-white font-medium">{bodyAnalysis.gender}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Geschätztes Alter" : "Est. Age"}</div>
+                <div className="text-white font-medium">{bodyAnalysis.age_estimate} {isGerman ? "Jahre" : "years"}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Körperfett" : "Body Fat"}</div>
+                <div className="text-orange-400 font-medium">{bodyAnalysis.body_fat_pct}%</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Muskelmasse" : "Muscle Mass"}</div>
+                <div className="text-green-400 font-medium">{bodyAnalysis.muscle_mass_pct}%</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Haltung" : "Posture"}</div>
+                <div className="text-white font-medium">{bodyAnalysis.posture}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Symmetrie" : "Symmetry"}</div>
+                <div className="text-white font-medium">{bodyAnalysis.symmetry}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">{isGerman ? "Taille-Hüfte" : "Waist-Hip"}</div>
+                <div className="text-white font-medium">{bodyAnalysis.waist_hip_ratio}</div>
+              </div>
+              <div className="bg-white/5 p-3 rounded-lg">
+                <div className="text-xs text-zinc-400">Fitness Level</div>
+                <div className="text-primary font-medium">{bodyAnalysis.fitness_level}/10</div>
+              </div>
+            </div>
+            <div className="mt-3 bg-white/5 p-3 rounded-lg">
+              <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Gesundheitshinweise" : "Health Notes"}</div>
+              <div className="text-white text-sm">{bodyAnalysis.health_notes}</div>
+            </div>
+            <div className="mt-3 bg-white/5 p-3 rounded-lg">
+              <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Trainingstipps" : "Training Tips"}</div>
+              <div className="text-white text-sm">{bodyAnalysis.training_tips}</div>
+            </div>
+          </Card>
+        )}
+
+        {/* Training Plan Display */}
+        {trainingPlan && !bodyAnalysis && !isAnalyzing && (
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+            <h2 className="text-lg font-bold text-white mb-3">Trainingsplan</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-zinc-400">Goal</span><span className="text-white font-medium">{trainingPlan.goal_kcal} kcal</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Regeneration</span><span className="text-white font-medium">{trainingPlan.regeneration}</span></div>
               <div className="flex justify-between"><span className="text-zinc-400">Workout Week</span><span className="text-white font-medium">{trainingPlan.workout_week}</span></div>
             </div>
-          ) : (
+          </Card>
+        )}
+
+        {/* Default State */}
+        {!trainingPlan && !bodyAnalysis && !isAnalyzing && (
+          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
             <p className="text-zinc-400 text-center py-6 text-sm">{isGerman ? "Klicke auf 'Pro-Athlete' oder 'Body Analyse'" : "Click 'Pro-Athlete' or 'Body Analyse'"}</p>
-          )}
-        </Card>
+          </Card>
+        )}
 
         {/* Pro Athlete Dialog */}
         <Dialog open={proAthleteDialogOpen} onOpenChange={setProAthleteDialogOpen}>
