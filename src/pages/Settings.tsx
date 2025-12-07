@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, CreditCard } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { languages, useLanguage } from "@/contexts/LanguageContext";
+import { WorkoutReminder } from "@/components/WorkoutReminder";
 import settingsBg from "@/assets/settings-bg.jpg";
 
 const Settings = () => {
@@ -28,6 +29,7 @@ const Settings = () => {
   const [notificationsDialogOpen, setNotificationsDialogOpen] = useState(false);
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   
   // Settings states
@@ -230,6 +232,12 @@ const Settings = () => {
       title: t("notifications"),
       description: language === "de" ? "Push & Update Benachrichtigungen" : "Push & Update notifications",
       onClick: () => setNotificationsDialogOpen(true),
+    },
+    {
+      icon: Clock,
+      title: language === "de" ? "Workout Erinnerungen" : "Workout Reminders",
+      description: language === "de" ? "Training Erinnerungen setzen" : "Set training reminders",
+      onClick: () => setReminderDialogOpen(true),
     },
     {
       icon: Globe,
@@ -551,6 +559,13 @@ const Settings = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Workout Reminder Dialog */}
+      <WorkoutReminder 
+        open={reminderDialogOpen} 
+        onOpenChange={setReminderDialogOpen} 
+        isGerman={language === "de"} 
+      />
 
       <BottomNav />
     </div>
