@@ -15,6 +15,18 @@ import { BodyAnalysisSkeleton } from "@/components/AnalysisSkeleton";
 import { compressImage, isValidImageFile } from "@/lib/imageUtils";
 import proAthleteBg from "@/assets/pro-athlete-bg.png";
 
+interface TrainingDay {
+  day: string;
+  workout: string;
+  duration: string;
+}
+
+interface TrainingPlan {
+  weeks: number;
+  focus: string;
+  weekly_schedule: TrainingDay[];
+}
+
 interface BodyAnalysisResult {
   gender: string;
   age_estimate: number;
@@ -26,6 +38,7 @@ interface BodyAnalysisResult {
   fitness_level: number;
   health_notes: string;
   training_tips: string;
+  training_plan?: TrainingPlan;
 }
 
 const ProAthlete = () => {
@@ -150,42 +163,27 @@ const ProAthlete = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // Use dummy data for testing when API fails
-        console.log("Using dummy data for testing");
-        setBodyAnalysis({
-          gender: "Male",
-          age_estimate: 28,
-          body_fat_pct: 18.5,
-          muscle_mass_pct: 42.3,
-          posture: isGerman ? "Gut - leichte Schulterneigung" : "Good - slight shoulder tilt",
-          symmetry: isGerman ? "Ausgeglichen" : "Balanced",
-          waist_hip_ratio: 0.85,
-          fitness_level: 7,
-          health_notes: isGerman ? "Gute Grundfitness. Empfehlung: Mehr Rückentraining für bessere Haltung." : "Good base fitness. Recommendation: More back training for better posture.",
-          training_tips: isGerman ? "Fokus auf Compound-Übungen. 3-4x/Woche Krafttraining. Cardio 2x/Woche." : "Focus on compound exercises. 3-4x/week strength training. Cardio 2x/week."
-        });
-        toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
-        return;
+        // Check for invalid image error
+        if (data.error === "invalid_image") {
+          toast({ 
+            title: isGerman ? "Ungültiges Bild" : "Invalid Image", 
+            description: data.message || (isGerman ? "Bitte ein passendes Körperbild hochladen" : "Please upload a valid body/fitness image"),
+            variant: "destructive" 
+          });
+          return;
+        }
+        throw new Error(data.error || "API error");
       }
 
       setBodyAnalysis(data.analysis);
       toast({ title: isGerman ? "Body Analyse abgeschlossen" : "Body analysis complete" });
     } catch (error) {
       console.error("Body analysis error:", error);
-      // Fallback to dummy data for testing
-      setBodyAnalysis({
-        gender: "Male",
-        age_estimate: 28,
-        body_fat_pct: 18.5,
-        muscle_mass_pct: 42.3,
-        posture: isGerman ? "Gut - leichte Schulterneigung" : "Good - slight shoulder tilt",
-        symmetry: isGerman ? "Ausgeglichen" : "Balanced",
-        waist_hip_ratio: 0.85,
-        fitness_level: 7,
-        health_notes: isGerman ? "Gute Grundfitness. Empfehlung: Mehr Rückentraining für bessere Haltung." : "Good base fitness. Recommendation: More back training for better posture.",
-        training_tips: isGerman ? "Fokus auf Compound-Übungen. 3-4x/Woche Krafttraining. Cardio 2x/Woche." : "Focus on compound exercises. 3-4x/week strength training. Cardio 2x/week."
+      toast({ 
+        title: isGerman ? "Analyse fehlgeschlagen" : "Analysis failed", 
+        description: isGerman ? "Bitte versuche es erneut" : "Please try again",
+        variant: "destructive" 
       });
-      toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
     } finally { 
       setIsAnalyzing(false); 
     }
@@ -305,10 +303,33 @@ const ProAthlete = () => {
               <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Gesundheitshinweise" : "Health Notes"}</div>
               <div className="text-white text-sm">{bodyAnalysis.health_notes}</div>
             </div>
-            <div className="bg-white/5 p-3 rounded-lg">
+            <div className="bg-white/5 p-3 rounded-lg mb-3">
               <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Trainingstipps" : "Training Tips"}</div>
               <div className="text-white text-sm">{bodyAnalysis.training_tips}</div>
             </div>
+
+            {/* AI-Generated Training Plan */}
+            {bodyAnalysis.training_plan && (
+              <div className="bg-gradient-to-br from-primary/20 to-primary/5 p-4 rounded-xl mt-4">
+                <h3 className="text-white font-bold mb-3">
+                  {isGerman ? `${bodyAnalysis.training_plan.weeks}-Wochen Trainingsplan` : `${bodyAnalysis.training_plan.weeks}-Week Training Plan`}
+                </h3>
+                <div className="text-xs text-zinc-400 mb-3">
+                  {isGerman ? "Fokus:" : "Focus:"} <span className="text-primary font-medium">{bodyAnalysis.training_plan.focus}</span>
+                </div>
+                <div className="space-y-2">
+                  {bodyAnalysis.training_plan.weekly_schedule?.map((day, idx) => (
+                    <div key={idx} className="flex justify-between items-center bg-black/30 p-2 rounded-lg">
+                      <div>
+                        <div className="text-white font-medium text-sm">{day.day}</div>
+                        <div className="text-zinc-400 text-xs">{day.workout}</div>
+                      </div>
+                      <div className="text-primary text-xs">{day.duration}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
         )}
 

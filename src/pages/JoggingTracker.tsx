@@ -147,14 +147,44 @@ const JoggingTracker = () => {
     setTargetTime(null);
   };
 
-  // Stop and save to history
+  // Stop and save to history - always saves current values
   const handleStop = async () => {
-    if (seconds < 60) {
-      toast({ title: isGerman ? "Fehler" : "Error", description: isGerman ? "Mindestens 1 Minute laufen" : "Run for at least 1 minute", variant: "destructive" });
+    if (seconds === 0) {
+      return;
+    }
+    
+    setIsActive(false);
+    
+    // Calculate final values
+    const durationMinutes = Math.floor(seconds / 60);
+    const distanceKm = calculateFallbackDistance(seconds);
+    const estimatedCalories = calculateCalories(distanceKm, seconds);
+
+    if (!userId) {
+      reset();
       return;
     }
 
-    await saveJoggingLog();
+    // Save to database
+    const { error } = await supabase
+      .from("jogging_logs")
+      .insert({
+        user_id: userId,
+        duration: durationMinutes > 0 ? durationMinutes : 1,
+        distance: parseFloat(distanceKm.toFixed(2)),
+        calories: estimatedCalories
+      });
+
+    if (error) {
+      toast({ title: isGerman ? "Fehler" : "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ 
+        title: isGerman ? "Gespeichert" : "Saved", 
+        description: `${distanceKm.toFixed(2)} km • ${durationMinutes} min • ${estimatedCalories} kcal` 
+      });
+      loadLogs(userId);
+    }
+    
     reset();
   };
 
@@ -339,9 +369,9 @@ const JoggingTracker = () => {
           </div>
         </Card>
 
-        {/* Control Buttons - Play/Stop */}
+        {/* Control Buttons - Play/Stop only */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-4">
-          <div className="flex gap-2 justify-center flex-wrap">
+          <div className="flex gap-3 justify-center flex-wrap">
             <Button variant="outline" size="lg" onClick={reset} className="w-14">
               <RotateCcw className="w-5 h-5" />
             </Button>
@@ -356,18 +386,14 @@ const JoggingTracker = () => {
             >
               {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </Button>
-            {/* Stop Button - Red */}
+            {/* Stop Button - Red - Always clickable when seconds > 0 */}
             <Button 
               size="lg" 
               onClick={handleStop}
               className="w-16 bg-red-500 hover:bg-red-600"
-              disabled={seconds < 60}
+              disabled={seconds === 0}
             >
               <Square className="w-6 h-6" />
-            </Button>
-            {/* Save Button */}
-            <Button variant="default" size="lg" className="w-14" disabled={seconds < 60} onClick={saveJoggingLog}>
-              <Save className="w-5 h-5" />
             </Button>
           </div>
         </Card>

@@ -137,24 +137,16 @@ const ProNutrition = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // Use dummy data for testing when API fails
-        console.log("Using dummy data for testing");
-        const dummyResult: FoodAnalysis = {
-          items: [
-            { name: isGerman ? "Gegrilltes Hähnchen" : "Grilled Chicken", portion: "150g", calories: 248, protein: 46, carbs: 0, fat: 5 },
-            { name: isGerman ? "Reis" : "Rice", portion: "200g", calories: 260, protein: 5, carbs: 57, fat: 1 },
-            { name: isGerman ? "Gemüse" : "Vegetables", portion: "100g", calories: 45, protein: 2, carbs: 8, fat: 1 }
-          ],
-          total_calories: 553,
-          total_protein: 53,
-          total_carbs: 65,
-          total_fat: 7,
-          category: "protein",
-          notes: isGerman ? "Ausgewogene Mahlzeit mit hohem Proteingehalt. Ideal für Muskelaufbau." : "Balanced meal with high protein content. Ideal for muscle building."
-        };
-        setAnalysisResult(dummyResult);
-        toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
-        return;
+        // Check for invalid image error
+        if (data.error === "invalid_image") {
+          toast({ 
+            title: isGerman ? "Ungültiges Bild" : "Invalid Image", 
+            description: data.message || (isGerman ? "Bitte ein passendes Essensbild hochladen" : "Please upload a valid food image"),
+            variant: "destructive" 
+          });
+          return;
+        }
+        throw new Error(data.error || "API error");
       }
 
       setAnalysisResult(data.analysis);
@@ -162,22 +154,11 @@ const ProNutrition = () => {
       toast({ title: isGerman ? "Analyse erfolgreich" : "Analysis successful" });
     } catch (error) {
       console.error("Food analysis error:", error);
-      // Fallback to dummy data for testing
-      const dummyResult: FoodAnalysis = {
-        items: [
-          { name: isGerman ? "Gegrilltes Hähnchen" : "Grilled Chicken", portion: "150g", calories: 248, protein: 46, carbs: 0, fat: 5 },
-          { name: isGerman ? "Reis" : "Rice", portion: "200g", calories: 260, protein: 5, carbs: 57, fat: 1 },
-          { name: isGerman ? "Gemüse" : "Vegetables", portion: "100g", calories: 45, protein: 2, carbs: 8, fat: 1 }
-        ],
-        total_calories: 553,
-        total_protein: 53,
-        total_carbs: 65,
-        total_fat: 7,
-        category: "protein",
-        notes: isGerman ? "Ausgewogene Mahlzeit mit hohem Proteingehalt. Ideal für Muskelaufbau." : "Balanced meal with high protein content. Ideal for muscle building."
-      };
-      setAnalysisResult(dummyResult);
-      toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
+      toast({ 
+        title: isGerman ? "Analyse fehlgeschlagen" : "Analysis failed", 
+        description: isGerman ? "Bitte versuche es erneut" : "Please try again",
+        variant: "destructive" 
+      });
     } finally {
       setIsAnalyzing(false);
     }
