@@ -34,7 +34,9 @@ serve(async (req) => {
       });
     }
 
-    // Check for Pro Nutrition subscription
+    // Subscription check disabled for testing - pages are freely accessible
+    // Uncomment this block when enabling paid subscriptions
+    /*
     const { data: subscription } = await supabase
       .from("subscriptions")
       .select("*")
@@ -49,6 +51,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    */
 
     const { imageBase64, category } = await req.json();
 
