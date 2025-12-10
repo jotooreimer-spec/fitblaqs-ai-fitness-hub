@@ -168,7 +168,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     { name: 'Vitamin', value: nutritionBreakdown.vitamin, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
     { name: 'Supplements', value: nutritionBreakdown.supplements, color: NUTRITION_COLORS.supplements, key: 'supplements' },
     { name: isGerman ? 'Fette' : 'Fats', value: nutritionBreakdown.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
-    { name: isGerman ? 'Wasser' : 'Water', value: nutritionBreakdown.water, color: NUTRITION_COLORS.water, key: 'water' },
+    { name: 'Hydration', value: nutritionBreakdown.water, color: NUTRITION_COLORS.water, key: 'water' },
   ].filter(item => item.value > 0) : [];
 
   const total = pieData.reduce((sum, item) => sum + item.value, 0);
@@ -180,7 +180,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     { name: 'Vitamin', value: 1, color: '#374151', key: 'vitamin' },
     { name: 'Supplements', value: 1, color: '#374151', key: 'supplements' },
     { name: isGerman ? 'Fette' : 'Fats', value: 1, color: '#374151', key: 'fats' },
-    { name: isGerman ? 'Wasser' : 'Water', value: 1, color: '#374151', key: 'water' },
+    { name: 'Hydration', value: 1, color: '#374151', key: 'water' },
   ];
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -240,9 +240,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <div className="flex items-center gap-3 mb-2">
             <Droplets className="w-5 h-5 text-cyan-400" />
-            <span className="text-sm text-muted-foreground">
-              {isGerman ? "Wasser" : "Water"}
-            </span>
+            <span className="text-sm text-muted-foreground">Hydration</span>
           </div>
           <div className="text-3xl font-bold">{todayWater > 0 ? (todayWater / 1000).toFixed(1) : "0"} L</div>
           <div className="text-xs text-muted-foreground mt-1">
@@ -329,7 +327,8 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               <YAxis 
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                domain={[0, 'auto']}
+                ticks={[0, 5, 10, 25, 50, 75, 100]}
+                domain={[0, 100]}
               />
               <Tooltip 
                 contentStyle={{
@@ -337,14 +336,12 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px"
                 }}
-                formatter={(value: number) => [value, isGerman ? 'Aktivitäten' : 'Activities']}
+                formatter={(value: number) => [value, isGerman ? 'Stunden' : 'Hours']}
               />
               <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="text-center text-sm text-muted-foreground mt-2">
-            {isGerman ? "Monatliche Übersicht" : "Monthly Overview"}
-          </div>
+          <div className="text-center text-xs text-muted-foreground mt-2">Hours</div>
         </Card>
       </div>
     </div>
