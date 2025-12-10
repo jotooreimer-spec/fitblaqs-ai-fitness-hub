@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Calendar as CalendarIcon, TrendingDown } from "lucide-react";
+import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -15,6 +15,11 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recha
 import { useToast } from "@/hooks/use-toast";
 import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
 import performanceBg from "@/assets/performance-bg.png";
+import bodyworkoutplan1 from "@/assets/bodyworkoutplan-1.png";
+import bodyworkoutplan2 from "@/assets/bodyworkoutplan-2.png";
+import bodyworkoutplan3 from "@/assets/bodyworkoutplan-3.png";
+import bodyworkoutplan4 from "@/assets/bodyworkoutplan-4.png";
+import bodyworkoutplan5 from "@/assets/bodyworkoutplan-5.png";
 
 interface DayData {
   workouts: any[];
@@ -40,6 +45,10 @@ const CalendarPage = () => {
   const [months, setMonths] = useState("");
   const [bodyWeight, setBodyWeight] = useState("");
   const [savedGoal, setSavedGoal] = useState<{ goal: number; months: number; startWeight: number; startDate: string } | null>(null);
+  const [bodyworkoutDialogOpen, setBodyworkoutDialogOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const bodyworkoutImages = [bodyworkoutplan1, bodyworkoutplan2, bodyworkoutplan3, bodyworkoutplan4, bodyworkoutplan5];
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -367,6 +376,15 @@ const CalendarPage = () => {
                   ))}
                 </div>
               )}
+              
+              {/* Bodyworkoutplan Button */}
+              <Button 
+                onClick={() => setBodyworkoutDialogOpen(true)} 
+                className="w-full mt-4 bg-primary/20 hover:bg-primary/30 text-white border border-primary/50"
+              >
+                <Dumbbell className="w-4 h-4 mr-2" />
+                Bodyworkoutplan
+              </Button>
             </Card>
           </div>
         </div>
@@ -426,6 +444,43 @@ const CalendarPage = () => {
                 {isGerman ? "Challenge zurücksetzen" : "Reset Challenge"}
               </Button>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bodyworkoutplan Dialog */}
+      <Dialog open={bodyworkoutDialogOpen} onOpenChange={setBodyworkoutDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] bg-zinc-900 border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Bodyworkoutplan</DialogTitle>
+          </DialogHeader>
+          <div className="relative">
+            <img 
+              src={bodyworkoutImages[currentImageIndex]} 
+              alt={`Bodyworkoutplan ${currentImageIndex + 1}`} 
+              className="w-full rounded-lg"
+            />
+            <div className="flex justify-between items-center mt-4">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentImageIndex === 0}
+                className="bg-zinc-800 border-zinc-600"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-white text-sm">{currentImageIndex + 1} / {bodyworkoutImages.length}</span>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => setCurrentImageIndex(prev => Math.min(bodyworkoutImages.length - 1, prev + 1))}
+                disabled={currentImageIndex === bodyworkoutImages.length - 1}
+                className="bg-zinc-800 border-zinc-600"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
