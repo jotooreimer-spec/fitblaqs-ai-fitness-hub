@@ -22,13 +22,13 @@ const Login = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/dashboard");
+        navigate("/onboarding");
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/dashboard");
+        navigate("/onboarding");
       }
     });
 
@@ -117,6 +117,14 @@ const Login = () => {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {isGerman ? "Noch kein Konto? Registrieren" : "No account? Register"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="text-sm text-primary hover:text-primary/80 transition-colors"
+            >
+              {isGerman ? "Passwort vergessen?" : "Forgot password?"}
             </button>
 
             <button

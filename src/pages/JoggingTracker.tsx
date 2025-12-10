@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, Timer } from "lucide-react";
+import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, Timer, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -29,8 +29,8 @@ const JoggingTracker = () => {
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
   const [timerDialogOpen, setTimerDialogOpen] = useState(false);
+  const [timerHours, setTimerHours] = useState(0);
   const [timerMinutes, setTimerMinutes] = useState(0);
-  const [timerSeconds, setTimerSeconds] = useState(0);
   const [targetTime, setTargetTime] = useState<number | null>(null);
   const [userId, setUserId] = useState<string>("");
   
@@ -97,6 +97,8 @@ const JoggingTracker = () => {
           if (targetTime && newSeconds >= targetTime) {
             setIsActive(false);
             autoSaveJoggingLog(newSeconds);
+            setSeconds(0);
+            setTargetTime(null);
           }
           
           return newSeconds;
@@ -130,7 +132,6 @@ const JoggingTracker = () => {
 
     if (!error) {
       toast({ title: isGerman ? "Auto-gespeichert" : "Auto-saved", description: isGerman ? "Timer beendet - Lauf gespeichert" : "Timer ended - Run saved" });
-      reset();
       loadLogs(userId);
     }
   };
@@ -144,6 +145,17 @@ const JoggingTracker = () => {
     setIsActive(false);
     setCircleAngle(0);
     setTargetTime(null);
+  };
+
+  // Stop and save to history
+  const handleStop = async () => {
+    if (seconds < 60) {
+      toast({ title: isGerman ? "Fehler" : "Error", description: isGerman ? "Mindestens 1 Minute laufen" : "Run for at least 1 minute", variant: "destructive" });
+      return;
+    }
+
+    await saveJoggingLog();
+    reset();
   };
 
   // Calculate fallback distance based on average jogging speed
@@ -160,15 +172,6 @@ const JoggingTracker = () => {
     const MET = 9.8; // MET for jogging at ~8 km/h
     return Math.round(MET * userWeight * hours);
   }, [userWeight]);
-
-  // Calculate pace (min/km)
-  const calculatePace = useCallback((distanceKm: number, totalSeconds: number) => {
-    if (distanceKm === 0 || totalSeconds === 0) return "0:00";
-    const paceSeconds = totalSeconds / distanceKm;
-    const paceMinutes = Math.floor(paceSeconds / 60);
-    const paceSecs = Math.floor(paceSeconds % 60);
-    return `${paceMinutes}:${paceSecs.toString().padStart(2, '0')}`;
-  }, []);
 
   const saveJoggingLog = async () => {
     if (seconds < 60) {
@@ -213,6 +216,7 @@ const JoggingTracker = () => {
     }
   };
 
+  // Format time as HH:MM:SS (smaller display)
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -221,18 +225,17 @@ const JoggingTracker = () => {
   };
 
   const setTimer = () => {
-    const totalSeconds = timerMinutes * 60 + timerSeconds;
+    const totalSeconds = timerHours * 3600 + timerMinutes * 60;
     if (totalSeconds > 0) {
       setTargetTime(totalSeconds);
       setTimerDialogOpen(false);
-      toast({ title: isGerman ? "Timer gesetzt" : "Timer set", description: `${timerMinutes}:${timerSeconds.toString().padStart(2, '0')}` });
+      toast({ title: isGerman ? "Timer gesetzt" : "Timer set", description: `${timerHours}h ${timerMinutes}min` });
     }
   };
 
   // Real-time calculated values
   const liveDistance = calculateFallbackDistance(seconds);
   const liveCalories = calculateCalories(liveDistance, seconds);
-  const livePace = calculatePace(liveDistance, seconds);
 
   // Calculate animated circle position
   const circleRadius = 80;
@@ -267,7 +270,7 @@ const JoggingTracker = () => {
         <Card className="bg-gradient-to-br from-green-900/80 to-green-700/60 backdrop-blur-sm border-white/10 p-4 mb-4 rounded-2xl">
           <div className="flex gap-4 items-center">
             {/* Square animated map */}
-            <div className="relative w-48 h-48 flex-shrink-0">
+            <div className="relative w-40 h-40 flex-shrink-0">
               <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
                 {/* Background */}
                 <defs>
@@ -323,20 +326,20 @@ const JoggingTracker = () => {
               </svg>
             </div>
             
-            {/* Stats display */}
+            {/* Stats display - smaller time */}
             <div className="flex-1 text-white">
-              <div className="text-5xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
-              <div className="text-2xl font-semibold text-green-400 mb-2">{liveDistance.toFixed(2)} km</div>
+              <div className="text-3xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
+              <div className="text-xl font-semibold text-green-400 mb-2">{liveDistance.toFixed(2)} km</div>
               {targetTime && (
                 <div className="text-sm text-white/60">
-                  {isGerman ? "Ziel:" : "Target:"} {formatTime(targetTime)}
+                  {isGerman ? "Ziel:" : "Target:"} {Math.floor(targetTime / 3600)}h {Math.floor((targetTime % 3600) / 60)}min
                 </div>
               )}
             </div>
           </div>
         </Card>
 
-        {/* Control Buttons - Play before Save */}
+        {/* Control Buttons - Play/Stop */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-4">
           <div className="flex gap-2 justify-center flex-wrap">
             <Button variant="outline" size="lg" onClick={reset} className="w-14">
@@ -345,26 +348,32 @@ const JoggingTracker = () => {
             <Button variant="outline" size="lg" onClick={() => setTimerDialogOpen(true)} className="w-14">
               <Timer className="w-5 h-5" />
             </Button>
-            {/* Play/Pause Button */}
+            {/* Play Button */}
             <Button 
               size="lg" 
               onClick={toggle}
-              className={`w-20 ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
+              className={`w-16 ${isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}`}
             >
               {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+            </Button>
+            {/* Stop Button - Red */}
+            <Button 
+              size="lg" 
+              onClick={handleStop}
+              className="w-16 bg-red-500 hover:bg-red-600"
+              disabled={seconds < 60}
+            >
+              <Square className="w-6 h-6" />
             </Button>
             {/* Save Button */}
             <Button variant="default" size="lg" className="w-14" disabled={seconds < 60} onClick={saveJoggingLog}>
               <Save className="w-5 h-5" />
             </Button>
-            <Button variant="destructive" size="lg" onClick={reset} className="w-14">
-              <Trash2 className="w-5 h-5" />
-            </Button>
           </div>
         </Card>
 
-        {/* Live Stats - Distance, Time, kcal, Pace */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        {/* Live Stats - Distance, Time, kcal (Pace removed) */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
             <div className="text-lg font-bold text-white">{liveDistance.toFixed(2)} km</div>
@@ -377,43 +386,36 @@ const JoggingTracker = () => {
             <div className="text-xs text-white/60 mb-1">kcal</div>
             <div className="text-lg font-bold text-white">{liveCalories}</div>
           </Card>
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">Pace</div>
-            <div className="text-lg font-bold text-white">{livePace} min/km</div>
-          </Card>
         </div>
 
         {/* History */}
         <h2 className="text-xl font-bold mb-4 text-white">{isGerman ? "Verlauf" : "History"}</h2>
         <div className="space-y-3">
-          {logs.map((log) => {
-            const logPace = calculatePace(log.distance, log.duration * 60);
-            return (
-              <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-medium text-white">{log.distance.toFixed(2)} km</div>
-                    <div className="text-sm text-white/60">{log.duration} min • {log.calories || 0} kcal • Pace: {logPace} min/km</div>
-                    <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy")}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => saveToCalendar(log)} className="text-primary">
-                      <Save className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteLog(log.id)} className="text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+          {logs.map((log) => (
+            <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium text-white">{log.distance.toFixed(2)} km</div>
+                  <div className="text-sm text-white/60">{log.duration} min • {log.calories || 0} kcal</div>
+                  <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy")}</div>
                 </div>
-              </Card>
-            );
-          })}
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => saveToCalendar(log)} className="text-primary">
+                    <Save className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => deleteLog(log.id)} className="text-destructive">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
           {logs.length === 0 && (
             <div className="text-center text-white/50 py-8">{isGerman ? "Keine Einträge" : "No entries"}</div>
           )}
         </div>
 
-        {/* Timer Dialog */}
+        {/* Timer Dialog - Hours & Minutes */}
         <Dialog open={timerDialogOpen} onOpenChange={setTimerDialogOpen}>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
@@ -421,12 +423,12 @@ const JoggingTracker = () => {
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>{isGerman ? "Minuten" : "Minutes"}</Label>
-                <Input type="number" min="0" max="120" value={timerMinutes} onChange={(e) => setTimerMinutes(parseInt(e.target.value) || 0)} />
+                <Label>{isGerman ? "Stunden" : "Hours"}</Label>
+                <Input type="number" min="0" max="24" value={timerHours} onChange={(e) => setTimerHours(parseInt(e.target.value) || 0)} />
               </div>
               <div>
-                <Label>{isGerman ? "Sekunden" : "Seconds"}</Label>
-                <Input type="number" min="0" max="59" value={timerSeconds} onChange={(e) => setTimerSeconds(parseInt(e.target.value) || 0)} />
+                <Label>{isGerman ? "Minuten" : "Minutes"}</Label>
+                <Input type="number" min="0" max="59" value={timerMinutes} onChange={(e) => setTimerMinutes(parseInt(e.target.value) || 0)} />
               </div>
             </div>
             <Button onClick={setTimer} className="w-full mt-4">{isGerman ? "Timer setzen" : "Set Timer"}</Button>

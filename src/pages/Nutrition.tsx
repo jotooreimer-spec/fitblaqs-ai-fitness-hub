@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { Trash2, Save } from "lucide-react";
+import { Trash2, Save, Droplets } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NutritionLogDialog } from "@/components/NutritionLogDialog";
+import { HydrationDialog } from "@/components/HydrationDialog";
+import { MilchprodukteDialog } from "@/components/MilchprodukteDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import vegetableImg from "@/assets/vegetable.jpg";
@@ -12,6 +14,8 @@ import veganImg from "@/assets/vegan.jpg";
 import proteinImg from "@/assets/protein.jpg";
 import supplementsImg from "@/assets/supplements.jpg";
 import nutritionBg from "@/assets/nutrition-bg.png";
+import hydrationBg from "@/assets/hydration-bg.jpg";
+import milchprodukteBg from "@/assets/milchprodukte-bg.jpg";
 
 const Nutrition = () => {
   const navigate = useNavigate();
@@ -21,6 +25,8 @@ const Nutrition = () => {
   const [userWeight, setUserWeight] = useState(70);
   const [selectedCategory, setSelectedCategory] = useState<"vegetarian" | "vegan" | "protein" | "supplements" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isHydrationDialogOpen, setIsHydrationDialogOpen] = useState(false);
+  const [isMilchprodukteDialogOpen, setIsMilchprodukteDialogOpen] = useState(false);
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -105,7 +111,7 @@ const Nutrition = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
 
-    let totalCalories = 0, totalProtein = 0, totalWater = 0;
+    let totalCalories = 0, totalProtein = 0, totalHydration = 0;
 
     todayLogs.forEach(log => {
       totalCalories += log.calories || 0;
@@ -113,12 +119,12 @@ const Nutrition = () => {
       
       const waterMatch = log.notes?.match(/Water: ([\d.]+)/);
       if (waterMatch) {
-        totalWater += parseFloat(waterMatch[1]) || 0;
+        totalHydration += parseFloat(waterMatch[1]) || 0;
       }
     });
 
     // Always start at 0 - no default values based on weight
-    return { calories: totalCalories, protein: totalProtein, water: totalWater };
+    return { calories: totalCalories, protein: totalProtein, hydration: totalHydration };
   };
 
   const dailyTotals = calculateDailyTotals();
@@ -170,8 +176,8 @@ const Nutrition = () => {
               <div className="text-3xl font-bold text-green-400">{Math.round(dailyTotals.protein)}g</div>
             </div>
             <div>
-              <div className="text-sm text-white/60 mb-1">{isGerman ? "Wasser" : "Water"}</div>
-              <div className="text-3xl font-bold text-blue-400">{(dailyTotals.water / 1000).toFixed(1)}L</div>
+              <div className="text-sm text-white/60 mb-1">Hydration</div>
+              <div className="text-3xl font-bold text-blue-400">{(dailyTotals.hydration / 1000).toFixed(1)}L</div>
             </div>
           </div>
           <p className="text-xs text-white/50 text-center mt-4">
@@ -182,7 +188,7 @@ const Nutrition = () => {
         </Card>
 
         {/* Nutrition Categories */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
           {nutritionCategories.map((category, index) => (
             <Card key={index} onClick={() => handleCategoryClick(category.key)} className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48">
               <img src={category.image} alt={category.title} className="absolute inset-0 w-full h-full object-cover" />
@@ -193,6 +199,35 @@ const Nutrition = () => {
               </div>
             </Card>
           ))}
+        </div>
+
+        {/* Hydration & Milchprodukte Boxes */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <Card 
+            onClick={() => setIsHydrationDialogOpen(true)} 
+            className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-blue-500/50 h-32"
+          >
+            <img src={hydrationBg} alt="Hydration" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-800/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+              <div className="flex items-center gap-2">
+                <Droplets className="w-5 h-5 text-blue-400" />
+                <h3 className="text-lg font-bold">Hydration</h3>
+              </div>
+              <p className="text-xs text-white/80">{isGerman ? "Wasser tracken" : "Track water"}</p>
+            </div>
+          </Card>
+          <Card 
+            onClick={() => setIsMilchprodukteDialogOpen(true)} 
+            className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-amber-500/50 h-32"
+          >
+            <img src={milchprodukteBg} alt="Milchprodukte" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-amber-900/80 via-amber-800/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+              <h3 className="text-lg font-bold">{isGerman ? "Milchprodukte" : "Dairy"}</h3>
+              <p className="text-xs text-white/80">{isGerman ? "Milch, Käse, Eier" : "Milk, Cheese, Eggs"}</p>
+            </div>
+          </Card>
         </div>
 
         {/* Today's Meal Plan */}
@@ -232,6 +267,8 @@ const Nutrition = () => {
       </div>
 
       <NutritionLogDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} category={selectedCategory} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+      <HydrationDialog open={isHydrationDialogOpen} onOpenChange={setIsHydrationDialogOpen} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+      <MilchprodukteDialog open={isMilchprodukteDialogOpen} onOpenChange={setIsMilchprodukteDialogOpen} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
       <BottomNav />
     </div>
   );

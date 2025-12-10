@@ -6,8 +6,9 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { TrainingLogDialog } from "@/components/TrainingLogDialog";
 import { TrainingHistory } from "@/components/TrainingHistory";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import upperbodyImg from "@/assets/upperbody-bg.png";
 import middlebodyImg from "@/assets/middlebody.png";
@@ -128,12 +129,24 @@ const Dashboard = () => {
                 {isGerman ? `Starte dein Training, ${userData.name}` : `Start your Workout, ${userData.name}`}
               </h1>
             </div>
-            <AvatarUpload 
-              userId={userId} 
-              currentAvatarUrl={profileData?.avatar_url} 
-              onUploadSuccess={(url) => setProfileData({ ...profileData, avatar_url: url })} 
-              isGerman={isGerman} 
-            />
+            <div className="flex flex-col items-center gap-2">
+              <AvatarUpload 
+                userId={userId} 
+                currentAvatarUrl={profileData?.avatar_url} 
+                onUploadSuccess={(url) => setProfileData({ ...profileData, avatar_url: url })} 
+                isGerman={isGerman} 
+              />
+              {/* Performance Button under Avatar */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate("/calendar")}
+                className="text-xs"
+              >
+                <BarChart3 className="w-3 h-3 mr-1" />
+                Performance
+              </Button>
+            </div>
           </div>
           <p className="text-white/70">
             {isGerman ? "Wähle deine Trainingseinheit" : "Choose your training session"}
@@ -176,9 +189,14 @@ const Dashboard = () => {
             <Progress value={monthlyProgress} className="h-3" />
             <div className="flex justify-between text-xs text-white/40">
               <span>0</span>
-              <span>15</span>
-              <span>30 {isGerman ? "Tage" : "days"}</span>
+              <span>5</span>
+              <span>10</span>
+              <span>25</span>
+              <span>50</span>
+              <span>75</span>
+              <span>100</span>
             </div>
+            <p className="text-xs text-white/50 text-center mt-2">Hours</p>
           </div>
         </Card>
 

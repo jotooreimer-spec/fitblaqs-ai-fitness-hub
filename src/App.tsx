@@ -7,6 +7,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Nutrition from "./pages/Nutrition";
 import JoggingTracker from "./pages/JoggingTracker";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/training/:muscleGroup" element={<TrainingDetail />} />
             <Route path="/exercise/:category" element={<ExerciseCategory />} />

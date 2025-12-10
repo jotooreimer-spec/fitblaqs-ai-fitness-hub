@@ -5,18 +5,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Dumbbell, Utensils, Check, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
-import StripeButton from "@/components/StripeButton";
-import { useSubscription } from "@/hooks/useSubscription";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
-
-const STRIPE_PUBLISHABLE_KEY = "pk_live_51SP7CORy3F0vfI5a7TkNcz07kjDX4GQcXqEy1dIZrT5eI3rCvGhTUdIsmPU364zknxrG5jLvxBG9r9fs3zR2p4UO00uo7D0rsP";
-const PRO_ATHLETE_BUTTON_ID = "buy_btn_1SbMy3Ry3F0vfI5aSQ4lBfvA";
-const PRO_NUTRITION_BUTTON_ID = "buy_btn_1SbMKWRy3F0vfI5aBnGAXBRg";
 
 const ProAthleteSubscription = () => {
   const navigate = useNavigate();
   const [isGerman, setIsGerman] = useState(true);
-  const { hasProAthlete, hasProNutrition, loading } = useSubscription();
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -28,14 +21,6 @@ const ProAthleteSubscription = () => {
       setIsGerman(metadata.language === "de");
     });
   }, [navigate]);
-
-  const handleProAthleteAccess = () => {
-    navigate("/pro-athlete");
-  };
-
-  const handleProNutritionAccess = () => {
-    navigate("/pro-nutrition");
-  };
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -50,11 +35,8 @@ const ProAthleteSubscription = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
-            <h1 className="text-4xl font-bold text-white">Pro Athlete</h1>
+            <h1 className="text-4xl font-bold text-white">Pro Subscriptions</h1>
             <p className="text-white/70">{isGerman ? "Wähle dein Abo" : "Choose your subscription"}</p>
-            <Button variant="outline" className="mt-2" onClick={() => navigate("/pro-subscription")}>
-              Payment
-            </Button>
           </div>
         </div>
 
@@ -72,7 +54,7 @@ const ProAthleteSubscription = () => {
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€19,99<span className="text-lg font-normal text-white/60">/mo</span></div>
+              <div className="text-4xl font-bold text-white mb-1">€19,99<span className="text-lg font-normal text-white/60">/{isGerman ? "Jahr" : "year"}</span></div>
               <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
             </div>
 
@@ -99,26 +81,9 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            {hasProAthlete ? (
-              <Button onClick={handleProAthleteAccess} className="w-full" size="lg">
-                {isGerman ? "Zugang" : "Access"}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <StripeButton 
-                  buyButtonId={PRO_ATHLETE_BUTTON_ID}
-                  publishableKey={STRIPE_PUBLISHABLE_KEY}
-                />
-                <a 
-                  href="https://buy.stripe.com/3cI4gB0KK4QZ6CIetj2Fa01" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block text-center text-sm text-white/60 hover:text-white underline"
-                >
-                  {isGerman ? "Alternativ: Direktlink" : "Alternative: Direct Link"}
-                </a>
-              </div>
-            )}
+            <Button onClick={() => navigate("/pro-athlete")} className="w-full" size="lg">
+              Pro Athlete
+            </Button>
           </Card>
 
           {/* Pro Athlete Nutrition */}
@@ -134,7 +99,7 @@ const ProAthleteSubscription = () => {
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€14,99<span className="text-lg font-normal text-white/60">/mo</span></div>
+              <div className="text-4xl font-bold text-white mb-1">€14,99<span className="text-lg font-normal text-white/60">/{isGerman ? "Jahr" : "year"}</span></div>
               <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
             </div>
 
@@ -161,27 +126,19 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            {hasProNutrition ? (
-              <Button onClick={handleProNutritionAccess} className="w-full bg-green-600 hover:bg-green-700" size="lg">
-                {isGerman ? "Zugang" : "Access"}
-              </Button>
-            ) : (
-              <div className="space-y-3">
-                <StripeButton 
-                  buyButtonId={PRO_NUTRITION_BUTTON_ID}
-                  publishableKey={STRIPE_PUBLISHABLE_KEY}
-                />
-                <a 
-                  href="https://buy.stripe.com/6oU5kF654erz0ek3OF2Fa00" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block text-center text-sm text-white/60 hover:text-white underline"
-                >
-                  {isGerman ? "Alternativ: Direktlink" : "Alternative: Direct Link"}
-                </a>
-              </div>
-            )}
+            <Button onClick={() => navigate("/pro-nutrition")} className="w-full bg-green-600 hover:bg-green-700" size="lg">
+              Pro Nutrition
+            </Button>
           </Card>
+        </div>
+
+        {/* Info Text */}
+        <div className="mt-8 text-center">
+          <p className="text-white/50 text-sm">
+            {isGerman 
+              ? "Die Zahlung erfolgt über Google Play Billing in der Android App" 
+              : "Payment is processed via Google Play Billing in the Android app"}
+          </p>
         </div>
       </div>
       <BottomNav />
