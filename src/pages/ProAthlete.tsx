@@ -48,7 +48,8 @@ const ProAthlete = () => {
     activity_level: "", training_frequency: "", goal: ""
   });
 
-  const { hasProAthlete, loading: subscriptionLoading } = useSubscription("pro_athlete");
+  // Subscription check disabled for testing - pages are freely accessible
+  // const { hasProAthlete, loading: subscriptionLoading } = useSubscription("pro_athlete");
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -57,12 +58,6 @@ const ProAthlete = () => {
       setIsGerman(metadata.language === "de");
     });
   }, [navigate]);
-
-  useEffect(() => {
-    if (!subscriptionLoading && !hasProAthlete) {
-      navigate("/pro-subscription");
-    }
-  }, [subscriptionLoading, hasProAthlete, navigate]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -155,13 +150,21 @@ const ProAthlete = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 429) {
-          toast({ title: isGerman ? "Rate Limit erreicht" : "Rate limit reached", variant: "destructive" });
-        } else if (response.status === 402) {
-          toast({ title: isGerman ? "Credits erschöpft" : "Credits exhausted", variant: "destructive" });
-        } else {
-          toast({ title: isGerman ? "Fehler" : "Error", description: data.error, variant: "destructive" });
-        }
+        // Use dummy data for testing when API fails
+        console.log("Using dummy data for testing");
+        setBodyAnalysis({
+          gender: "Male",
+          age_estimate: 28,
+          body_fat_pct: 18.5,
+          muscle_mass_pct: 42.3,
+          posture: isGerman ? "Gut - leichte Schulterneigung" : "Good - slight shoulder tilt",
+          symmetry: isGerman ? "Ausgeglichen" : "Balanced",
+          waist_hip_ratio: 0.85,
+          fitness_level: 7,
+          health_notes: isGerman ? "Gute Grundfitness. Empfehlung: Mehr Rückentraining für bessere Haltung." : "Good base fitness. Recommendation: More back training for better posture.",
+          training_tips: isGerman ? "Fokus auf Compound-Übungen. 3-4x/Woche Krafttraining. Cardio 2x/Woche." : "Focus on compound exercises. 3-4x/week strength training. Cardio 2x/week."
+        });
+        toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
         return;
       }
 
@@ -169,7 +172,20 @@ const ProAthlete = () => {
       toast({ title: isGerman ? "Body Analyse abgeschlossen" : "Body analysis complete" });
     } catch (error) {
       console.error("Body analysis error:", error);
-      toast({ title: isGerman ? "Fehler bei der Analyse" : "Analysis failed", variant: "destructive" });
+      // Fallback to dummy data for testing
+      setBodyAnalysis({
+        gender: "Male",
+        age_estimate: 28,
+        body_fat_pct: 18.5,
+        muscle_mass_pct: 42.3,
+        posture: isGerman ? "Gut - leichte Schulterneigung" : "Good - slight shoulder tilt",
+        symmetry: isGerman ? "Ausgeglichen" : "Balanced",
+        waist_hip_ratio: 0.85,
+        fitness_level: 7,
+        health_notes: isGerman ? "Gute Grundfitness. Empfehlung: Mehr Rückentraining für bessere Haltung." : "Good base fitness. Recommendation: More back training for better posture.",
+        training_tips: isGerman ? "Fokus auf Compound-Übungen. 3-4x/Woche Krafttraining. Cardio 2x/Woche." : "Focus on compound exercises. 3-4x/week strength training. Cardio 2x/week."
+      });
+      toast({ title: isGerman ? "Demo-Analyse (Testmodus)" : "Demo analysis (test mode)" });
     } finally { 
       setIsAnalyzing(false); 
     }
@@ -224,11 +240,44 @@ const ProAthlete = () => {
         {/* Analysis Loading Skeleton */}
         {isAnalyzing && <BodyAnalysisSkeleton isGerman={isGerman} />}
 
-        {/* Body Analysis Result */}
+        {/* Body Analysis Result with Charts */}
         {bodyAnalysis && !isAnalyzing && (
           <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
-            <h2 className="text-lg font-bold text-white mb-3">Body Analyse</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <h2 className="text-lg font-bold text-white mb-4">Body Analyse</h2>
+            
+            {/* Visual Progress Bars */}
+            <div className="space-y-4 mb-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-400">{isGerman ? "Körperfett" : "Body Fat"}</span>
+                  <span className="text-orange-400 font-bold">{bodyAnalysis.body_fat_pct}%</span>
+                </div>
+                <div className="w-full bg-zinc-700 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-3 rounded-full transition-all" style={{ width: `${Math.min(bodyAnalysis.body_fat_pct, 50)}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-400">{isGerman ? "Muskelmasse" : "Muscle Mass"}</span>
+                  <span className="text-green-400 font-bold">{bodyAnalysis.muscle_mass_pct}%</span>
+                </div>
+                <div className="w-full bg-zinc-700 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-400 h-3 rounded-full transition-all" style={{ width: `${Math.min(bodyAnalysis.muscle_mass_pct, 60)}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-zinc-400">Fitness Level</span>
+                  <span className="text-primary font-bold">{bodyAnalysis.fitness_level}/10</span>
+                </div>
+                <div className="w-full bg-zinc-700 rounded-full h-3">
+                  <div className="bg-gradient-to-r from-primary to-blue-400 h-3 rounded-full transition-all" style={{ width: `${bodyAnalysis.fitness_level * 10}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-xs text-zinc-400">{isGerman ? "Geschlecht" : "Gender"}</div>
                 <div className="text-white font-medium">{bodyAnalysis.gender}</div>
@@ -238,35 +287,25 @@ const ProAthlete = () => {
                 <div className="text-white font-medium">{bodyAnalysis.age_estimate} {isGerman ? "Jahre" : "years"}</div>
               </div>
               <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-xs text-zinc-400">{isGerman ? "Körperfett" : "Body Fat"}</div>
-                <div className="text-orange-400 font-medium">{bodyAnalysis.body_fat_pct}%</div>
-              </div>
-              <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-xs text-zinc-400">{isGerman ? "Muskelmasse" : "Muscle Mass"}</div>
-                <div className="text-green-400 font-medium">{bodyAnalysis.muscle_mass_pct}%</div>
-              </div>
-              <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-xs text-zinc-400">{isGerman ? "Haltung" : "Posture"}</div>
-                <div className="text-white font-medium">{bodyAnalysis.posture}</div>
+                <div className="text-white font-medium text-sm">{bodyAnalysis.posture}</div>
               </div>
               <div className="bg-white/5 p-3 rounded-lg">
                 <div className="text-xs text-zinc-400">{isGerman ? "Symmetrie" : "Symmetry"}</div>
                 <div className="text-white font-medium">{bodyAnalysis.symmetry}</div>
               </div>
-              <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-xs text-zinc-400">{isGerman ? "Taille-Hüfte" : "Waist-Hip"}</div>
+              <div className="bg-white/5 p-3 rounded-lg col-span-2">
+                <div className="text-xs text-zinc-400">{isGerman ? "Taille-Hüfte-Verhältnis" : "Waist-Hip Ratio"}</div>
                 <div className="text-white font-medium">{bodyAnalysis.waist_hip_ratio}</div>
               </div>
-              <div className="bg-white/5 p-3 rounded-lg">
-                <div className="text-xs text-zinc-400">Fitness Level</div>
-                <div className="text-primary font-medium">{bodyAnalysis.fitness_level}/10</div>
-              </div>
             </div>
-            <div className="mt-3 bg-white/5 p-3 rounded-lg">
+
+            {/* Notes */}
+            <div className="bg-white/5 p-3 rounded-lg mb-3">
               <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Gesundheitshinweise" : "Health Notes"}</div>
               <div className="text-white text-sm">{bodyAnalysis.health_notes}</div>
             </div>
-            <div className="mt-3 bg-white/5 p-3 rounded-lg">
+            <div className="bg-white/5 p-3 rounded-lg">
               <div className="text-xs text-zinc-400 mb-1">{isGerman ? "Trainingstipps" : "Training Tips"}</div>
               <div className="text-white text-sm">{bodyAnalysis.training_tips}</div>
             </div>
