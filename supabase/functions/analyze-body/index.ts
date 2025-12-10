@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -34,25 +35,6 @@ serve(async (req) => {
       });
     }
 
-    // Subscription check disabled for testing - pages are freely accessible
-    // Uncomment this block when enabling paid subscriptions
-    /*
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("plan", "pro_athlete")
-      .eq("status", "active")
-      .single();
-
-    if (!subscription) {
-      return new Response(JSON.stringify({ error: "Pro Athlete subscription required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    */
-
     const { imageBase64, gender } = await req.json();
 
     if (!imageBase64) {
@@ -62,15 +44,26 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const systemPrompt = `You are a professional fitness and body composition analyst. Analyze the provided body image and provide detailed metrics. Be professional and encouraging. Respond in JSON format with these exact fields:
+    const systemPrompt = `You are a professional fitness and body composition analyst. Analyze the provided body/fitness image and provide detailed metrics. 
+
+IMPORTANT: First verify this is a fitness/body image showing a human body. If the image does NOT show a human body suitable for fitness analysis, respond with:
+{"error": "not_body_image", "message": "Bitte ein Körper-/Fitnessbild hochladen"}
+
+If it IS a valid body image, be professional and encouraging. Analyze body composition including:
+- Body type differentiation (muscular, fat, defined, symmetry)
+- Estimated measurements and metrics
+- Generate a personalized 4-12 week training plan
+
+Respond in JSON format with these exact fields:
 {
   "gender": "male" or "female",
   "age_estimate": number (estimated age),
@@ -81,44 +74,54 @@ serve(async (req) => {
   "waist_hip_ratio": number (estimated ratio, e.g., 0.85),
   "fitness_level": number (1-10 scale),
   "health_notes": "Brief health observations and recommendations",
-  "training_tips": "Personalized training recommendations based on body analysis"
+  "training_tips": "Personalized training recommendations based on body analysis",
+  "training_plan": {
+    "weeks": number (4-12),
+    "focus": "muscle_gain" or "fat_loss" or "definition" or "maintenance",
+    "weekly_schedule": [
+      {"day": "Monday", "workout": "Push - Chest/Shoulders/Triceps", "duration": "60 min"},
+      {"day": "Tuesday", "workout": "Pull - Back/Biceps", "duration": "60 min"},
+      {"day": "Wednesday", "workout": "Rest/Cardio", "duration": "30 min"},
+      {"day": "Thursday", "workout": "Legs - Quads/Hamstrings/Calves", "duration": "60 min"},
+      {"day": "Friday", "workout": "Upper Body", "duration": "60 min"},
+      {"day": "Saturday", "workout": "Full Body/HIIT", "duration": "45 min"},
+      {"day": "Sunday", "workout": "Rest", "duration": "0 min"}
+    ]
+  }
 }
 Only respond with valid JSON, no additional text.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log("Calling OpenAI API for body analysis...");
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
-              { type: "text", text: `Analyze this body image. Gender hint: ${gender || 'unknown'}` },
+              { type: "text", text: `Analyze this body/fitness image. Gender hint: ${gender || 'unknown'}. Provide detailed body composition analysis and training plan.` },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
         ],
+        max_tokens: 2000,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -131,6 +134,7 @@ Only respond with valid JSON, no additional text.`;
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
+    console.log("OpenAI response received:", content?.substring(0, 200));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -148,20 +152,26 @@ Only respond with valid JSON, no additional text.`;
       } else {
         throw new Error("No JSON found");
       }
-    } catch {
+      
+      // Check if it's not a body image
+      if (analysisData.error === "not_body_image") {
+        return new Response(JSON.stringify({ 
+          error: "invalid_image", 
+          message: analysisData.message || "Bitte ein passendes Körperbild hochladen" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      analysisData = {
-        gender: gender || "unknown",
-        age_estimate: 25,
-        body_fat_pct: 20,
-        muscle_mass_pct: 40,
-        posture: "good",
-        symmetry: "good",
-        waist_hip_ratio: 0.85,
-        fitness_level: 5,
-        health_notes: "Analysis completed. Continue your fitness journey!",
-        training_tips: "Focus on balanced training with cardio and strength exercises.",
-      };
+      return new Response(JSON.stringify({ 
+        error: "parse_error", 
+        message: "AI response could not be parsed" 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Save to database
@@ -169,8 +179,17 @@ Only respond with valid JSON, no additional text.`;
       .from("body_analysis")
       .insert({
         user_id: user.id,
-        image_url: imageBase64.substring(0, 100) + "...", // Store truncated reference
-        ...analysisData,
+        image_url: imageBase64.substring(0, 100) + "...",
+        gender: analysisData.gender,
+        age_estimate: analysisData.age_estimate,
+        body_fat_pct: analysisData.body_fat_pct,
+        muscle_mass_pct: analysisData.muscle_mass_pct,
+        posture: analysisData.posture,
+        symmetry: analysisData.symmetry,
+        waist_hip_ratio: analysisData.waist_hip_ratio,
+        fitness_level: analysisData.fitness_level,
+        health_notes: analysisData.health_notes,
+        training_tips: analysisData.training_tips,
       })
       .select()
       .single();

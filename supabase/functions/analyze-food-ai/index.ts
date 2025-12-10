@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -34,25 +35,6 @@ serve(async (req) => {
       });
     }
 
-    // Subscription check disabled for testing - pages are freely accessible
-    // Uncomment this block when enabling paid subscriptions
-    /*
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("plan", "pro_nutrition")
-      .eq("status", "active")
-      .single();
-
-    if (!subscription) {
-      return new Response(JSON.stringify({ error: "Pro Nutrition subscription required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    */
-
     const { imageBase64, category } = await req.json();
 
     if (!imageBase64) {
@@ -62,15 +44,26 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const systemPrompt = `You are a professional nutritionist analyzing food images. Identify all food items and provide detailed nutritional information. Respond in JSON format:
+    const systemPrompt = `You are a professional nutritionist analyzing food images. 
+
+IMPORTANT: First verify this is a food image. If the image does NOT show food, respond with:
+{"error": "not_food_image", "message": "Bitte ein Essensbild hochladen"}
+
+If it IS a valid food image, identify all food items and provide detailed nutritional information including:
+- Calories, protein, carbohydrates, fat for each item
+- Total nutritional values
+- Supplement and nutrition plan recommendations
+
+Respond in JSON format:
 {
   "items": [
     {
@@ -87,44 +80,47 @@ serve(async (req) => {
   "total_carbs": number,
   "total_fat": number,
   "category": "meat", "protein", "supplements", "vegetarian", or "vegan",
-  "notes": "Brief nutritional advice or observations"
+  "notes": "Brief nutritional advice or observations",
+  "nutrition_plan": {
+    "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
+    "supplements": ["Supplement suggestion 1", "Supplement suggestion 2"],
+    "meal_timing": "Best time to consume this meal",
+    "hydration": "Recommended water intake with this meal"
+  }
 }
 Be accurate and provide realistic nutritional estimates. Only respond with valid JSON.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log("Calling OpenAI API for food analysis...");
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
-              { type: "text", text: `Analyze this food image and provide nutritional breakdown. Category hint: ${category || 'unknown'}` },
+              { type: "text", text: `Analyze this food image and provide detailed nutritional breakdown. Category hint: ${category || 'unknown'}` },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
         ],
+        max_tokens: 1500,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-          status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -137,6 +133,7 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
+    console.log("OpenAI response received:", content?.substring(0, 200));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -154,17 +151,26 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
       } else {
         throw new Error("No JSON found");
       }
-    } catch {
+      
+      // Check if it's not a food image
+      if (analysisData.error === "not_food_image") {
+        return new Response(JSON.stringify({ 
+          error: "invalid_image", 
+          message: analysisData.message || "Bitte ein passendes Essensbild hochladen" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      analysisData = {
-        items: [{ name: "Food Item", portion: "1 serving", calories: 300, protein: 15, carbs: 40, fat: 10 }],
-        total_calories: 300,
-        total_protein: 15,
-        total_carbs: 40,
-        total_fat: 10,
-        category: category || "protein",
-        notes: "Analysis completed. Check values for accuracy.",
-      };
+      return new Response(JSON.stringify({ 
+        error: "parse_error", 
+        message: "AI response could not be parsed" 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Save to database

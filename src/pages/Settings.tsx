@@ -29,7 +29,8 @@ const Settings = () => {
   const [notificationsDialogOpen, setNotificationsDialogOpen] = useState(false);
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
-  // reminderDialogOpen removed
+  const [privacyContentDialogOpen, setPrivacyContentDialogOpen] = useState(false);
+  const [termsContentDialogOpen, setTermsContentDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   
   // Settings states
@@ -510,12 +511,12 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Privacy Dialog */}
+      {/* Privacy & Security Dialog */}
       <Dialog open={privacyDialogOpen} onOpenChange={setPrivacyDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
-              {t("privacy")}
+              Privacy & Security
               <Button variant="ghost" size="icon" onClick={() => setPrivacyDialogOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
@@ -527,7 +528,7 @@ const Settings = () => {
               className="w-full justify-start" 
               onClick={() => {
                 setPrivacyDialogOpen(false);
-                navigate("/privacy-policy");
+                setPrivacyContentDialogOpen(true);
               }}
             >
               <Shield className="w-4 h-4 mr-2" />
@@ -538,12 +539,190 @@ const Settings = () => {
               className="w-full justify-start"
               onClick={() => {
                 setPrivacyDialogOpen(false);
-                navigate("/terms-of-service");
+                setTermsContentDialogOpen(true);
               }}
             >
               <Shield className="w-4 h-4 mr-2" />
               {language === "de" ? "Nutzungsbedingungen" : "Terms of Service"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Policy Content Dialog */}
+      <Dialog open={privacyContentDialogOpen} onOpenChange={setPrivacyContentDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              {language === "de" ? "Datenschutzerklärung" : "Privacy Policy"}
+              <Button variant="ghost" size="icon" onClick={() => setPrivacyContentDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="prose prose-sm max-w-none">
+            {language === "de" ? (
+              <>
+                <h3 className="font-bold text-lg">1. Verantwortlicher</h3>
+                <p>FitBlaq Company<br/>E-Mail: Supportservice@Fitblaq.com</p>
+
+                <h3 className="font-bold text-lg mt-4">2. Erhebung und Verarbeitung personenbezogener Daten</h3>
+                <p>Wir erheben und verarbeiten folgende personenbezogene Daten:</p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Kontoinformationen (Name, E-Mail-Adresse, Passwort)</li>
+                  <li>Profilinformationen (Größe, Gewicht, Körpertyp, Sportlevel)</li>
+                  <li>Trainingsdaten (Übungen, Sätze, Wiederholungen, Gewichte)</li>
+                  <li>Ernährungsdaten (Mahlzeiten, Kalorien, Makronährstoffe)</li>
+                  <li>Jogging-Daten (Distanz, Dauer, verbrannte Kalorien)</li>
+                  <li>Gewichtshistorie</li>
+                  <li>Hochgeladene Bilder und Videos</li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">3. Zweck der Datenverarbeitung</h3>
+                <p>Ihre Daten werden ausschließlich verwendet, um die Fitness-App-Dienste bereitzustellen.</p>
+
+                <h3 className="font-bold text-lg mt-4">4. Datensicherheit</h3>
+                <p>Alle Daten werden mittels TLS/SSL verschlüsselt übertragen und sicher gespeichert.</p>
+
+                <h3 className="font-bold text-lg mt-4">5. Ihre Rechte</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>Auskunftsrecht</strong></li>
+                  <li><strong>Recht auf Berichtigung</strong></li>
+                  <li><strong>Recht auf Löschung</strong></li>
+                  <li><strong>Recht auf Datenübertragbarkeit</strong></li>
+                  <li><strong>Widerspruchsrecht</strong></li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">6. Speicherdauer</h3>
+                <p>Ihre Daten werden 30 Tage nach Kontolöschung gelöscht. Pro Athlete-Daten nach 5 Tagen.</p>
+
+                <h3 className="font-bold text-lg mt-4">7. Kontakt</h3>
+                <p>FitBlaq Company<br/>E-Mail: Supportservice@Fitblaq.com</p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-bold text-lg">1. Data Controller</h3>
+                <p>FitBlaq Company<br/>Email: Supportservice@Fitblaq.com</p>
+
+                <h3 className="font-bold text-lg mt-4">2. Collection and Processing of Personal Data</h3>
+                <p>We collect and process the following personal data:</p>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Account information (name, email address, password)</li>
+                  <li>Profile information (height, weight, body type, athletic level)</li>
+                  <li>Training data (exercises, sets, repetitions, weights)</li>
+                  <li>Nutrition data (meals, calories, macronutrients)</li>
+                  <li>Jogging data (distance, duration, calories burned)</li>
+                  <li>Weight history</li>
+                  <li>Uploaded images and videos</li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">3. Purpose of Data Processing</h3>
+                <p>Your data is used exclusively to provide fitness app services.</p>
+
+                <h3 className="font-bold text-lg mt-4">4. Data Security</h3>
+                <p>All data is transmitted using TLS/SSL encryption and stored securely.</p>
+
+                <h3 className="font-bold text-lg mt-4">5. Your Rights</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>Right to access</strong></li>
+                  <li><strong>Right to rectification</strong></li>
+                  <li><strong>Right to erasure</strong></li>
+                  <li><strong>Right to data portability</strong></li>
+                  <li><strong>Right to object</strong></li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">6. Data Retention</h3>
+                <p>Your data is deleted 30 days after account deletion. Pro Athlete data after 5 days.</p>
+
+                <h3 className="font-bold text-lg mt-4">7. Contact</h3>
+                <p>FitBlaq Company<br/>Email: Supportservice@Fitblaq.com</p>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Terms of Service Content Dialog */}
+      <Dialog open={termsContentDialogOpen} onOpenChange={setTermsContentDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              {language === "de" ? "Nutzungsbedingungen" : "Terms of Service"}
+              <Button variant="ghost" size="icon" onClick={() => setTermsContentDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="prose prose-sm max-w-none">
+            {language === "de" ? (
+              <>
+                <h3 className="font-bold text-lg">1. Geltungsbereich</h3>
+                <p>Diese Nutzungsbedingungen gelten für die Nutzung der FitBlaqs-App.</p>
+
+                <h3 className="font-bold text-lg mt-4">2. Nutzerkonto</h3>
+                <p>Zur Nutzung der App ist ein Benutzerkonto erforderlich.</p>
+
+                <h3 className="font-bold text-lg mt-4">3. Pro-Abonnements</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>Pro Athlete:</strong> €19,99 für 12 Monate</li>
+                  <li><strong>Pro Nutrition:</strong> €14,99 für 12 Monate</li>
+                </ul>
+                <p>Abonnements können nach 6 Monaten gekündigt werden.</p>
+
+                <h3 className="font-bold text-lg mt-4">4. KI-Funktionen</h3>
+                <p>Die KI-gestützte Analyse dient nur zu Informationszwecken.</p>
+
+                <h3 className="font-bold text-lg mt-4">5. Nutzungsregeln</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Keine illegalen Inhalte hochladen</li>
+                  <li>Die App nicht missbrauchen</li>
+                  <li>Keine falschen Informationen angeben</li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">6. Haftungsausschluss</h3>
+                <p>Konsultieren Sie vor Beginn eines Trainingsprogramms einen Arzt.</p>
+
+                <h3 className="font-bold text-lg mt-4">7. Kündigung</h3>
+                <p>Konto jederzeit in Einstellungen löschbar. Abonnements nach 6 Monaten per E-Mail kündbar.</p>
+
+                <h3 className="font-bold text-lg mt-4">8. Kontakt</h3>
+                <p>Supportservice@Fitblaq.com</p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-bold text-lg">1. Scope</h3>
+                <p>These Terms of Service apply to the use of the FitBlaqs app.</p>
+
+                <h3 className="font-bold text-lg mt-4">2. User Account</h3>
+                <p>A user account is required to use the app.</p>
+
+                <h3 className="font-bold text-lg mt-4">3. Pro Subscriptions</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li><strong>Pro Athlete:</strong> €19.99 for 12 months</li>
+                  <li><strong>Pro Nutrition:</strong> €14.99 for 12 months</li>
+                </ul>
+                <p>Subscriptions can be cancelled after 6 months.</p>
+
+                <h3 className="font-bold text-lg mt-4">4. AI Features</h3>
+                <p>AI-powered analysis is for informational purposes only.</p>
+
+                <h3 className="font-bold text-lg mt-4">5. Usage Rules</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                  <li>Not upload illegal content</li>
+                  <li>Not misuse the app</li>
+                  <li>Not provide false information</li>
+                </ul>
+
+                <h3 className="font-bold text-lg mt-4">6. Disclaimer</h3>
+                <p>Consult a physician before starting any training program.</p>
+
+                <h3 className="font-bold text-lg mt-4">7. Termination</h3>
+                <p>Delete account anytime in Settings. Subscriptions cancellable after 6 months via email.</p>
+
+                <h3 className="font-bold text-lg mt-4">8. Contact</h3>
+                <p>Supportservice@Fitblaq.com</p>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
