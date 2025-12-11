@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import logo from "@/assets/fitblaqs-logo.png";
 import authBackground from "@/assets/auth-background.png";
 import { toast } from "sonner";
-import { signUpWithEmail } from "@/lib/auth";
+import { signUpWithEmail, checkOnboardingStatus } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { registerSchema, getValidationErrors } from "@/lib/validations";
 
@@ -28,15 +28,28 @@ const Register = () => {
   });
 
   useEffect(() => {
+    const checkSessionAndRedirect = async (userId: string) => {
+      try {
+        const hasCompletedOnboarding = await checkOnboardingStatus(userId);
+        if (hasCompletedOnboarding) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
+      } catch (e) {
+        navigate("/onboarding", { replace: true });
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/dashboard");
+        checkSessionAndRedirect(session.user.id);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && event === "SIGNED_IN") {
+        checkSessionAndRedirect(session.user.id);
       }
     });
 
@@ -56,7 +69,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await signUpWithEmail(formData.email, formData.password, {
+      const data = await signUpWithEmail(formData.email, formData.password, {
         name: formData.name,
         age: formData.age,
         weight: formData.weight,
@@ -66,6 +79,11 @@ const Register = () => {
       });
       
       toast.success(formData.language === "de" ? "Registrierung erfolgreich!" : "Registration successful!");
+      
+      // Auto-login is handled by Supabase, redirect to onboarding
+      if (data.user) {
+        navigate("/onboarding", { replace: true });
+      }
     } catch (error: any) {
       const message = error?.message?.toLowerCase() || "";
       if (message.includes("already registered") || message.includes("already exists")) {

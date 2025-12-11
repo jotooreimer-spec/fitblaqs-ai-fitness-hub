@@ -27,9 +27,10 @@ export const useSubscription = (plan?: SubscriptionPlan) => {
         return;
       }
 
+      // Only select needed columns (exclude stripe_customer_id, stripe_subscription_id for security)
       let query = supabase
         .from("subscriptions")
-        .select("*")
+        .select("id, user_id, plan, status, start_date, end_date")
         .eq("user_id", session.user.id)
         .eq("status", "active");
 

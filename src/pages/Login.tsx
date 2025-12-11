@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 import logo from "@/assets/fitblaqs-logo.png";
 import loginBg from "@/assets/login-bg.jpg";
 import { toast } from "sonner";
-import { signInWithEmail } from "@/lib/auth";
+import { signInWithEmail, checkOnboardingStatus } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { loginSchema, getValidationErrors } from "@/lib/validations";
+import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,17 +19,31 @@ const Login = () => {
   const [isGerman, setIsGerman] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   useEffect(() => {
+    const checkSessionAndRedirect = async (userId: string) => {
+      try {
+        const hasCompletedOnboarding = await checkOnboardingStatus(userId);
+        if (hasCompletedOnboarding) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
+      } catch (e) {
+        navigate("/onboarding", { replace: true });
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/onboarding");
+        checkSessionAndRedirect(session.user.id);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/onboarding");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && event === "SIGNED_IN") {
+        checkSessionAndRedirect(session.user.id);
       }
     });
 
@@ -48,8 +63,18 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await signInWithEmail(email, password);
+      const data = await signInWithEmail(email, password);
       toast.success(isGerman ? "Anmeldung erfolgreich!" : "Login successful!");
+      
+      // Check onboarding status and redirect
+      if (data.user) {
+        const hasCompletedOnboarding = await checkOnboardingStatus(data.user.id);
+        if (hasCompletedOnboarding) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
+      }
     } catch (error: any) {
       toast.error(
         isGerman 
@@ -121,10 +146,10 @@ const Login = () => {
 
             <button
               type="button"
-              onClick={() => navigate("/register")}
+              onClick={() => setPasswordDialogOpen(true)}
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
-              {isGerman ? "Passwort vergessen?" : "Forgot password?"}
+              {isGerman ? "Passwort vergessen / ändern?" : "Forgot / Change password?"}
             </button>
 
             <button
@@ -137,6 +162,12 @@ const Login = () => {
           </div>
         </form>
       </Card>
+
+      <PasswordChangeDialog
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+        userEmail={email}
+      />
     </div>
   );
 };
