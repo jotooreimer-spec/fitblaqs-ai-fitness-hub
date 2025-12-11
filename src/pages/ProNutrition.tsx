@@ -22,6 +22,39 @@ interface FoodItem {
   protein: number;
   carbs: number;
   fat: number;
+  sugar?: number;
+  fiber?: number;
+}
+
+interface HealthEvaluation {
+  rating: string;
+  calorie_density: string;
+  nutrient_density: string;
+  satiety_score: number;
+  sugar_risk: string;
+  fat_quality: string;
+}
+
+interface Improvement {
+  action: string;
+  impact: string;
+  reason: string;
+}
+
+interface AlternativeMeal {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  calories_saved: number;
+  why_better: string;
+}
+
+interface MacroDistribution {
+  protein_pct: number;
+  carbs_pct: number;
+  fat_pct: number;
 }
 
 interface FoodAnalysis {
@@ -30,8 +63,18 @@ interface FoodAnalysis {
   total_protein: number;
   total_carbs: number;
   total_fat: number;
+  total_sugar?: number;
+  total_fiber?: number;
   category: string;
   notes: string;
+  macro_distribution?: MacroDistribution;
+  health_evaluation?: HealthEvaluation;
+  improvements?: Improvement[];
+  alternative_meal?: AlternativeMeal;
+  calculated_calories?: { from_protein: number; from_carbs: number; from_fat: number; total_calculated: number; deviation_pct: number };
+  trace_elements?: { vitamin_a: string; vitamin_c: string; iron: string; calcium: string };
+  nutrition_plan?: { recommendations: string[]; supplements: string[]; meal_timing: string; hydration: string };
+  history_summary?: string;
 }
 
 const ProNutrition = () => {
@@ -311,71 +354,190 @@ const ProNutrition = () => {
 
         {/* Analysis Result with Visual Charts */}
         {analysisResult && !isAnalyzing && (
-          <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
-            <h2 className="text-lg font-bold text-white mb-4">{isGerman ? "Analyse Ergebnis" : "Analysis Result"}</h2>
-            
-            {/* Visual Macro Progress Bars */}
-            <div className="space-y-3 mb-4">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">{isGerman ? "Kalorien" : "Calories"}</span>
-                  <span className="text-orange-400 font-bold">{analysisResult.total_calories} kcal</span>
+          <div className="space-y-4 mb-4">
+            <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+              <h2 className="text-lg font-bold text-white mb-4">{isGerman ? "🥗 Analyse Ergebnis" : "🥗 Analysis Result"}</h2>
+              
+              {/* Macro Distribution Pie */}
+              {analysisResult.macro_distribution && (
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-red-500/20 p-3 rounded-lg text-center">
+                    <div className="text-red-400 font-bold text-lg">{analysisResult.macro_distribution.protein_pct}%</div>
+                    <div className="text-xs text-zinc-400">Protein</div>
+                  </div>
+                  <div className="bg-yellow-500/20 p-3 rounded-lg text-center">
+                    <div className="text-yellow-400 font-bold text-lg">{analysisResult.macro_distribution.carbs_pct}%</div>
+                    <div className="text-xs text-zinc-400">Carbs</div>
+                  </div>
+                  <div className="bg-blue-500/20 p-3 rounded-lg text-center">
+                    <div className="text-blue-400 font-bold text-lg">{analysisResult.macro_distribution.fat_pct}%</div>
+                    <div className="text-xs text-zinc-400">Fett</div>
+                  </div>
                 </div>
-                <div className="w-full bg-zinc-700 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_calories / 2500) * 100, 100)}%` }} />
+              )}
+              
+              {/* Visual Macro Progress Bars */}
+              <div className="space-y-3 mb-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">{isGerman ? "Kalorien" : "Calories"}</span>
+                    <span className="text-orange-400 font-bold">{analysisResult.total_calories} kcal</span>
+                  </div>
+                  <div className="w-full bg-zinc-700 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-orange-500 to-orange-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_calories / 2500) * 100, 100)}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">Protein</span>
-                  <span className="text-red-400 font-bold">{analysisResult.total_protein}g</span>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">Protein</span>
+                    <span className="text-red-400 font-bold">{analysisResult.total_protein}g</span>
+                  </div>
+                  <div className="w-full bg-zinc-700 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_protein / 150) * 100, 100)}%` }} />
+                  </div>
                 </div>
-                <div className="w-full bg-zinc-700 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_protein / 150) * 100, 100)}%` }} />
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">{isGerman ? "Kohlenhydrate" : "Carbs"}</span>
+                    <span className="text-yellow-400 font-bold">{analysisResult.total_carbs}g</span>
+                  </div>
+                  <div className="w-full bg-zinc-700 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_carbs / 300) * 100, 100)}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">{isGerman ? "Kohlenhydrate" : "Carbs"}</span>
-                  <span className="text-yellow-400 font-bold">{analysisResult.total_carbs}g</span>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-zinc-400">{isGerman ? "Fett" : "Fat"}</span>
+                    <span className="text-blue-400 font-bold">{analysisResult.total_fat}g</span>
+                  </div>
+                  <div className="w-full bg-zinc-700 rounded-full h-3">
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_fat / 100) * 100, 100)}%` }} />
+                  </div>
                 </div>
-                <div className="w-full bg-zinc-700 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_carbs / 300) * 100, 100)}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-zinc-400">{isGerman ? "Fett" : "Fat"}</span>
-                  <span className="text-blue-400 font-bold">{analysisResult.total_fat}g</span>
-                </div>
-                <div className="w-full bg-zinc-700 rounded-full h-3">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_fat / 100) * 100, 100)}%` }} />
-                </div>
-              </div>
-            </div>
-
-            {/* Food Items List */}
-            <div className="space-y-2 mb-4">
-              {analysisResult.items.map((item, idx) => (
-                <div key={idx} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
+                {analysisResult.total_sugar !== undefined && (
                   <div>
-                    <div className="text-white font-medium">{item.name}</div>
-                    <div className="text-xs text-zinc-400">{item.portion}</div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-zinc-400">{isGerman ? "Zucker" : "Sugar"}</span>
+                      <span className="text-pink-400 font-bold">{analysisResult.total_sugar}g</span>
+                    </div>
+                    <div className="w-full bg-zinc-700 rounded-full h-3">
+                      <div className="bg-gradient-to-r from-pink-500 to-pink-400 h-3 rounded-full transition-all" style={{ width: `${Math.min((analysisResult.total_sugar / 50) * 100, 100)}%` }} />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-orange-400 font-bold">{item.calories} kcal</div>
-                    <div className="text-xs text-zinc-400">P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g</div>
+                )}
+              </div>
+
+              {/* Food Items List */}
+              <div className="space-y-2 mb-4">
+                {analysisResult.items.map((item, idx) => (
+                  <div key={idx} className="bg-white/5 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                      <div className="text-white font-medium">{item.name}</div>
+                      <div className="text-xs text-zinc-400">{item.portion}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-orange-400 font-bold">{item.calories} kcal</div>
+                      <div className="text-xs text-zinc-400">P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Health Evaluation */}
+            {analysisResult.health_evaluation && (
+              <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+                <h3 className="text-white font-bold mb-3">{isGerman ? "⚕️ Gesundheitsbewertung" : "⚕️ Health Evaluation"}</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/5 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">Rating</div>
+                    <div className={`font-bold ${analysisResult.health_evaluation.rating === 'sehr_gesund' ? 'text-green-400' : analysisResult.health_evaluation.rating === 'mittel' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {analysisResult.health_evaluation.rating === 'sehr_gesund' ? '✅ Sehr gesund' : analysisResult.health_evaluation.rating === 'mittel' ? '⚠️ Mittel' : '❌ Ungünstig'}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">{isGerman ? "Sättigungsgrad" : "Satiety"}</div>
+                    <div className="text-white font-bold">{analysisResult.health_evaluation.satiety_score}/10</div>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">{isGerman ? "Kaloriendichte" : "Calorie Density"}</div>
+                    <div className="text-white font-medium">{analysisResult.health_evaluation.calorie_density}</div>
+                  </div>
+                  <div className="bg-white/5 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">{isGerman ? "Zucker-Risiko" : "Sugar Risk"}</div>
+                    <div className={`font-medium ${analysisResult.health_evaluation.sugar_risk === 'niedrig' ? 'text-green-400' : analysisResult.health_evaluation.sugar_risk === 'mittel' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {analysisResult.health_evaluation.sugar_risk}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </Card>
+            )}
+
+            {/* Improvements */}
+            {analysisResult.improvements && analysisResult.improvements.length > 0 && (
+              <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+                <h3 className="text-white font-bold mb-3">{isGerman ? "💡 Verbesserungen" : "💡 Improvements"}</h3>
+                <div className="space-y-2">
+                  {analysisResult.improvements.map((imp, idx) => (
+                    <div key={idx} className="bg-white/5 p-3 rounded-lg">
+                      <div className="text-white font-medium text-sm">{imp.action}</div>
+                      <div className="text-primary text-xs font-bold">{imp.impact}</div>
+                      <div className="text-zinc-400 text-xs">{imp.reason}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Alternative Meal */}
+            {analysisResult.alternative_meal && (
+              <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/10 backdrop-blur-md border-green-500/20 rounded-2xl p-4">
+                <h3 className="text-white font-bold mb-3">{isGerman ? "🥗 Bessere Alternative" : "🥗 Better Alternative"}</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-white font-medium">{analysisResult.alternative_meal.name}</div>
+                  <div className="text-green-400 font-bold">{analysisResult.alternative_meal.calories} kcal</div>
+                </div>
+                <div className="text-xs text-zinc-400 mb-2">
+                  P: {analysisResult.alternative_meal.protein}g | C: {analysisResult.alternative_meal.carbs}g | F: {analysisResult.alternative_meal.fat}g
+                </div>
+                <div className="bg-green-500/20 p-2 rounded-lg">
+                  <span className="text-green-400 font-bold">{analysisResult.alternative_meal.calories_saved} kcal gespart!</span>
+                </div>
+                <p className="text-zinc-300 text-xs mt-2">{analysisResult.alternative_meal.why_better}</p>
+              </Card>
+            )}
+
+            {/* Nutrition Plan */}
+            {analysisResult.nutrition_plan && (
+              <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+                <h3 className="text-white font-bold mb-3">{isGerman ? "📋 Empfehlungen" : "📋 Recommendations"}</h3>
+                <div className="space-y-2">
+                  {analysisResult.nutrition_plan.recommendations?.map((rec, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span className="text-zinc-300 text-sm">{rec}</span>
+                    </div>
+                  ))}
+                  <div className="mt-3 bg-white/5 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">{isGerman ? "Beste Essenszeit" : "Best Meal Time"}</div>
+                    <div className="text-white text-sm">{analysisResult.nutrition_plan.meal_timing}</div>
+                  </div>
+                  <div className="bg-blue-500/20 p-3 rounded-lg">
+                    <div className="text-xs text-zinc-400">💧 Hydration</div>
+                    <div className="text-blue-400 text-sm">{analysisResult.nutrition_plan.hydration}</div>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {analysisResult.notes && (
-              <p className="text-sm text-zinc-400 mb-4">{analysisResult.notes}</p>
+              <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+                <p className="text-sm text-zinc-300">{analysisResult.notes}</p>
+              </Card>
             )}
 
             <Button onClick={addToDay} className="w-full">{isGerman ? "Zum Tag hinzufügen" : "Add to Day"}</Button>
-          </Card>
+          </div>
         )}
 
         {/* History */}

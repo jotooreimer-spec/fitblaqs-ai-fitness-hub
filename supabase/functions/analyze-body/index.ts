@@ -35,7 +35,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64, gender } = await req.json();
+    const { imageBase64, userData } = await req.json();
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: "Image is required" }), {
@@ -46,52 +46,129 @@ serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const systemPrompt = `You are a professional fitness and body composition analyst. Analyze the provided body/fitness image and provide detailed metrics. 
+    // Get user profile data for calculations
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("weight, height, body_type, athlete_level")
+      .eq("user_id", user.id)
+      .single();
 
-IMPORTANT: First verify this is a fitness/body image showing a human body. If the image does NOT show a human body suitable for fitness analysis, respond with:
+    const systemPrompt = `Du bist ein hochpräziser Body-Analyse-Assistent für Sportwissenschaft und Gesundheitsdaten.
+Deine Aufgabe ist es, anhand des Körperbildes eine EXTREM DETAILLIERTE Analyse durchzuführen.
+
+Du darfst NICHT diagnostizieren. Du darfst KEINE medizinischen Erkrankungen ableiten.
+Das Bild dient zur visuellen Einschätzung und Speicherung in der History.
+
+WICHTIG: Prüfe zuerst, ob es ein Körper-/Fitnessbild ist. Falls NICHT, antworte mit:
 {"error": "not_body_image", "message": "Bitte ein Körper-/Fitnessbild hochladen"}
 
-If it IS a valid body image, be professional and encouraging. Analyze body composition including:
-- Body type differentiation (muscular, fat, defined, symmetry)
-- Estimated measurements and metrics
-- Generate a personalized 4-12 week training plan
+Falls es ein gültiges Körperbild ist, liefere folgende Analyse:
 
-Respond in JSON format with these exact fields:
+1. VALIDIERUNG: Prüfe welche Körperpartien sichtbar sind
+2. BMI: Standardformel (falls Gewicht/Größe bekannt)
+3. KÖRPERFETT %: Schätzung basierend auf sichtbaren Merkmalen
+4. MUSKELMASSE: Schätzung (Unterdurchschnittlich/Normal/Überdurchschnittlich/Athletisch)
+5. TDEE: Kalorienbedarf über Mifflin-St Jeor + Aktivitätsfaktor
+6. ZIELKALORIEN: Für Gewichtsziel
+7. ZEIT BIS ZIEL: In Wochen
+8. TRAININGSPLAN: 4-12 Wochen mit Push/Pull/Legs/Cardio
+9. ERNÄHRUNGSPLAN: Protein/Carbs/Fette pro Tag
+10. STRATEGIE: Konkrete Schritte zum Ziel
+
+${userData ? `
+Benutzerdaten:
+- Körpertyp: ${userData.bodyType || 'unbekannt'}
+- Gewicht: ${userData.weight || profile?.weight || 'unbekannt'} kg
+- Zielgewicht: ${userData.targetWeight || 'unbekannt'} kg
+- Alter: ${userData.age || 'unbekannt'}
+- Größe: ${userData.height || profile?.height || 'unbekannt'} cm
+- Aktivitätslevel: ${userData.activityLevel || 'moderat'}
+- Training/Woche: ${userData.trainingFrequency || '3-4'}x
+- Ziel: ${userData.goal || 'Fitness verbessern'}
+` : `Profildaten: Gewicht ${profile?.weight || 'unbekannt'}kg, Größe ${profile?.height || 'unbekannt'}cm`}
+
+Antworte NUR mit validem JSON:
 {
-  "gender": "male" or "female",
-  "age_estimate": number (estimated age),
-  "body_fat_pct": number (estimated body fat percentage, e.g., 15.5),
-  "muscle_mass_pct": number (estimated muscle mass percentage),
-  "posture": "excellent", "good", "fair", or "needs_improvement",
-  "symmetry": "excellent", "good", "fair", or "asymmetric",
-  "waist_hip_ratio": number (estimated ratio, e.g., 0.85),
-  "fitness_level": number (1-10 scale),
-  "health_notes": "Brief health observations and recommendations",
-  "training_tips": "Personalized training recommendations based on body analysis",
+  "gender": "male" | "female",
+  "age_estimate": number,
+  "body_fat_pct": number,
+  "muscle_mass_pct": number,
+  "muscle_category": "unterdurchschnittlich" | "normal" | "überdurchschnittlich" | "athletisch",
+  "posture": "excellent" | "good" | "fair" | "needs_improvement",
+  "symmetry": "excellent" | "good" | "fair" | "asymmetric",
+  "waist_hip_ratio": number,
+  "fitness_level": number,
+  "bmi": {
+    "value": number,
+    "category": "Untergewicht" | "Normalgewicht" | "Übergewicht" | "Adipositas"
+  },
+  "tdee": {
+    "bmr": number,
+    "activity_factor": number,
+    "total": number,
+    "formula": "Mifflin-St Jeor"
+  },
+  "target_calories": {
+    "daily": number,
+    "deficit_surplus": number,
+    "goal": "Fettabbau" | "Muskelaufbau" | "Erhaltung",
+    "weekly_change_kg": number
+  },
+  "time_to_goal": {
+    "weeks": number,
+    "days": number,
+    "weight_to_lose_gain": number
+  },
   "training_plan": {
-    "weeks": number (4-12),
-    "focus": "muscle_gain" or "fat_loss" or "definition" or "maintenance",
+    "weeks": number,
+    "focus": "muscle_gain" | "fat_loss" | "definition" | "maintenance",
     "weekly_schedule": [
-      {"day": "Monday", "workout": "Push - Chest/Shoulders/Triceps", "duration": "60 min"},
-      {"day": "Tuesday", "workout": "Pull - Back/Biceps", "duration": "60 min"},
-      {"day": "Wednesday", "workout": "Rest/Cardio", "duration": "30 min"},
-      {"day": "Thursday", "workout": "Legs - Quads/Hamstrings/Calves", "duration": "60 min"},
-      {"day": "Friday", "workout": "Upper Body", "duration": "60 min"},
-      {"day": "Saturday", "workout": "Full Body/HIIT", "duration": "45 min"},
-      {"day": "Sunday", "workout": "Rest", "duration": "0 min"}
-    ]
-  }
-}
-Only respond with valid JSON, no additional text.`;
+      {"day": "Montag", "workout": "Push - Brust/Schultern/Trizeps", "duration": "60 min", "exercises": ["Bankdrücken 4x8-12", "Schulterdrücken 3x10-12", "Seitheben 3x12-15", "Trizeps Dips 3x12"]},
+      {"day": "Dienstag", "workout": "Pull - Rücken/Bizeps", "duration": "60 min", "exercises": ["Klimmzüge 4x8-12", "Rudern 3x10-12", "Face Pulls 3x15", "Bizeps Curls 3x12"]},
+      {"day": "Mittwoch", "workout": "Cardio/Regeneration", "duration": "30 min", "exercises": ["LISS Cardio", "Mobility Work"]},
+      {"day": "Donnerstag", "workout": "Legs - Beine/Gesäß", "duration": "60 min", "exercises": ["Kniebeugen 4x8-12", "Beinpresse 3x12", "Ausfallschritte 3x10", "Wadenheben 4x15"]},
+      {"day": "Freitag", "workout": "Upper Body", "duration": "55 min", "exercises": ["Schrägbankdrücken 3x10", "Latzug 3x12", "Arnold Press 3x12", "Kabelzug 3x15"]},
+      {"day": "Samstag", "workout": "HIIT/Full Body", "duration": "45 min", "exercises": ["Burpees 4x12", "Kettlebell Swings 4x15", "Mountain Climbers 3x20", "Box Jumps 3x10"]},
+      {"day": "Sonntag", "workout": "Ruhetag", "duration": "0 min", "exercises": ["Aktive Erholung", "Stretching"]}
+    ],
+    "progression": "2.5-5% wöchentliche Steigerung"
+  },
+  "nutrition_plan": {
+    "daily_calories": number,
+    "protein_g": number,
+    "carbs_g": number,
+    "fat_g": number,
+    "protein_per_kg": number,
+    "meal_plan": {
+      "breakfast": {"meal": "Beschreibung", "calories": number, "protein": number},
+      "lunch": {"meal": "Beschreibung", "calories": number, "protein": number},
+      "dinner": {"meal": "Beschreibung", "calories": number, "protein": number},
+      "snacks": {"meal": "Beschreibung", "calories": number, "protein": number}
+    },
+    "hydration_liters": number,
+    "supplements": ["Creatin 5g", "Vitamin D 2000IU", "Omega-3"]
+  },
+  "strategy": {
+    "weekly_workouts": number,
+    "cardio_sessions": number,
+    "sleep_hours": number,
+    "water_liters": number,
+    "key_focus": "Hauptfokus der nächsten Wochen",
+    "mistakes_to_avoid": ["Fehler 1", "Fehler 2", "Fehler 3"],
+    "progress_markers": ["Nach 2 Wochen", "Nach 4 Wochen", "Nach 8 Wochen"]
+  },
+  "health_notes": "Gesundheitshinweise und Empfehlungen",
+  "training_tips": "Personalisierte Trainingstipps basierend auf Körperanalyse",
+  "history_summary": "3-4 Sätze Zusammenfassung für History-Eintrag"
+}`;
 
-    console.log("Calling OpenAI API for body analysis...");
+    console.log("Calling OpenAI API for detailed body analysis...");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -106,12 +183,12 @@ Only respond with valid JSON, no additional text.`;
           {
             role: "user",
             content: [
-              { type: "text", text: `Analyze this body/fitness image. Gender hint: ${gender || 'unknown'}. Provide detailed body composition analysis and training plan.` },
+              { type: "text", text: "Analysiere dieses Körper-/Fitnessbild EXTREM DETAILLIERT. Berechne BMI, TDEE, Körperfett%, erstelle einen kompletten Trainingsplan und Ernährungsplan mit konkreten Zahlen." },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     });
 
@@ -120,7 +197,7 @@ Only respond with valid JSON, no additional text.`;
       console.error("OpenAI API error:", response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -134,7 +211,7 @@ Only respond with valid JSON, no additional text.`;
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("OpenAI response received:", content?.substring(0, 200));
+    console.log("OpenAI response received:", content?.substring(0, 400));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -143,7 +220,6 @@ Only respond with valid JSON, no additional text.`;
       });
     }
 
-    // Parse JSON response
     let analysisData;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -153,7 +229,6 @@ Only respond with valid JSON, no additional text.`;
         throw new Error("No JSON found");
       }
       
-      // Check if it's not a body image
       if (analysisData.error === "not_body_image") {
         return new Response(JSON.stringify({ 
           error: "invalid_image", 
@@ -165,10 +240,7 @@ Only respond with valid JSON, no additional text.`;
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      return new Response(JSON.stringify({ 
-        error: "parse_error", 
-        message: "AI response could not be parsed" 
-      }), {
+      return new Response(JSON.stringify({ error: "parse_error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -189,7 +261,16 @@ Only respond with valid JSON, no additional text.`;
         waist_hip_ratio: analysisData.waist_hip_ratio,
         fitness_level: analysisData.fitness_level,
         health_notes: analysisData.health_notes,
-        training_tips: analysisData.training_tips,
+        training_tips: JSON.stringify({
+          tips: analysisData.training_tips,
+          bmi: analysisData.bmi,
+          tdee: analysisData.tdee,
+          target_calories: analysisData.target_calories,
+          time_to_goal: analysisData.time_to_goal,
+          training_plan: analysisData.training_plan,
+          nutrition_plan: analysisData.nutrition_plan,
+          strategy: analysisData.strategy
+        }),
       })
       .select()
       .single();
