@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, CreditCard } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Store, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -16,6 +16,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { languages, useLanguage } from "@/contexts/LanguageContext";
 // WorkoutReminder removed
 import settingsBg from "@/assets/settings-bg.jpg";
+import fitblaqShopIcon from "@/assets/fitblaq-shop.png";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -185,6 +186,13 @@ const Settings = () => {
       onClick: () => setLanguageDialogOpen(true),
     },
     {
+      icon: Store,
+      title: "FitBlaq Shop",
+      description: "FitBlaqstore.com",
+      onClick: () => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry",
+      customIcon: fitblaqShopIcon,
+    },
+    {
       icon: Shield,
       title: t("privacy"),
       description: language === "de" ? "Daten & Sicherheit" : "Data & Security",
@@ -239,11 +247,18 @@ const Settings = () => {
                 className="bg-black/40 backdrop-blur-sm border-white/10 p-5 hover:border-primary/50 transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4">
-                  <Icon className="w-6 h-6 text-primary" />
+                  {(section as any).customIcon ? (
+                    <img src={(section as any).customIcon} alt={section.title} className="w-6 h-6 rounded object-cover" />
+                  ) : (
+                    <Icon className="w-6 h-6 text-primary" />
+                  )}
                   <div className="flex-1">
                     <div className="font-semibold text-white">{section.title}</div>
                     <div className="text-sm text-white/70">{section.description}</div>
                   </div>
+                  {section.title === "FitBlaq Shop" && (
+                    <Mail className="w-4 h-4 text-white/50" />
+                  )}
                 </div>
               </Card>
             );

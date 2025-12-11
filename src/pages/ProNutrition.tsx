@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, HelpCircle, Upload, X, Utensils, Scan, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, HelpCircle, Upload, X, Utensils, Scan, Save, Trash2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -14,6 +14,7 @@ import BottomNav from "@/components/BottomNav";
 import { FoodAnalysisSkeleton } from "@/components/AnalysisSkeleton";
 import { compressImage, isValidImageFile } from "@/lib/imageUtils";
 import proNutritionBg from "@/assets/pro-nutrition-bg.png";
+import performanceButtonBg from "@/assets/performance-button.png";
 
 interface FoodItem {
   name: string;
@@ -288,6 +289,18 @@ const ProNutrition = () => {
           <h1 className="text-lg font-semibold text-white">Pro Nutrition</h1>
           <Button variant="ghost" size="icon" className="text-white"><HelpCircle className="w-6 h-6" /></Button>
         </div>
+
+        {/* Performance Box - Square with image background */}
+        <Card 
+          onClick={() => navigate("/calendar")}
+          className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl overflow-hidden mb-4 cursor-pointer hover:scale-[1.02] transition-all w-24 h-24 relative"
+        >
+          <img src={performanceButtonBg} alt="Performance" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-white mb-1" />
+            <span className="text-xs font-semibold text-white">Performance</span>
+          </div>
+        </Card>
 
         {/* Daily Totals */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
