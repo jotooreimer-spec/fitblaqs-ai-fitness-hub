@@ -234,31 +234,49 @@ const Nutrition = () => {
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Heutiger Essensplan" : "Today's Meal Plan"}</h2>
           <div className="space-y-4">
-            {todayLogs.map((log) => (
-              <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex-1">
-                    {/* Category as header */}
-                    <div className="text-xs font-semibold text-primary mb-1">{getCategoryName(log.meal_type)}</div>
-                    <div className="font-semibold text-white">{log.food_name}</div>
-                    <div className="text-sm text-white/60 mt-1">
-                      {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
+            {todayLogs.map((log) => {
+              // Parse supplements from notes
+              const supplementsMatch = log.notes?.match(/Supplements?: ([^|]+)/i);
+              const supplementsInfo = supplementsMatch ? supplementsMatch[1].trim() : null;
+              
+              return (
+                <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      {/* Category as header */}
+                      <div className="text-xs font-semibold text-primary mb-1">{getCategoryName(log.meal_type)}</div>
+                      <div className="font-semibold text-white">{log.food_name}</div>
+                      <div className="text-sm text-white/60 mt-1">
+                        {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
+                      </div>
+                      {/* Show Hydration if available */}
+                      {log.notes?.includes("Water:") && (
+                        <div className="text-xs text-blue-400 mt-1">
+                          💧 Hydration: {log.notes.match(/Water: ([\d.]+)/)?.[1] || 0} ml
+                        </div>
+                      )}
+                      {/* Show Supplements if available */}
+                      {supplementsInfo && (
+                        <div className="text-xs text-amber-400 mt-1">
+                          💊 Supplements: {supplementsInfo}
+                        </div>
+                      )}
+                      <div className="text-xs text-white/40 mt-1">
+                        {new Date(log.completed_at).toLocaleDateString(isGerman ? "de-DE" : "en-US")}
+                      </div>
                     </div>
-                    <div className="text-xs text-white/40 mt-1">
-                      {new Date(log.completed_at).toLocaleDateString(isGerman ? "de-DE" : "en-US")}
+                    <div className="flex gap-2">
+                      <Button size="icon" variant="ghost" onClick={() => handleSaveToCalendar(log)} className="text-primary hover:text-primary">
+                        <Save className="w-4 h-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleDeleteLog(log.id)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="icon" variant="ghost" onClick={() => handleSaveToCalendar(log)} className="text-primary hover:text-primary">
-                      <Save className="w-4 h-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => handleDeleteLog(log.id)} className="text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
             {todayLogs.length === 0 && (
               <div className="text-center text-white/50 py-8">{isGerman ? "Keine Einträge für heute" : "No entries for today"}</div>
             )}

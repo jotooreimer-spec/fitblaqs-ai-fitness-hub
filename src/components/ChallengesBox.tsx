@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Target, Calendar, TrendingDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Target, Calendar, TrendingDown, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
   const [goalWeight, setGoalWeight] = useState("");
   const [months, setMonths] = useState("");
   const [savedGoal, setSavedGoal] = useState<{ goal: number; months: number; startWeight: number; startDate: string } | null>(null);
+  const [daysDialogOpen, setDaysDialogOpen] = useState(false);
 
   useEffect(() => {
     // Load saved challenge from localStorage
@@ -95,7 +97,10 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
               <div className="text-xs text-white/60 mb-1">{isGerman ? "Aktuell" : "Current"}</div>
               <div className="text-2xl font-bold text-white">{currentWeight} kg</div>
             </div>
-            <div>
+            <div 
+              className="cursor-pointer hover:scale-105 transition-transform"
+              onClick={(e) => { e.stopPropagation(); setDaysDialogOpen(true); }}
+            >
               <div className="text-xs text-white/60 mb-1">{isGerman ? "Verbleibend" : "Remaining"}</div>
               <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
                 <Calendar className="w-4 h-4" />
@@ -162,6 +167,40 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
           </Button>
         </div>
       )}
+      
+      {/* Days Remaining Dialog */}
+      <Dialog open={daysDialogOpen} onOpenChange={setDaysDialogOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              {isGerman ? "Verbleibende Tage" : "Days Remaining"}
+              <Button variant="ghost" size="icon" onClick={() => setDaysDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <div className="text-6xl font-bold text-primary mb-2">{daysRemaining}</div>
+            <div className="text-lg text-muted-foreground">{isGerman ? "Tage verbleibend" : "Days remaining"}</div>
+            {savedGoal && (
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{isGerman ? "Zielgewicht:" : "Goal weight:"}</span>
+                  <span className="font-semibold">{savedGoal.goal} kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{isGerman ? "Noch abzunehmen:" : "To lose:"}</span>
+                  <span className="font-semibold text-orange-400">{Math.max(0, currentWeight - savedGoal.goal).toFixed(1)} kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{isGerman ? "Zeitraum:" : "Duration:"}</span>
+                  <span className="font-semibold">{savedGoal.months} {isGerman ? "Monate" : "months"}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

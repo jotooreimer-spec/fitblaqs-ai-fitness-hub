@@ -58,14 +58,28 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       .gte("completed_at", yearStart.toISOString());
 
     // Build monthly chart data with hours (calculated from saved entries)
+    // Only completed months show bars - current month stays at 0 until month ends
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
     const chartData = monthNames.map((month, index) => {
+      // Only show values for completed months (past months)
+      const isCompletedMonth = index < currentMonth;
+      
+      if (!isCompletedMonth) {
+        return { 
+          month: isGerman ? monthNamesDE[index] : month,
+          count: 0 
+        };
+      }
+      
       // Calculate workout hours from saved entries
       const monthWorkouts = workouts?.filter(w => {
         const d = new Date(w.completed_at);
-        return d.getMonth() === index;
+        return d.getMonth() === index && d.getFullYear() === currentYear;
       }) || [];
       
       // Estimate hours: each workout set is ~3 minutes average (including rest)
@@ -75,14 +89,14 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         return total + (setsCount * minutesPerSet / 60);
       }, 0);
 
-      // Calculate jogging hours from duration (duration is in seconds)
+      // Calculate jogging hours from duration (duration is in minutes)
       const monthJogging = joggingLogs?.filter(j => {
         const d = new Date(j.completed_at);
-        return d.getMonth() === index;
+        return d.getMonth() === index && d.getFullYear() === currentYear;
       }) || [];
       
       const joggingHours = monthJogging.reduce((total, j) => {
-        return total + ((j.duration || 0) / 3600); // Convert seconds to hours
+        return total + ((j.duration || 0) / 60); // duration in minutes, convert to hours
       }, 0);
 
       return { 
