@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Dumbbell, Utensils, Check, Star } from "lucide-react";
+import { ArrowLeft, Dumbbell, Utensils, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
+import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 
 const ProAthleteSubscription = () => {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ const ProAthleteSubscription = () => {
           {/* Pro Athlete Training */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
             <div className="absolute top-4 right-4">
-              <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
+              <img src={fitblaqsLogo} alt="FitBlaq" className="w-8 h-8 object-contain" />
             </div>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
@@ -79,6 +80,10 @@ const ProAthleteSubscription = () => {
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "KI-generierte Übungsauswahl" : "AI-generated exercise selection"}</span>
               </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Performance & Dailyplanner (alle Fitness-Stats)" : "Performance & Dailyplanner (all fitness stats)"}</span>
+              </li>
             </ul>
 
             <Button onClick={() => navigate("/pro-athlete")} className="w-full" size="lg">
@@ -89,7 +94,7 @@ const ProAthleteSubscription = () => {
           {/* Pro Athlete Nutrition */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
             <div className="absolute top-4 right-4">
-              <Star className="w-8 h-8 text-green-400 fill-green-400" />
+              <img src={fitblaqsLogo} alt="FitBlaq" className="w-8 h-8 object-contain" />
             </div>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -123,6 +128,10 @@ const ProAthleteSubscription = () => {
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "Foto Upload Analyse" : "Photo upload analysis"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Performance & Dailyplanner (alle Fitness-Stats)" : "Performance & Dailyplanner (all fitness stats)"}</span>
               </li>
             </ul>
 
