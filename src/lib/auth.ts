@@ -48,6 +48,52 @@ export const signUpWithEmail = async (
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  // Robust logout for Web, PWA, and Android APK
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    // Ignore errors - proceed with logout anyway
+    console.log("Sign out completed");
+  }
+
+  // Clear local storage safely (may fail in some APK contexts)
+  try {
+    localStorage.clear();
+    sessionStorage.clear();
+  } catch (e) {
+    // Ignore storage errors
+  }
+};
+
+// Check if user has completed onboarding
+export const checkOnboardingStatus = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("has_completed_onboarding")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) {
+      return false;
+    }
+
+    return data.has_completed_onboarding === true;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Mark onboarding as completed
+export const completeOnboarding = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ has_completed_onboarding: true })
+      .eq("user_id", userId);
+
+    return !error;
+  } catch (e) {
+    return false;
+  }
 };

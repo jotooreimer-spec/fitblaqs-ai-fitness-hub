@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dumbbell, Zap, Heart, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
 import onboardingBg from "@/assets/onboarding-bg.jpg";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
@@ -15,6 +16,8 @@ import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 const Onboarding = () => {
   const navigate = useNavigate();
   const [isGerman, setIsGerman] = useState(true);
+  const [userId, setUserId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
   
   // Dialog states
   const [levelDialogOpen, setLevelDialogOpen] = useState(false);
@@ -26,44 +29,84 @@ const Onboarding = () => {
   const [bodyType, setBodyType] = useState<string>("");
   const [healthOptions, setHealthOptions] = useState<string[]>([]);
 
-  // Check language from session
-  useState(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/login");
-        return;
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        setUserId(session.user.id);
+        const metadata = session.user.user_metadata;
+        setIsGerman(metadata.language === "de");
+
+        // Check if already completed onboarding
+        const hasCompleted = await checkOnboardingStatus(session.user.id);
+        if (hasCompleted) {
+          navigate("/dashboard", { replace: true });
+          return;
+        }
+
+        // Load existing profile data
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("athlete_level, body_type")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (profile) {
+          if (profile.athlete_level) setLevel(profile.athlete_level);
+          if (profile.body_type) setBodyType(profile.body_type);
+        }
+
+        setIsLoading(false);
+      } catch (e) {
+        navigate("/login", { replace: true });
       }
-      const metadata = session.user.user_metadata;
-      setIsGerman(metadata.language === "de");
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login", { replace: true });
+      }
     });
-  });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleLevelSave = async () => {
-    if (!level) return;
+    if (!level || !userId) return;
     
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    try {
       await supabase.from("profiles").update({
         athlete_level: level
-      }).eq("user_id", session.user.id);
+      }).eq("user_id", userId);
+      
+      setLevelDialogOpen(false);
+      toast.success(isGerman ? "Level gespeichert" : "Level saved");
+    } catch (e) {
+      toast.error(isGerman ? "Fehler beim Speichern" : "Error saving");
     }
-    
-    setLevelDialogOpen(false);
-    toast.success(isGerman ? "Level gespeichert" : "Level saved");
   };
 
   const handlePowerSave = async () => {
-    if (!bodyType) return;
+    if (!bodyType || !userId) return;
     
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    try {
       await supabase.from("profiles").update({
         body_type: bodyType
-      }).eq("user_id", session.user.id);
+      }).eq("user_id", userId);
+      
+      setPowerDialogOpen(false);
+      toast.success(isGerman ? "Körpertyp gespeichert" : "Body type saved");
+    } catch (e) {
+      toast.error(isGerman ? "Fehler beim Speichern" : "Error saving");
     }
-    
-    setPowerDialogOpen(false);
-    toast.success(isGerman ? "Körpertyp gespeichert" : "Body type saved");
   };
 
   const handleHealthySave = () => {
@@ -71,17 +114,46 @@ const Onboarding = () => {
     toast.success(isGerman ? "Gesundheitsdaten gespeichert" : "Health data saved");
   };
 
-  const handleStartWorkout = () => {
+  const handleStartWorkout = async () => {
     // Check if all required fields are filled
     if (!level || !bodyType || healthOptions.length === 0) {
       toast.error(isGerman ? "Bitte fülle alle Felder aus" : "Please complete all fields");
       return;
     }
-    navigate("/dashboard");
+
+    if (!userId) {
+      toast.error(isGerman ? "Sitzung abgelaufen" : "Session expired");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    try {
+      // Mark onboarding as completed in Supabase
+      const success = await completeOnboarding(userId);
+      
+      if (success) {
+        toast.success(isGerman ? "Willkommen bei FitBlaqs!" : "Welcome to FitBlaqs!");
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast.error(isGerman ? "Fehler beim Speichern" : "Error saving");
+      }
+    } catch (e) {
+      toast.error(isGerman ? "Fehler beim Speichern" : "Error saving");
+    }
   };
 
   // Check if all boxes are completed
   const allCompleted = level && bodyType && healthOptions.length > 0;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse">
+          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-20 h-20" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

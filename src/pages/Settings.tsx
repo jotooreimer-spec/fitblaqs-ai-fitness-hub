@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Store, Mail } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Store, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { languages, useLanguage } from "@/contexts/LanguageContext";
-// WorkoutReminder removed
+import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 import settingsBg from "@/assets/settings-bg.jpg";
 import fitblaqShopIcon from "@/assets/fitblaq-shop.png";
 
@@ -34,6 +34,7 @@ const Settings = () => {
   const [termsContentDialogOpen, setTermsContentDialogOpen] = useState(false);
   const [shopDialogOpen, setShopDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   
   // Settings states
   const [updateNotifications, setUpdateNotifications] = useState(false);
@@ -95,14 +96,27 @@ const Settings = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
+    // Robust logout for Web, PWA, and Android APK
     try {
       await signOut();
-      document.documentElement.classList.remove("theme-female");
-      toast.success(t("logout") + " ✓");
-      navigate("/");
-    } catch (error) {
-      toast.error(t("error"));
+    } catch (e) {
+      // Ignore errors - proceed with logout anyway
     }
+    
+    document.documentElement.classList.remove("theme-female");
+    toast.success(t("logout") + " ✓");
+    
+    // Navigate to landing page
+    window.location.href = "/";
+    
+    // Fallback reload for APK
+    setTimeout(() => {
+      try {
+        window.location.reload();
+      } catch (e) {
+        // Ignore
+      }
+    }, 200);
   };
 
   const handleSaveProfile = async () => {
@@ -167,6 +181,12 @@ const Settings = () => {
       title: t("editProfile"),
       description: language === "de" ? "Name, Gewicht, Größe ändern" : "Change name, weight, height",
       onClick: () => setProfileDialogOpen(true),
+    },
+    {
+      icon: Lock,
+      title: language === "de" ? "Passwort ändern" : "Change Password",
+      description: language === "de" ? "Passwort aktualisieren" : "Update your password",
+      onClick: () => setPasswordDialogOpen(true),
     },
     {
       icon: CreditCard,
@@ -674,6 +694,13 @@ const Settings = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Password Change Dialog */}
+      <PasswordChangeDialog
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+        userEmail={userData?.email || ""}
+      />
 
       {/* FitBlaq Shop Dialog */}
       <Dialog open={shopDialogOpen} onOpenChange={setShopDialogOpen}>
