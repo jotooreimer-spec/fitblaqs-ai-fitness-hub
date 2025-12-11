@@ -37,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    const { imageBase64, category } = await req.json();
+    const { imageBase64, category, manualData } = await req.json();
 
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: "Image is required" }), {
@@ -54,96 +54,88 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Du bist ein hochpräziser Ernährungs-Analyse-Assistent für Sportwissenschaft und Gesundheitsdaten.
-Deine Aufgabe ist es, anhand des Bildes eine EXTREM DETAILLIERTE Analyse durchzuführen.
+    const systemPrompt = `Du bist ein professioneller Ernährungsberater und Food-Tracker-Analyst.
+Der Benutzer lädt ein Bild eines Lebensmittels hoch.
+
+${manualData ? `Manuelle Werte vom Benutzer:
+- Name: ${manualData.name || 'unbekannt'}
+- Category: ${manualData.category || category || 'unbekannt'}
+- Protein: ${manualData.protein || 'unbekannt'} g
+- Calories: ${manualData.calories || 'unbekannt'} kcal
+- Carbs: ${manualData.carbs || 'unbekannt'} g
+- Fat: ${manualData.fat || 'unbekannt'} g
+- Sugar: ${manualData.sugar || 'unbekannt'} g
+- Water: ${manualData.water || 'unbekannt'} ml
+- Spurenelemente: ${manualData.traceElements || 'unbekannt'}` : 'Keine manuellen Werte - analysiere das Bild vollständig.'}
 
 WICHTIG: Prüfe zuerst, ob es ein Essensbild ist. Falls NICHT, antworte mit:
 {"error": "not_food_image", "message": "Bitte ein Essensbild hochladen"}
 
-Falls es ein gültiges Essensbild ist, liefere folgende Analyse:
+Falls es ein gültiges Essensbild ist:
 
-1. VALIDIERUNG: Prüfe ob alle Makros erkennbar sind
-2. EXAKTE NÄHRWERTE: Kalorien pro Makro (Protein×4, Carbs×4, Fat×9)
-3. MAKROVERTEILUNG: Prozentanteile berechnen
-4. DETAILANALYSE: Zucker, Wasser, Bioverfügbarkeit, Mikronährstoffe
-5. GESUNDHEITSBEWERTUNG: Sehr gesund / Mittel / Ungünstig
-6. VERBESSERUNGEN: Konkrete Zahlen zum Optimieren
-7. ALTERNATIVE: Ähnliches Gericht mit weniger kcal
+1. Analysiere das Bild (erkenne Lebensmittel) und gleiche es mit den angegebenen Werten ab.
+2. Berechne die genauen Kalorien und Makronährstoffverteilung.
+3. Gib in Prozent an, wie viel des Tagesbedarfs (basierend auf 2000 kcal) abgedeckt ist.
+4. Erstelle ein optimiertes Gericht, das ähnliche Makros liefert, aber weniger Kalorien hat.
+5. Berechne Kalorien: Protein×4 + Carbs×4 + Fat×9
 
 Antworte NUR mit validem JSON in diesem Format:
 {
+  "FoodName": "Erkanntes Lebensmittel",
+  "Category": "${category || 'protein'}",
+  "Calories": number,
+  "Protein_g": number,
+  "Carbs_g": number,
+  "Fat_g": number,
+  "Sugar_g": number,
+  "Fiber_g": number,
+  "Water_ml": number,
+  "TraceElements": {
+    "Vitamin_A": "Menge + Einheit",
+    "Vitamin_C": "Menge + Einheit",
+    "Iron": "Menge + Einheit",
+    "Calcium": "Menge + Einheit"
+  },
+  "DailyPercent": {
+    "Calories": number (% von 2000 kcal),
+    "Protein": number (% von 50g),
+    "Carbs": number (% von 250g),
+    "Fat": number (% von 65g)
+  },
+  "MacroDistribution": {
+    "Protein_pct": number,
+    "Carbs_pct": number,
+    "Fat_pct": number
+  },
+  "HealthRating": "sehr_gesund" | "mittel" | "ungünstig",
+  "SuggestedDish": {
+    "Name": "Alternatives Gericht",
+    "Calories": number (weniger als Original),
+    "Protein_g": number,
+    "Carbs_g": number,
+    "Fat_g": number,
+    "CaloriesSaved": number,
+    "WhyBetter": "Begründung"
+  },
   "items": [
     {
-      "name": "Lebensmittelname",
+      "name": "Einzelnes Lebensmittel",
       "portion": "geschätzte Portion",
       "calories": number,
       "protein": number,
       "carbs": number,
-      "fat": number,
-      "sugar": number,
-      "fiber": number
+      "fat": number
     }
   ],
   "total_calories": number,
   "total_protein": number,
   "total_carbs": number,
   "total_fat": number,
-  "total_sugar": number,
-  "total_fiber": number,
-  "category": "meat" | "protein" | "supplements" | "vegetarian" | "vegan",
-  "macro_distribution": {
-    "protein_pct": number,
-    "carbs_pct": number,
-    "fat_pct": number
-  },
-  "calculated_calories": {
-    "from_protein": number,
-    "from_carbs": number,
-    "from_fat": number,
-    "total_calculated": number,
-    "deviation_pct": number
-  },
-  "health_evaluation": {
-    "rating": "sehr_gesund" | "mittel" | "ungünstig",
-    "calorie_density": "niedrig" | "mittel" | "hoch",
-    "nutrient_density": "niedrig" | "mittel" | "hoch",
-    "satiety_score": number,
-    "sugar_risk": "niedrig" | "mittel" | "hoch",
-    "fat_quality": "gut" | "mittel" | "schlecht"
-  },
-  "improvements": [
-    {
-      "action": "Beschreibung der Verbesserung",
-      "impact": "Auswirkung in kcal oder Gramm",
-      "reason": "Begründung"
-    }
-  ],
-  "alternative_meal": {
-    "name": "Alternativgericht",
-    "calories": number,
-    "protein": number,
-    "carbs": number,
-    "fat": number,
-    "calories_saved": number,
-    "why_better": "Begründung"
-  },
-  "nutrition_plan": {
-    "recommendations": ["Empfehlung 1", "Empfehlung 2", "Empfehlung 3"],
-    "supplements": ["Supplement 1", "Supplement 2"],
-    "meal_timing": "Optimale Essenszeit",
-    "hydration": "Empfohlene Wasserzufuhr"
-  },
-  "trace_elements": {
-    "vitamin_a": "geschätzt",
-    "vitamin_c": "geschätzt",
-    "iron": "geschätzt",
-    "calcium": "geschätzt"
-  },
-  "notes": "Zusammenfassung und Empfehlungen",
-  "history_summary": "3-4 Sätze über das Gericht für die History"
+  "notes": "Zusammenfassung und Ernährungstipps",
+  "NutritionTips": "Konkrete Empfehlungen"
 }`;
 
-    console.log("Calling OpenAI API for detailed food analysis...");
+    console.log("Calling OpenAI API for food analysis...");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -158,7 +150,7 @@ Antworte NUR mit validem JSON in diesem Format:
           {
             role: "user",
             content: [
-              { type: "text", text: `Analysiere dieses Essensbild EXTREM DETAILLIERT. Kategorie-Hinweis: ${category || 'unknown'}. Berechne alle Makros, Mikronährstoffe, Gesundheitsbewertung und liefere Verbesserungsvorschläge.` },
+              { type: "text", text: "Analysiere dieses Essensbild und erstelle eine komplette Nährwertanalyse mit Verbesserungsvorschlägen." },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
@@ -186,7 +178,7 @@ Antworte NUR mit validem JSON in diesem Format:
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("OpenAI response received:", content?.substring(0, 300));
+    console.log("OpenAI response received:", content?.substring(0, 500));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -221,22 +213,66 @@ Antworte NUR mit validem JSON in diesem Format:
       });
     }
 
+    // Map to standard format for UI
+    const mappedAnalysis = {
+      ...analysisData,
+      items: analysisData.items || [{
+        name: analysisData.FoodName,
+        portion: "1 serving",
+        calories: analysisData.Calories,
+        protein: analysisData.Protein_g,
+        carbs: analysisData.Carbs_g,
+        fat: analysisData.Fat_g
+      }],
+      total_calories: analysisData.total_calories || analysisData.Calories,
+      total_protein: analysisData.total_protein || analysisData.Protein_g,
+      total_carbs: analysisData.total_carbs || analysisData.Carbs_g,
+      total_fat: analysisData.total_fat || analysisData.Fat_g,
+      total_sugar: analysisData.Sugar_g,
+      total_fiber: analysisData.Fiber_g,
+      category: analysisData.Category || category || "protein",
+      notes: analysisData.notes || analysisData.NutritionTips,
+      macro_distribution: analysisData.MacroDistribution ? {
+        protein_pct: analysisData.MacroDistribution.Protein_pct,
+        carbs_pct: analysisData.MacroDistribution.Carbs_pct,
+        fat_pct: analysisData.MacroDistribution.Fat_pct
+      } : null,
+      health_evaluation: {
+        rating: analysisData.HealthRating || "mittel",
+        calorie_density: analysisData.DailyPercent?.Calories > 25 ? "hoch" : "mittel",
+        nutrient_density: "mittel",
+        satiety_score: 7,
+        sugar_risk: analysisData.Sugar_g > 15 ? "hoch" : analysisData.Sugar_g > 5 ? "mittel" : "niedrig",
+        fat_quality: "mittel"
+      },
+      alternative_meal: analysisData.SuggestedDish ? {
+        name: analysisData.SuggestedDish.Name,
+        calories: analysisData.SuggestedDish.Calories,
+        protein: analysisData.SuggestedDish.Protein_g,
+        carbs: analysisData.SuggestedDish.Carbs_g,
+        fat: analysisData.SuggestedDish.Fat_g,
+        calories_saved: analysisData.SuggestedDish.CaloriesSaved,
+        why_better: analysisData.SuggestedDish.WhyBetter
+      } : null,
+      trace_elements: analysisData.TraceElements,
+      daily_percent: analysisData.DailyPercent
+    };
+
     // Save to database
     const { data: saved, error: saveError } = await supabase
       .from("food_analysis")
       .insert({
         user_id: user.id,
         image_url: imageBase64.substring(0, 100) + "...",
-        items: analysisData.items,
-        total_calories: analysisData.total_calories,
-        category: analysisData.category,
+        items: mappedAnalysis.items,
+        total_calories: mappedAnalysis.total_calories,
+        category: mappedAnalysis.category,
         notes: JSON.stringify({
-          summary: analysisData.notes,
-          health_evaluation: analysisData.health_evaluation,
-          improvements: analysisData.improvements,
-          alternative: analysisData.alternative_meal,
-          trace_elements: analysisData.trace_elements,
-          macro_distribution: analysisData.macro_distribution
+          summary: mappedAnalysis.notes,
+          health_evaluation: mappedAnalysis.health_evaluation,
+          alternative: mappedAnalysis.alternative_meal,
+          trace_elements: mappedAnalysis.trace_elements,
+          daily_percent: mappedAnalysis.daily_percent
         }),
       })
       .select()
@@ -246,7 +282,7 @@ Antworte NUR mit validem JSON in diesem Format:
       console.error("Save error:", saveError);
     }
 
-    return new Response(JSON.stringify({ success: true, analysis: analysisData, saved }), {
+    return new Response(JSON.stringify({ success: true, analysis: mappedAnalysis, saved }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
