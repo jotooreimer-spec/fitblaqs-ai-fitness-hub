@@ -99,43 +99,55 @@ const CalendarPage = () => {
   }, [date, userId]);
 
   const loadMonthData = async (uid: string, selectedDate: Date) => {
-    const monthStart = startOfMonth(selectedDate);
-    const monthEnd = endOfMonth(selectedDate);
+    const yearStart = new Date(selectedDate.getFullYear(), 0, 1);
+    const yearEnd = new Date(selectedDate.getFullYear(), 11, 31, 23, 59, 59);
 
     const { data: workoutData } = await supabase
       .from("workout_logs")
       .select("*")
       .eq("user_id", uid)
-      .gte("completed_at", monthStart.toISOString())
-      .lte("completed_at", monthEnd.toISOString());
+      .gte("completed_at", yearStart.toISOString())
+      .lte("completed_at", yearEnd.toISOString());
 
     const { data: joggingData } = await supabase
       .from("jogging_logs")
       .select("calories, duration, completed_at")
       .eq("user_id", uid)
-      .gte("completed_at", monthStart.toISOString())
-      .lte("completed_at", monthEnd.toISOString());
+      .gte("completed_at", yearStart.toISOString())
+      .lte("completed_at", yearEnd.toISOString());
 
-    // Build monthly chart data with months (Jan-Dec)
+    // Build monthly chart data - only completed months show values
     const monthNames = isGerman 
       ? ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    const currentMonth = selectedDate.getMonth();
-    const chartData = monthNames.slice(0, currentMonth + 1).map((month, index) => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const selectedYear = selectedDate.getFullYear();
+    
+    const chartData = monthNames.map((month, index) => {
+      // Only show values for completed months (past months)
+      // Current month shows 0 until month ends
+      const isCompletedMonth = selectedYear < currentYear || (selectedYear === currentYear && index < currentMonth);
+      
+      if (!isCompletedMonth) {
+        return { month, hours: 0 };
+      }
+      
       const monthWorkouts = workoutData?.filter(w => {
         const d = new Date(w.completed_at);
-        return d.getMonth() === index;
+        return d.getMonth() === index && d.getFullYear() === selectedYear;
       }) || [];
       const monthJogging = joggingData?.filter(j => {
         const d = new Date(j.completed_at);
-        return d.getMonth() === index;
+        return d.getMonth() === index && d.getFullYear() === selectedYear;
       }) || [];
       
+      // Calculate hours from duration (jogging in minutes, workouts estimate 30min each)
       const joggingHours = monthJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
-      const workoutHours = monthWorkouts.length * 0.5;
+      const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0); // ~3min per set
 
-      return { month, hours: Math.min(joggingHours + workoutHours, 100) };
+      return { month, hours: Math.min(Math.round((joggingHours + workoutHours) * 10) / 10, 100) };
     });
 
     setMonthlyChartData(chartData);

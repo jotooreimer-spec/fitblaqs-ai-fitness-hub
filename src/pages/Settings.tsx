@@ -32,6 +32,7 @@ const Settings = () => {
   const [privacyDialogOpen, setPrivacyDialogOpen] = useState(false);
   const [privacyContentDialogOpen, setPrivacyContentDialogOpen] = useState(false);
   const [termsContentDialogOpen, setTermsContentDialogOpen] = useState(false);
+  const [shopDialogOpen, setShopDialogOpen] = useState(false);
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   
   // Settings states
@@ -189,7 +190,7 @@ const Settings = () => {
       icon: Store,
       title: "FitBlaq Shop",
       description: "FitBlaqstore.com",
-      onClick: () => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry",
+      onClick: () => setShopDialogOpen(true),
       customIcon: fitblaqShopIcon,
     },
     {
@@ -674,6 +675,43 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
+      {/* FitBlaq Shop Dialog */}
+      <Dialog open={shopDialogOpen} onOpenChange={setShopDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              FitBlaq Shop
+              <Button variant="ghost" size="icon" onClick={() => setShopDialogOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-center">
+            <img src={fitblaqShopIcon} alt="FitBlaq Shop" className="w-20 h-20 mx-auto rounded-xl" />
+            <div>
+              <p className="text-lg font-semibold mb-2">{language === "de" ? "Kontaktiere uns" : "Contact Us"}</p>
+              <p className="text-muted-foreground mb-4">
+                {language === "de" 
+                  ? "Für Bestellungen und Anfragen erreichst du uns unter:" 
+                  : "For orders and inquiries, reach us at:"}
+              </p>
+            </div>
+            <Card className="p-4 bg-primary/10 border-primary/30">
+              <div className="flex items-center justify-center gap-2">
+                <Mail className="w-5 h-5 text-primary" />
+                <span className="font-mono text-lg">Supportservice@Fitblaq.com</span>
+              </div>
+            </Card>
+            <Button 
+              onClick={() => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry"}
+              className="w-full"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              {language === "de" ? "Email senden" : "Send Email"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
