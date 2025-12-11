@@ -696,19 +696,14 @@ const Settings = () => {
                   : "For orders and inquiries, reach us at:"}
               </p>
             </div>
-            <Card className="p-4 bg-primary/10 border-primary/30">
+            <Card className="p-4 bg-primary/10 border-primary/30 cursor-pointer hover:bg-primary/20 transition-colors"
+              onClick={() => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry"}
+            >
               <div className="flex items-center justify-center gap-2">
                 <Mail className="w-5 h-5 text-primary" />
                 <span className="font-mono text-lg">Supportservice@Fitblaq.com</span>
               </div>
             </Card>
-            <Button 
-              onClick={() => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry"}
-              className="w-full"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              {language === "de" ? "Email senden" : "Send Email"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
