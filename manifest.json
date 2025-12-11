@@ -1,10 +1,12 @@
 {
   "name": "FitBlaqs - AI Fitness & Nutrition",
   "short_name": "FitBlaqs",
+  "description": "Professional AI-powered fitness and nutrition tracking app with personalized workout plans, meal tracking, and progress monitoring. Track your training, analyze food with AI, monitor your weight, and achieve your fitness goals.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#8B5CF6",
   "id": "/",
   "icons": [
     {
@@ -18,6 +20,13 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["fitness", "health", "lifestyle"]
 }

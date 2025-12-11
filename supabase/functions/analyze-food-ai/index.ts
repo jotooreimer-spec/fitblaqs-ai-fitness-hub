@@ -8,13 +8,19 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log("analyze-food-ai: Starting request processing");
+    
     const authHeader = req.headers.get("Authorization");
+    console.log("analyze-food-ai: Auth header present:", !!authHeader);
+    
     if (!authHeader) {
+      console.error("analyze-food-ai: No authorization header");
       return new Response(JSON.stringify({ error: "No authorization header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -23,18 +29,25 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    
+    console.log("analyze-food-ai: Creating Supabase client");
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log("analyze-food-ai: User fetch result - User:", !!user, "Error:", userError?.message);
+    
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("analyze-food-ai: User authentication failed:", userError?.message);
+      return new Response(JSON.stringify({ error: "Unauthorized", details: userError?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("analyze-food-ai: User authenticated:", user.id);
+    
     const { imageBase64, category } = await req.json();
 
     if (!imageBase64) {
@@ -46,7 +59,7 @@ serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not configured");
+      console.error("analyze-food-ai: OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

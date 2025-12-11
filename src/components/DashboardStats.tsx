@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Activity, Flame, MapPin, Droplets } from "lucide-react";
-import { format, startOfMonth, startOfYear, eachMonthOfInterval } from "date-fns";
+import { startOfYear } from "date-fns";
 
 interface Props {
   isGerman: boolean;
@@ -42,7 +42,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     todayEnd.setHours(23, 59, 59, 999);
     const yearStart = startOfYear(today);
 
-    // Load workout logs for yearly bar chart (by month)
+    // Load workout logs for yearly bar chart - calculate hours from saved entries
     const { data: workouts } = await supabase
       .from("workout_logs")
       .select("*")
@@ -50,38 +50,51 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       .gte("completed_at", yearStart.toISOString())
       .order("completed_at", { ascending: true });
 
-    // Load jogging logs for yearly chart
+    // Load jogging logs for yearly chart - calculate hours from duration
     const { data: joggingLogs } = await supabase
       .from("jogging_logs")
       .select("*")
       .eq("user_id", userId)
       .gte("completed_at", yearStart.toISOString());
 
-    // Build monthly chart data with months (Jan-Dec)
+    // Build monthly chart data with hours (calculated from saved entries)
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
     const chartData = monthNames.map((month, index) => {
+      // Calculate workout hours from saved entries
       const monthWorkouts = workouts?.filter(w => {
         const d = new Date(w.completed_at);
         return d.getMonth() === index;
       }) || [];
       
+      // Estimate hours: each workout set is ~3 minutes average (including rest)
+      const workoutHours = monthWorkouts.reduce((total, w) => {
+        const setsCount = w.sets || 1;
+        const minutesPerSet = 3; // Average time per set including rest
+        return total + (setsCount * minutesPerSet / 60);
+      }, 0);
+
+      // Calculate jogging hours from duration (duration is in seconds)
       const monthJogging = joggingLogs?.filter(j => {
         const d = new Date(j.completed_at);
         return d.getMonth() === index;
       }) || [];
+      
+      const joggingHours = monthJogging.reduce((total, j) => {
+        return total + ((j.duration || 0) / 3600); // Convert seconds to hours
+      }, 0);
 
       return { 
         month: isGerman ? monthNamesDE[index] : month,
-        count: monthWorkouts.length + monthJogging.length
+        count: Math.round((workoutHours + joggingHours) * 10) / 10 // Round to 1 decimal
       };
     });
 
     setMonthlyWorkoutData(chartData);
     setTotalWorkouts((workouts?.length || 0) + (joggingLogs?.length || 0));
 
-    // Load today's nutrition - Start at 0, only count actual entries
+    // Load today's nutrition - Start at 0, only count actual saved entries
     const { data: todayNutrition } = await supabase
       .from("nutrition_logs")
       .select("*")
@@ -124,7 +137,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         water: totalWater
       });
     } else {
-      // No data - all zeros
+      // No saved data - all zeros
       setHasNutritionData(false);
       setTodayCalories(0);
       setTodayProtein(0);
@@ -139,14 +152,14 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       });
     }
 
-    // Load jogging distance
+    // Load jogging distance - automatically calculated from saved entries
     const { data: jogging } = await supabase
       .from("jogging_logs")
       .select("distance")
       .eq("user_id", userId);
 
     if (jogging) {
-      const total = jogging.reduce((sum: number, log: any) => sum + parseFloat(log.distance), 0);
+      const total = jogging.reduce((sum: number, log: any) => sum + parseFloat(log.distance || 0), 0);
       setTotalDistance(total);
     }
   };
@@ -161,7 +174,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     water: '#3B82F6'
   };
 
-  // Only show pie data if we have entries, otherwise show zeros
+  // Only show pie data if we have saved entries
   const pieData = hasNutritionData ? [
     { name: isGerman ? 'Kalorien' : 'Calories', value: nutritionBreakdown.calories, color: NUTRITION_COLORS.calories, key: 'calories' },
     { name: 'Protein', value: nutritionBreakdown.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
@@ -200,7 +213,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Quick Stats - Auto-calculated from Today's Meal Plan */}
+      {/* Quick Stats - Auto-calculated from saved entries */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <div className="flex items-center gap-3 mb-2">
@@ -251,7 +264,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Weight Watcher Pie Chart - Shows 0% when no data */}
+        {/* Weight Watcher Pie Chart - Shows 0% when no saved data */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">Weight Watcher</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -307,7 +320,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
           )}
         </Card>
 
-        {/* Workout Activity Bar Chart - Monthly (Jan-Dec) */}
+        {/* Workout Activity Bar Chart - Auto-calculated hours from saved entries */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">
             {isGerman ? "Workout Aktivität" : "Workout Activity"}
@@ -336,12 +349,14 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px"
                 }}
-                formatter={(value: number) => [value, isGerman ? 'Stunden' : 'Hours']}
+                formatter={(value: number) => [value.toFixed(1), isGerman ? 'Stunden' : 'Hours']}
               />
               <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="text-center text-xs text-muted-foreground mt-2">Hours</div>
+          <div className="text-center text-xs text-muted-foreground mt-2">
+            {isGerman ? "Stunden (automatisch berechnet)" : "Hours (auto-calculated)"}
+          </div>
         </Card>
       </div>
     </div>

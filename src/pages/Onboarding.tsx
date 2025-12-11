@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dumbbell, Zap, Heart, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,36 +71,17 @@ const Onboarding = () => {
     toast.success(isGerman ? "Gesundheitsdaten gespeichert" : "Health data saved");
   };
 
-  const onboardingBoxes = [
-    {
-      icon: Dumbbell,
-      title: "Level",
-      description: isGerman ? "Wähle dein Fitness-Level" : "Choose your fitness level",
-      onClick: () => setLevelDialogOpen(true),
-      completed: !!level
-    },
-    {
-      icon: Zap,
-      title: "Power",
-      description: isGerman ? "Wähle deinen Körpertyp" : "Choose your body type",
-      onClick: () => setPowerDialogOpen(true),
-      completed: !!bodyType
-    },
-    {
-      icon: Heart,
-      title: "Healthy",
-      description: isGerman ? "Gesundheitsinformationen" : "Health information",
-      onClick: () => setHealthyDialogOpen(true),
-      completed: healthOptions.length > 0
-    },
-    {
-      icon: Play,
-      title: isGerman ? "Starte dein Workout" : "Start your Workout",
-      description: isGerman ? "Zum Dashboard" : "Go to Dashboard",
-      onClick: () => navigate("/dashboard"),
-      isStart: true
+  const handleStartWorkout = () => {
+    // Check if all required fields are filled
+    if (!level || !bodyType || healthOptions.length === 0) {
+      toast.error(isGerman ? "Bitte fülle alle Felder aus" : "Please complete all fields");
+      return;
     }
-  ];
+    navigate("/dashboard");
+  };
+
+  // Check if all boxes are completed
+  const allCompleted = level && bodyType && healthOptions.length > 0;
 
   return (
     <div 
@@ -117,37 +97,88 @@ const Onboarding = () => {
       
       <div className="relative z-10 w-full max-w-lg">
         {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-20 h-20 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-white mb-2">FitBlaqs</h1>
-          <p className="text-xl text-blue-400">Power & Healthy</p>
+        <div className="text-center mb-6">
+          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-16 h-16 mx-auto mb-3" />
+          <h1 className="text-3xl font-bold text-white mb-1">FitBlaqs</h1>
+          <p className="text-lg text-blue-400">Power & Healthy</p>
         </div>
 
-        {/* Onboarding Boxes */}
-        <div className="grid grid-cols-2 gap-4">
-          {onboardingBoxes.map((box, index) => {
-            const Icon = box.icon;
-            return (
-              <Card
-                key={index}
-                onClick={box.onClick}
-                className={`p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                  box.isStart 
-                    ? 'bg-primary/90 hover:bg-primary border-primary col-span-2' 
-                    : box.completed 
-                      ? 'bg-green-600/80 border-green-500/50' 
-                      : 'bg-black/60 backdrop-blur-sm border-white/10 hover:border-primary/50'
-                }`}
-              >
-                <div className="flex flex-col items-center text-center">
-                  <Icon className={`w-8 h-8 mb-3 ${box.isStart ? 'text-white' : 'text-primary'}`} />
-                  <h3 className="font-bold text-white text-lg mb-1">{box.title}</h3>
-                  <p className="text-sm text-white/70">{box.description}</p>
-                </div>
-              </Card>
-            );
-          })}
+        {/* Onboarding Boxes - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Level Box */}
+          <Card
+            onClick={() => setLevelDialogOpen(true)}
+            className={`p-4 cursor-pointer transition-all duration-300 hover:scale-105 ${
+              level 
+                ? 'bg-green-600/80 border-green-500/50' 
+                : 'bg-black/60 backdrop-blur-sm border-white/10 hover:border-primary/50'
+            }`}
+          >
+            <div className="flex flex-col items-center text-center">
+              <Dumbbell className="w-6 h-6 mb-2 text-primary" />
+              <h3 className="font-bold text-white text-sm mb-0.5">Level</h3>
+              <p className="text-xs text-white/70">{isGerman ? "Fitness-Level" : "Fitness level"}</p>
+            </div>
+          </Card>
+
+          {/* Power Box */}
+          <Card
+            onClick={() => setPowerDialogOpen(true)}
+            className={`p-4 cursor-pointer transition-all duration-300 hover:scale-105 ${
+              bodyType 
+                ? 'bg-green-600/80 border-green-500/50' 
+                : 'bg-black/60 backdrop-blur-sm border-white/10 hover:border-primary/50'
+            }`}
+          >
+            <div className="flex flex-col items-center text-center">
+              <Zap className="w-6 h-6 mb-2 text-primary" />
+              <h3 className="font-bold text-white text-sm mb-0.5">Power</h3>
+              <p className="text-xs text-white/70">{isGerman ? "Körpertyp" : "Body type"}</p>
+            </div>
+          </Card>
+
+          {/* Healthy Box */}
+          <Card
+            onClick={() => setHealthyDialogOpen(true)}
+            className={`p-4 cursor-pointer transition-all duration-300 hover:scale-105 ${
+              healthOptions.length > 0 
+                ? 'bg-green-600/80 border-green-500/50' 
+                : 'bg-black/60 backdrop-blur-sm border-white/10 hover:border-primary/50'
+            }`}
+          >
+            <div className="flex flex-col items-center text-center">
+              <Heart className="w-6 h-6 mb-2 text-primary" />
+              <h3 className="font-bold text-white text-sm mb-0.5">Healthy</h3>
+              <p className="text-xs text-white/70">{isGerman ? "Gesundheit" : "Health info"}</p>
+            </div>
+          </Card>
+
+          {/* Start Workout Box - Same size as others */}
+          <Card
+            onClick={handleStartWorkout}
+            className={`p-4 cursor-pointer transition-all duration-300 hover:scale-105 ${
+              allCompleted 
+                ? 'bg-primary/90 hover:bg-primary border-primary' 
+                : 'bg-gray-600/50 border-gray-500/30 cursor-not-allowed'
+            }`}
+          >
+            <div className="flex flex-col items-center text-center">
+              <Play className={`w-6 h-6 mb-2 ${allCompleted ? 'text-white' : 'text-gray-400'}`} />
+              <h3 className={`font-bold text-sm mb-0.5 ${allCompleted ? 'text-white' : 'text-gray-400'}`}>
+                {isGerman ? "Start" : "Start"}
+              </h3>
+              <p className={`text-xs ${allCompleted ? 'text-white/70' : 'text-gray-500'}`}>
+                {isGerman ? "Workout" : "Workout"}
+              </p>
+            </div>
+          </Card>
         </div>
+
+        {!allCompleted && (
+          <p className="text-center text-white/60 text-xs mt-4">
+            {isGerman ? "Fülle alle Felder aus um fortzufahren" : "Complete all fields to continue"}
+          </p>
+        )}
       </div>
 
       {/* Level Dialog */}

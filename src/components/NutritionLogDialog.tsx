@@ -45,6 +45,8 @@ export const NutritionLogDialog = ({
   const [fiberUnit, setFiberUnit] = useState("g");
   const [sugar, setSugar] = useState("");
   const [sugarUnit, setSugarUnit] = useState("g");
+  const [spurenelemente, setSpurenelemente] = useState("");
+  const [spurenelementeUnit, setSpurenelementeUnit] = useState("mg");
   // Supplements specific fields
   const [amount, setAmount] = useState("");
   const [amountUnit, setAmountUnit] = useState("g");
@@ -127,19 +129,19 @@ export const NutritionLogDialog = ({
       fatsInG = minerals ? convertToGrams(parseFloat(minerals), mineralsUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
-      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
     } else if (category === "protein") {
       // Protein Detail: Carbs → Eisen, Water → Aminosäuren
       proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
-      notes = `Iron: ${carbs || 0}${carbsUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Calcium: ${vitamin || 0}${vitaminUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = `Iron: ${carbs || 0}${carbsUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Calcium: ${vitamin || 0}${vitaminUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
     } else {
       proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
       const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
-      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
     }
 
     const mealTypeMap = {
@@ -187,6 +189,7 @@ export const NutritionLogDialog = ({
     setMinerals("");
     setFiber("");
     setSugar("");
+    setSpurenelemente("");
     setAmount("");
     setLiquid("");
     onOpenChange(false);
@@ -408,6 +411,22 @@ export const NutritionLogDialog = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
+                <Label htmlFor="spurenelemente">{isGerman ? "Spurenelemente" : "Trace Elements"}</Label>
+                <Input id="spurenelemente" type="number" value={spurenelemente} onChange={(e) => setSpurenelemente(e.target.value)} />
+              </div>
+              <div>
+                <Label>&nbsp;</Label>
+                <Select value={spurenelementeUnit} onValueChange={setSpurenelementeUnit}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mg">mg</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
                 <Label htmlFor="sugar">Sugar</Label>
                 <Input id="sugar" type="number" value={sugar} onChange={(e) => setSugar(e.target.value)} />
               </div>
@@ -431,7 +450,7 @@ export const NutritionLogDialog = ({
     );
   }
 
-  // Protein form - Carbs → Eisen, Water → Aminosäuren
+  // Protein form - Carbs → Eisen, Water → Aminosäuren, plus Spurenelemente
   if (category === "protein") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -520,6 +539,22 @@ export const NutritionLogDialog = ({
               <div>
                 <Label>&nbsp;</Label>
                 <Select value={vitaminUnit} onValueChange={setVitaminUnit}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mg">mg</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="minerals">{isGerman ? "Spurenelemente" : "Trace Elements"}</Label>
+                <Input id="minerals" type="number" value={minerals} onChange={(e) => setMinerals(e.target.value)} />
+              </div>
+              <div>
+                <Label>&nbsp;</Label>
+                <Select value={mineralsUnit} onValueChange={setMineralsUnit}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mg">mg</SelectItem>
