@@ -52,123 +52,97 @@ serve(async (req) => {
       });
     }
 
-    // Get user profile data for calculations
+    // Get user profile data
     const { data: profile } = await supabase
       .from("profiles")
       .select("weight, height, body_type, athlete_level")
       .eq("user_id", user.id)
       .single();
 
-    const systemPrompt = `Du bist ein hochpräziser Body-Analyse-Assistent für Sportwissenschaft und Gesundheitsdaten.
-Deine Aufgabe ist es, anhand des Körperbildes eine EXTREM DETAILLIERTE Analyse durchzuführen.
+    const weight = userData?.weight || profile?.weight || 75;
+    const targetWeight = userData?.targetWeight || weight;
+    const age = userData?.age || 30;
+    const height = userData?.height || profile?.height || 175;
+    const activityLevel = userData?.activityLevel || "Moderate";
+    const trainingHours = userData?.trainingFrequency || 4;
+    const bodyType = userData?.bodyType || profile?.body_type || "Normal";
+    const goal = userData?.goal || "Maintain Weight";
 
-Du darfst NICHT diagnostizieren. Du darfst KEINE medizinischen Erkrankungen ableiten.
-Das Bild dient zur visuellen Einschätzung und Speicherung in der History.
+    const systemPrompt = `Du bist ein professioneller Personal Trainer und Body-Analysis-Coach.
+Der Benutzer lädt ein Körperbild hoch mit folgenden Werten:
+
+- Weight: ${weight} kg
+- Target Weight: ${targetWeight} kg
+- Age: ${age}
+- Height: ${height} cm
+- Activity Level: ${activityLevel}
+- Training/Week: ${trainingHours} Stunden
+- Body Type: ${bodyType}
+- Goal: ${goal}
 
 WICHTIG: Prüfe zuerst, ob es ein Körper-/Fitnessbild ist. Falls NICHT, antworte mit:
 {"error": "not_body_image", "message": "Bitte ein Körper-/Fitnessbild hochladen"}
 
-Falls es ein gültiges Körperbild ist, liefere folgende Analyse:
+Falls es ein gültiges Körperbild ist:
 
-1. VALIDIERUNG: Prüfe welche Körperpartien sichtbar sind
-2. BMI: Standardformel (falls Gewicht/Größe bekannt)
-3. KÖRPERFETT %: Schätzung basierend auf sichtbaren Merkmalen
-4. MUSKELMASSE: Schätzung (Unterdurchschnittlich/Normal/Überdurchschnittlich/Athletisch)
-5. TDEE: Kalorienbedarf über Mifflin-St Jeor + Aktivitätsfaktor
-6. ZIELKALORIEN: Für Gewichtsziel
-7. ZEIT BIS ZIEL: In Wochen
-8. TRAININGSPLAN: 4-12 Wochen mit Push/Pull/Legs/Cardio
-9. ERNÄHRUNGSPLAN: Protein/Carbs/Fette pro Tag
-10. STRATEGIE: Konkrete Schritte zum Ziel
+1. Analysiere das Bild und kombiniere es mit den manuellen Werten.
+2. Berechne genau den Körperfettanteil, den Muskelanteil und die Kalorien pro Tag, um das Zielgewicht zu erreichen.
+3. Gib Empfehlungen für Training und Ernährung:
+   - Proteinbedarf (1.6-2.2g pro kg Körpergewicht)
+   - Makronährstoffverteilung
+   - Cardio/Strength Training
+4. Berechne BMR mit Mifflin-St Jeor: BMR = 10×Gewicht + 6.25×Größe - 5×Alter + 5 (Männer) oder -161 (Frauen)
+5. TDEE = BMR × Aktivitätsfaktor (Sedentary: 1.2, Light: 1.375, Moderate: 1.55, Active: 1.725, Very Active: 1.9)
+6. Für Fettabbau: TDEE - 500 kcal, für Muskelaufbau: TDEE + 300 kcal
 
-${userData ? `
-Benutzerdaten:
-- Körpertyp: ${userData.bodyType || 'unbekannt'}
-- Gewicht: ${userData.weight || profile?.weight || 'unbekannt'} kg
-- Zielgewicht: ${userData.targetWeight || 'unbekannt'} kg
-- Alter: ${userData.age || 'unbekannt'}
-- Größe: ${userData.height || profile?.height || 'unbekannt'} cm
-- Aktivitätslevel: ${userData.activityLevel || 'moderat'}
-- Training/Woche: ${userData.trainingFrequency || '3-4'}x
-- Ziel: ${userData.goal || 'Fitness verbessern'}
-` : `Profildaten: Gewicht ${profile?.weight || 'unbekannt'}kg, Größe ${profile?.height || 'unbekannt'}cm`}
-
-Antworte NUR mit validem JSON:
+Antworte NUR mit validem JSON in diesem Format:
 {
-  "gender": "male" | "female",
+  "Weight_kg": ${weight},
+  "Target_kg": ${targetWeight},
+  "Age": ${age},
+  "Height_cm": ${height},
+  "ActivityLevel": "${activityLevel}",
+  "TrainingHoursPerWeek": ${trainingHours},
+  "BodyType": "geschätzt aus Bild",
+  "CurrentFatPercent": number (geschätzt 10-35),
+  "MuscleMassPercent": number (geschätzt 25-50),
+  "BMR": number,
+  "TDEE": number,
+  "DailyCalories": number (Zielkalorien),
+  "WeeksToGoal": number,
+  "Macros": {
+    "Protein_g": number,
+    "Carbs_g": number,
+    "Fat_g": number
+  },
+  "TrainingPlan": {
+    "Cardio": "z.B. 3x30min HIIT oder 4x45min moderate",
+    "Strength": "z.B. 4x Push/Pull/Legs Split",
+    "WeeklySchedule": [
+      {"day": "Montag", "workout": "Push", "duration": "60 min"},
+      {"day": "Dienstag", "workout": "Pull", "duration": "60 min"},
+      {"day": "Mittwoch", "workout": "Cardio/Rest", "duration": "30 min"},
+      {"day": "Donnerstag", "workout": "Legs", "duration": "60 min"},
+      {"day": "Freitag", "workout": "Upper Body", "duration": "55 min"},
+      {"day": "Samstag", "workout": "HIIT", "duration": "45 min"},
+      {"day": "Sonntag", "workout": "Rest", "duration": "0 min"}
+    ]
+  },
+  "NutritionTips": "Konkrete Ernährungstipps",
+  "GoalAdvice": "Konkrete Empfehlung zum Erreichen des Ziels",
+  "gender": "male" oder "female",
   "age_estimate": number,
   "body_fat_pct": number,
   "muscle_mass_pct": number,
-  "muscle_category": "unterdurchschnittlich" | "normal" | "überdurchschnittlich" | "athletisch",
-  "posture": "excellent" | "good" | "fair" | "needs_improvement",
-  "symmetry": "excellent" | "good" | "fair" | "asymmetric",
+  "posture": "excellent/good/fair/needs_improvement",
+  "symmetry": "excellent/good/fair/asymmetric",
   "waist_hip_ratio": number,
-  "fitness_level": number,
-  "bmi": {
-    "value": number,
-    "category": "Untergewicht" | "Normalgewicht" | "Übergewicht" | "Adipositas"
-  },
-  "tdee": {
-    "bmr": number,
-    "activity_factor": number,
-    "total": number,
-    "formula": "Mifflin-St Jeor"
-  },
-  "target_calories": {
-    "daily": number,
-    "deficit_surplus": number,
-    "goal": "Fettabbau" | "Muskelaufbau" | "Erhaltung",
-    "weekly_change_kg": number
-  },
-  "time_to_goal": {
-    "weeks": number,
-    "days": number,
-    "weight_to_lose_gain": number
-  },
-  "training_plan": {
-    "weeks": number,
-    "focus": "muscle_gain" | "fat_loss" | "definition" | "maintenance",
-    "weekly_schedule": [
-      {"day": "Montag", "workout": "Push - Brust/Schultern/Trizeps", "duration": "60 min", "exercises": ["Bankdrücken 4x8-12", "Schulterdrücken 3x10-12", "Seitheben 3x12-15", "Trizeps Dips 3x12"]},
-      {"day": "Dienstag", "workout": "Pull - Rücken/Bizeps", "duration": "60 min", "exercises": ["Klimmzüge 4x8-12", "Rudern 3x10-12", "Face Pulls 3x15", "Bizeps Curls 3x12"]},
-      {"day": "Mittwoch", "workout": "Cardio/Regeneration", "duration": "30 min", "exercises": ["LISS Cardio", "Mobility Work"]},
-      {"day": "Donnerstag", "workout": "Legs - Beine/Gesäß", "duration": "60 min", "exercises": ["Kniebeugen 4x8-12", "Beinpresse 3x12", "Ausfallschritte 3x10", "Wadenheben 4x15"]},
-      {"day": "Freitag", "workout": "Upper Body", "duration": "55 min", "exercises": ["Schrägbankdrücken 3x10", "Latzug 3x12", "Arnold Press 3x12", "Kabelzug 3x15"]},
-      {"day": "Samstag", "workout": "HIIT/Full Body", "duration": "45 min", "exercises": ["Burpees 4x12", "Kettlebell Swings 4x15", "Mountain Climbers 3x20", "Box Jumps 3x10"]},
-      {"day": "Sonntag", "workout": "Ruhetag", "duration": "0 min", "exercises": ["Aktive Erholung", "Stretching"]}
-    ],
-    "progression": "2.5-5% wöchentliche Steigerung"
-  },
-  "nutrition_plan": {
-    "daily_calories": number,
-    "protein_g": number,
-    "carbs_g": number,
-    "fat_g": number,
-    "protein_per_kg": number,
-    "meal_plan": {
-      "breakfast": {"meal": "Beschreibung", "calories": number, "protein": number},
-      "lunch": {"meal": "Beschreibung", "calories": number, "protein": number},
-      "dinner": {"meal": "Beschreibung", "calories": number, "protein": number},
-      "snacks": {"meal": "Beschreibung", "calories": number, "protein": number}
-    },
-    "hydration_liters": number,
-    "supplements": ["Creatin 5g", "Vitamin D 2000IU", "Omega-3"]
-  },
-  "strategy": {
-    "weekly_workouts": number,
-    "cardio_sessions": number,
-    "sleep_hours": number,
-    "water_liters": number,
-    "key_focus": "Hauptfokus der nächsten Wochen",
-    "mistakes_to_avoid": ["Fehler 1", "Fehler 2", "Fehler 3"],
-    "progress_markers": ["Nach 2 Wochen", "Nach 4 Wochen", "Nach 8 Wochen"]
-  },
-  "health_notes": "Gesundheitshinweise und Empfehlungen",
-  "training_tips": "Personalisierte Trainingstipps basierend auf Körperanalyse",
-  "history_summary": "3-4 Sätze Zusammenfassung für History-Eintrag"
+  "fitness_level": number (1-10),
+  "health_notes": "Gesundheitshinweise",
+  "training_tips": "Trainingstipps basierend auf Analyse"
 }`;
 
-    console.log("Calling OpenAI API for detailed body analysis...");
+    console.log("Calling OpenAI API for body analysis...");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -183,7 +157,7 @@ Antworte NUR mit validem JSON:
           {
             role: "user",
             content: [
-              { type: "text", text: "Analysiere dieses Körper-/Fitnessbild EXTREM DETAILLIERT. Berechne BMI, TDEE, Körperfett%, erstelle einen kompletten Trainingsplan und Ernährungsplan mit konkreten Zahlen." },
+              { type: "text", text: "Analysiere dieses Körperbild und erstelle eine komplette Analyse mit Trainings- und Ernährungsplan." },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
@@ -211,7 +185,7 @@ Antworte NUR mit validem JSON:
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("OpenAI response received:", content?.substring(0, 400));
+    console.log("OpenAI response received:", content?.substring(0, 500));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -246,30 +220,47 @@ Antworte NUR mit validem JSON:
       });
     }
 
+    // Map to standard format for UI
+    const mappedAnalysis = {
+      ...analysisData,
+      body_fat_pct: analysisData.CurrentFatPercent || analysisData.body_fat_pct,
+      muscle_mass_pct: analysisData.MuscleMassPercent || analysisData.muscle_mass_pct,
+      fitness_level: analysisData.fitness_level || 7,
+      training_plan: {
+        weeks: analysisData.WeeksToGoal || 12,
+        focus: goal === "Lose Fat" ? "fat_loss" : goal === "Gain Muscle" ? "muscle_gain" : "maintenance",
+        weekly_schedule: analysisData.TrainingPlan?.WeeklySchedule || []
+      },
+      nutrition_plan: {
+        daily_calories: analysisData.DailyCalories,
+        protein_g: analysisData.Macros?.Protein_g,
+        carbs_g: analysisData.Macros?.Carbs_g,
+        fat_g: analysisData.Macros?.Fat_g
+      },
+      tdee: { total: analysisData.TDEE, bmr: analysisData.BMR }
+    };
+
     // Save to database
     const { data: saved, error: saveError } = await supabase
       .from("body_analysis")
       .insert({
         user_id: user.id,
         image_url: imageBase64.substring(0, 100) + "...",
-        gender: analysisData.gender,
-        age_estimate: analysisData.age_estimate,
-        body_fat_pct: analysisData.body_fat_pct,
-        muscle_mass_pct: analysisData.muscle_mass_pct,
-        posture: analysisData.posture,
-        symmetry: analysisData.symmetry,
-        waist_hip_ratio: analysisData.waist_hip_ratio,
-        fitness_level: analysisData.fitness_level,
-        health_notes: analysisData.health_notes,
+        gender: analysisData.gender || "unknown",
+        age_estimate: analysisData.age_estimate || analysisData.Age,
+        body_fat_pct: analysisData.CurrentFatPercent || analysisData.body_fat_pct,
+        muscle_mass_pct: analysisData.MuscleMassPercent || analysisData.muscle_mass_pct,
+        posture: analysisData.posture || "good",
+        symmetry: analysisData.symmetry || "good",
+        waist_hip_ratio: analysisData.waist_hip_ratio || 0.85,
+        fitness_level: analysisData.fitness_level || 7,
+        health_notes: analysisData.health_notes || analysisData.NutritionTips,
         training_tips: JSON.stringify({
-          tips: analysisData.training_tips,
-          bmi: analysisData.bmi,
-          tdee: analysisData.tdee,
-          target_calories: analysisData.target_calories,
-          time_to_goal: analysisData.time_to_goal,
-          training_plan: analysisData.training_plan,
-          nutrition_plan: analysisData.nutrition_plan,
-          strategy: analysisData.strategy
+          tips: analysisData.training_tips || analysisData.GoalAdvice,
+          macros: analysisData.Macros,
+          training_plan: analysisData.TrainingPlan,
+          daily_calories: analysisData.DailyCalories,
+          weeks_to_goal: analysisData.WeeksToGoal
         }),
       })
       .select()
@@ -279,7 +270,7 @@ Antworte NUR mit validem JSON:
       console.error("Save error:", saveError);
     }
 
-    return new Response(JSON.stringify({ success: true, analysis: analysisData, saved }), {
+    return new Response(JSON.stringify({ success: true, analysis: mappedAnalysis, saved }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
