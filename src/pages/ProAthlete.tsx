@@ -158,6 +158,19 @@ const ProAthlete = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // Send manual form data for better AI analysis
+      const userData = {
+        weight: athleteForm.weight ? parseFloat(athleteForm.weight) : undefined,
+        targetWeight: athleteForm.target_weight ? parseFloat(athleteForm.target_weight) : undefined,
+        age: athleteForm.age ? parseInt(athleteForm.age) : undefined,
+        height: athleteForm.height ? parseFloat(athleteForm.height) : undefined,
+        activityLevel: athleteForm.activity_level || "Moderate",
+        trainingFrequency: athleteForm.training_frequency ? parseInt(athleteForm.training_frequency) : 4,
+        bodyType: athleteForm.body_type || "Normal",
+        goal: athleteForm.goal || "Maintain Weight",
+        healthNotes: athleteForm.health_notes || undefined
+      };
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-body`, {
         method: "POST",
         headers: {
@@ -166,6 +179,7 @@ const ProAthlete = () => {
         },
         body: JSON.stringify({
           imageBase64: compressed.base64,
+          userData: userData,
         }),
       });
 
@@ -222,10 +236,46 @@ const ProAthlete = () => {
           </div>
         </Card>
 
-        {/* Upload Area */}
+        {/* Manual Input + Upload Area */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "1. Manuelle Werte eingeben" : "1. Enter Manual Values"}</h3>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <Input type="number" placeholder={isGerman ? "Gewicht (kg)" : "Weight (kg)"} value={athleteForm.weight} onChange={(e) => setAthleteForm({...athleteForm, weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder={isGerman ? "Zielgewicht (kg)" : "Target Weight (kg)"} value={athleteForm.target_weight} onChange={(e) => setAthleteForm({...athleteForm, target_weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder={isGerman ? "Alter" : "Age"} value={athleteForm.age} onChange={(e) => setAthleteForm({...athleteForm, age: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder={isGerman ? "Größe (cm)" : "Height (cm)"} value={athleteForm.height} onChange={(e) => setAthleteForm({...athleteForm, height: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Select value={athleteForm.activity_level} onValueChange={(v) => setAthleteForm({...athleteForm, activity_level: v})}>
+              <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9"><SelectValue placeholder={isGerman ? "Aktivitätslevel" : "Activity Level"} /></SelectTrigger>
+              <SelectContent className="bg-zinc-800">
+                <SelectItem value="Sedentary">{isGerman ? "Sitzend" : "Sedentary"}</SelectItem>
+                <SelectItem value="Light">{isGerman ? "Leicht aktiv" : "Light"}</SelectItem>
+                <SelectItem value="Moderate">{isGerman ? "Moderat" : "Moderate"}</SelectItem>
+                <SelectItem value="Active">{isGerman ? "Aktiv" : "Active"}</SelectItem>
+                <SelectItem value="Very Active">{isGerman ? "Sehr aktiv" : "Very Active"}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="number" placeholder={isGerman ? "Training/Woche" : "Training/Week"} value={athleteForm.training_frequency} onChange={(e) => setAthleteForm({...athleteForm, training_frequency: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Select value={athleteForm.body_type} onValueChange={(v) => setAthleteForm({...athleteForm, body_type: v})}>
+              <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9"><SelectValue placeholder={isGerman ? "Körpertyp" : "Body Type"} /></SelectTrigger>
+              <SelectContent className="bg-zinc-800">
+                <SelectItem value="Ectomorph">{isGerman ? "Schlank" : "Ectomorph"}</SelectItem>
+                <SelectItem value="Mesomorph">{isGerman ? "Muskulös" : "Mesomorph"}</SelectItem>
+                <SelectItem value="Endomorph">{isGerman ? "Kräftig" : "Endomorph"}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={athleteForm.goal} onValueChange={(v) => setAthleteForm({...athleteForm, goal: v})}>
+              <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9"><SelectValue placeholder={isGerman ? "Ziel" : "Goal"} /></SelectTrigger>
+              <SelectContent className="bg-zinc-800">
+                <SelectItem value="Lose Fat">{isGerman ? "Fett verlieren" : "Lose Fat"}</SelectItem>
+                <SelectItem value="Gain Muscle">{isGerman ? "Muskeln aufbauen" : "Gain Muscle"}</SelectItem>
+                <SelectItem value="Maintain Weight">{isGerman ? "Gewicht halten" : "Maintain Weight"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "2. Bild hochladen" : "2. Upload Image"}</h3>
           <div 
-            className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[100px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} 
+            className={`border-2 border-dashed rounded-xl p-4 text-center min-h-[80px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} 
             onDrop={handleDrop} 
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} 
             onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
@@ -237,10 +287,10 @@ const ProAthlete = () => {
               </div>
             ) : (
               <div>
-                <Upload className="w-6 h-6 mx-auto mb-2 text-zinc-400" />
-                <p className="text-zinc-400 text-xs mb-2">{isGerman ? "Bild per Drag & Drop" : "Drag & drop image"}</p>
+                <Upload className="w-5 h-5 mx-auto mb-1 text-zinc-400" />
+                <p className="text-zinc-400 text-xs mb-2">{isGerman ? "Drag & Drop" : "Drag & drop"}</p>
                 <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" id="file-upload" />
-                <label htmlFor="file-upload"><Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white"><span><Upload className="w-3 h-3 mr-1" />{isGerman ? "Hochladen" : "Upload"}</span></Button></label>
+                <label htmlFor="file-upload"><Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white text-xs"><span><Upload className="w-3 h-3 mr-1" />{isGerman ? "Hochladen" : "Upload"}</span></Button></label>
               </div>
             )}
           </div>
@@ -249,10 +299,11 @@ const ProAthlete = () => {
         {/* Action Buttons */}
         <div className="flex gap-3 mb-4">
           <Button onClick={() => setProAthleteDialogOpen(true)} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
-            <Dumbbell className="w-4 h-4 mr-2" />Pro-Athlete
+            <Dumbbell className="w-4 h-4 mr-2" />{isGerman ? "Trainingsplan" : "Training Plan"}
           </Button>
-          <Button onClick={() => setBodyAnalysisDialogOpen(true)} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
-            <Scan className="w-4 h-4 mr-2" />Body Analyse
+          <Button onClick={analyzeBody} disabled={!uploadedFile || isAnalyzing} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
+            {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scan className="w-4 h-4 mr-2" />}
+            {isGerman ? "3. AI Analyse" : "3. AI Analyze"}
           </Button>
         </div>
 
@@ -262,6 +313,12 @@ const ProAthlete = () => {
         {/* Body Analysis Result with Charts */}
         {bodyAnalysis && !isAnalyzing && (
           <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+            {/* Show uploaded image at top */}
+            {uploadedFile && (
+              <div className="mb-4">
+                <img src={uploadedFile} alt="Body Analysis" className="w-16 h-16 object-cover rounded-lg mx-auto" />
+              </div>
+            )}
             <h2 className="text-lg font-bold text-white mb-4">Body Analyse</h2>
             
             {/* Visual Progress Bars */}

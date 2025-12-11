@@ -89,8 +89,12 @@ const ProNutrition = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<FoodAnalysis | null>(null);
   const [foodTrackerDialogOpen, setFoodTrackerDialogOpen] = useState(false);
-  const [manualForm, setManualForm] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", category: "protein" });
-  const [dailyTotals, setDailyTotals] = useState({ calories: 0, protein: 0, carbs: 0 });
+  const [manualForm, setManualForm] = useState({ 
+    name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
+    category: "protein",
+    traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+  });
+  const [dailyTotals, setDailyTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 });
   const [history, setHistory] = useState<any[]>([]);
 
   // Subscription check disabled for testing - pages are freely accessible
@@ -116,17 +120,20 @@ const ProNutrition = () => {
 
     if (data) {
       setHistory(data);
-      // Calculate daily totals
+      // Calculate daily totals automatically from all entries
       const today = new Date().toISOString().split('T')[0];
       const todayLogs = data.filter(d => d.created_at.split('T')[0] === today);
       const totals = todayLogs.reduce((acc, log) => {
         const items = (log.items as unknown as FoodItem[]) || [];
+        const notesData = log.notes ? (typeof log.notes === 'string' ? JSON.parse(log.notes) : log.notes) : {};
         return {
           calories: acc.calories + (log.total_calories || 0),
           protein: acc.protein + items.reduce((s, i) => s + (i.protein || 0), 0),
           carbs: acc.carbs + items.reduce((s, i) => s + (i.carbs || 0), 0),
+          fat: acc.fat + items.reduce((s, i) => s + (i.fat || 0), 0),
+          water: acc.water + (notesData.water || 0),
         };
-      }, { calories: 0, protein: 0, carbs: 0 });
+      }, { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 });
       setDailyTotals(totals);
     }
   };
@@ -166,6 +173,19 @@ const ProNutrition = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // Send manual data along with the image for better analysis
+      const manualData = {
+        name: manualForm.name || undefined,
+        category: manualForm.category,
+        protein: manualForm.protein || undefined,
+        calories: manualForm.calories || undefined,
+        carbs: manualForm.carbs || undefined,
+        fat: manualForm.fat || undefined,
+        sugar: manualForm.sugar || undefined,
+        water: manualForm.water || undefined,
+        traceElements: `Eisen: ${manualForm.traceElements.iron || '0'}mg, Calcium: ${manualForm.traceElements.calcium || '0'}mg, Magnesium: ${manualForm.traceElements.magnesium || '0'}mg, Zink: ${manualForm.traceElements.zinc || '0'}mg`
+      };
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-food-ai`, {
         method: "POST",
         headers: {
@@ -175,6 +195,7 @@ const ProNutrition = () => {
         body: JSON.stringify({
           imageBase64: compressed.base64,
           category: manualForm.category,
+          manualData: manualData,
         }),
       });
 
@@ -240,7 +261,11 @@ const ProNutrition = () => {
     }
 
     setFoodTrackerDialogOpen(false);
-    setManualForm({ name: "", calories: "", protein: "", carbs: "", fat: "", category: "protein" });
+    setManualForm({ 
+      name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
+      category: "protein",
+      traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+    });
     loadHistory(userId);
     toast({ title: isGerman ? "Gespeichert" : "Saved" });
   };
@@ -259,11 +284,19 @@ const ProNutrition = () => {
         calories: prev.calories + (analysisResult.total_calories || 0),
         protein: prev.protein + (analysisResult.total_protein || 0),
         carbs: prev.carbs + (analysisResult.total_carbs || 0),
+        fat: prev.fat + (analysisResult.total_fat || 0),
+        water: prev.water + 0,
       }));
       toast({ title: isGerman ? "Zum Tag hinzugefügt" : "Added to day" });
       setAnalysisResult(null);
       setUploadedFile(null);
       setUploadedFileRaw(null);
+      // Reset form
+      setManualForm({ 
+        name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
+        category: "protein",
+        traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+      });
     }
   };
 
@@ -302,47 +335,86 @@ const ProNutrition = () => {
           </div>
         </Card>
 
-        {/* Daily Totals */}
+        {/* Daily Totals - Auto calculated */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
           <div className="w-full bg-zinc-700 rounded-full h-2 mb-4">
             <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${Math.min((dailyTotals.calories / 2500) * 100, 100)}%` }} />
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="grid grid-cols-5 gap-2 text-center text-sm">
             <div>
-              <div className="text-2xl font-bold text-white">{dailyTotals.calories}</div>
+              <div className="text-xl font-bold text-white">{dailyTotals.calories}</div>
               <div className="text-xs text-zinc-400">kcal</div>
             </div>
             <div>
-              <div className="text-2xl font-medium text-white">{Math.round(dailyTotals.protein)}g</div>
+              <div className="text-xl font-medium text-white">{Math.round(dailyTotals.protein)}g</div>
               <div className="text-xs text-zinc-400">Protein</div>
             </div>
             <div>
-              <div className="text-2xl font-medium text-white">{Math.round(dailyTotals.carbs)}g</div>
-              <div className="text-xs text-zinc-400">{isGerman ? "Kohlenhydrate" : "Carbs"}</div>
+              <div className="text-xl font-medium text-white">{Math.round(dailyTotals.carbs)}g</div>
+              <div className="text-xs text-zinc-400">Carbs</div>
+            </div>
+            <div>
+              <div className="text-xl font-medium text-white">{Math.round(dailyTotals.fat)}g</div>
+              <div className="text-xs text-zinc-400">Fat</div>
+            </div>
+            <div>
+              <div className="text-xl font-medium text-blue-400">{dailyTotals.water}ml</div>
+              <div className="text-xs text-zinc-400">💧</div>
             </div>
           </div>
+          <p className="text-xs text-zinc-500 text-center mt-2">{isGerman ? "Automatisch berechnet" : "Auto-calculated"}</p>
         </Card>
 
-        {/* Upload Area */}
+        {/* Manual Input + Upload Area */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
+          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "1. Manuelle Werte (optional)" : "1. Manual Values (optional)"}</h3>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <Input placeholder="Name" value={manualForm.name} onChange={(e) => setManualForm({...manualForm, name: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Select value={manualForm.category} onValueChange={(v) => setManualForm({...manualForm, category: v})}>
+              <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-zinc-800">
+                <SelectItem value="protein">Protein</SelectItem>
+                <SelectItem value="vegetarian">{isGerman ? "Vegetarisch" : "Vegetarian"}</SelectItem>
+                <SelectItem value="vegan">Vegan</SelectItem>
+                <SelectItem value="supplements">Supplements</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input type="number" placeholder="Calories" value={manualForm.calories} onChange={(e) => setManualForm({...manualForm, calories: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder="Protein (g)" value={manualForm.protein} onChange={(e) => setManualForm({...manualForm, protein: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder="Carbs (g)" value={manualForm.carbs} onChange={(e) => setManualForm({...manualForm, carbs: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder="Fat (g)" value={manualForm.fat} onChange={(e) => setManualForm({...manualForm, fat: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder="Sugar (g)" value={manualForm.sugar} onChange={(e) => setManualForm({...manualForm, sugar: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <Input type="number" placeholder="Water (ml)" value={manualForm.water} onChange={(e) => setManualForm({...manualForm, water: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+          </div>
+          
+          {/* Trace Elements */}
+          <div className="text-xs text-zinc-400 mb-2">{isGerman ? "Spurenelemente" : "Trace Elements"}</div>
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <Input type="number" placeholder="Eisen mg" value={manualForm.traceElements.iron} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, iron: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
+            <Input type="number" placeholder="Calcium mg" value={manualForm.traceElements.calcium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, calcium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
+            <Input type="number" placeholder="Magnesium mg" value={manualForm.traceElements.magnesium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, magnesium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
+            <Input type="number" placeholder="Zink mg" value={manualForm.traceElements.zinc} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, zinc: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
+          </div>
+
+          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "2. Bild hochladen" : "2. Upload Image"}</h3>
           <div 
-            className={`border-2 border-dashed rounded-xl p-6 text-center min-h-[100px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} 
+            className={`border-2 border-dashed rounded-xl p-4 text-center min-h-[80px] flex items-center justify-center transition-colors ${isDragging ? 'border-primary bg-primary/10' : 'border-zinc-600'}`} 
             onDrop={handleDrop} 
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} 
             onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
           >
             {uploadedFile ? (
               <div className="relative w-full">
-                <img src={uploadedFile} alt="Food" className="max-h-24 mx-auto rounded-lg" />
+                <img src={uploadedFile} alt="Food" className="max-h-20 mx-auto rounded-lg" />
                 <Button variant="destructive" size="icon" className="absolute top-0 right-0 w-6 h-6" onClick={() => { setUploadedFile(null); setUploadedFileRaw(null); }}><X className="w-3 h-3" /></Button>
               </div>
             ) : (
               <div>
-                <Upload className="w-6 h-6 mx-auto mb-2 text-zinc-400" />
-                <p className="text-zinc-400 text-xs mb-2">{isGerman ? "Bild per Drag & Drop" : "Drag & drop image"}</p>
+                <Upload className="w-5 h-5 mx-auto mb-1 text-zinc-400" />
+                <p className="text-zinc-400 text-xs mb-2">{isGerman ? "Drag & Drop" : "Drag & drop"}</p>
                 <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" id="food-upload" />
                 <label htmlFor="food-upload">
-                  <Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white">
+                  <Button asChild variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-600 text-white text-xs">
                     <span><Upload className="w-3 h-3 mr-1" />{isGerman ? "Hochladen" : "Upload"}</span>
                   </Button>
                 </label>
@@ -354,11 +426,11 @@ const ProNutrition = () => {
         {/* Action Buttons */}
         <div className="flex gap-3 mb-4">
           <Button onClick={() => setFoodTrackerDialogOpen(true)} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
-            <Utensils className="w-4 h-4 mr-2" />Food Tracker
+            <Utensils className="w-4 h-4 mr-2" />{isGerman ? "Nur speichern" : "Save only"}
           </Button>
           <Button onClick={analyzeFood} disabled={!uploadedFile || isAnalyzing} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
             {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scan className="w-4 h-4 mr-2" />}
-            {isGerman ? "Essen analysieren" : "Analyze Food"}
+            {isGerman ? "3. AI Analyse" : "3. AI Analyze"}
           </Button>
         </div>
 
@@ -369,6 +441,12 @@ const ProNutrition = () => {
         {analysisResult && !isAnalyzing && (
           <div className="space-y-4 mb-4">
             <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+              {/* Show uploaded image at top */}
+              {uploadedFile && (
+                <div className="mb-4">
+                  <img src={uploadedFile} alt="Analyzed Food" className="w-16 h-16 object-cover rounded-lg mx-auto" />
+                </div>
+              )}
               <h2 className="text-lg font-bold text-white mb-4">{isGerman ? "🥗 Analyse Ergebnis" : "🥗 Analysis Result"}</h2>
               
               {/* Macro Distribution Pie */}
