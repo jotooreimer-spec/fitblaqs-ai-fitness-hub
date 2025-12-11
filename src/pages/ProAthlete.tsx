@@ -32,13 +32,21 @@ interface BodyAnalysisResult {
   age_estimate: number;
   body_fat_pct: number;
   muscle_mass_pct: number;
+  muscle_category?: string;
   posture: string;
   symmetry: string;
   waist_hip_ratio: number;
   fitness_level: number;
   health_notes: string;
   training_tips: string;
+  bmi?: { value: number; category: string };
+  tdee?: { bmr: number; activity_factor: number; total: number };
+  target_calories?: { daily: number; deficit_surplus: number; goal: string; weekly_change_kg: number };
+  time_to_goal?: { weeks: number; days: number; weight_to_lose_gain: number };
   training_plan?: TrainingPlan;
+  nutrition_plan?: { daily_calories: number; protein_g: number; carbs_g: number; fat_g: number; hydration_liters: number; supplements: string[] };
+  strategy?: { weekly_workouts: number; sleep_hours: number; water_liters: number; key_focus: string; mistakes_to_avoid: string[] };
+  history_summary?: string;
 }
 
 const ProAthlete = () => {

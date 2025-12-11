@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -17,10 +16,7 @@ serve(async (req) => {
     console.log("analyze-food-ai: Starting request processing");
     
     const authHeader = req.headers.get("Authorization");
-    console.log("analyze-food-ai: Auth header present:", !!authHeader);
-    
     if (!authHeader) {
-      console.error("analyze-food-ai: No authorization header");
       return new Response(JSON.stringify({ error: "No authorization header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -29,25 +25,18 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
-    console.log("analyze-food-ai: Creating Supabase client");
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log("analyze-food-ai: User fetch result - User:", !!user, "Error:", userError?.message);
-    
     if (userError || !user) {
-      console.error("analyze-food-ai: User authentication failed:", userError?.message);
-      return new Response(JSON.stringify({ error: "Unauthorized", details: userError?.message }), {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("analyze-food-ai: User authenticated:", user.id);
-    
     const { imageBase64, category } = await req.json();
 
     if (!imageBase64) {
@@ -59,51 +48,102 @@ serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
-      console.error("analyze-food-ai: OPENAI_API_KEY not configured");
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const systemPrompt = `You are a professional nutritionist analyzing food images. 
+    const systemPrompt = `Du bist ein hochpräziser Ernährungs-Analyse-Assistent für Sportwissenschaft und Gesundheitsdaten.
+Deine Aufgabe ist es, anhand des Bildes eine EXTREM DETAILLIERTE Analyse durchzuführen.
 
-IMPORTANT: First verify this is a food image. If the image does NOT show food, respond with:
+WICHTIG: Prüfe zuerst, ob es ein Essensbild ist. Falls NICHT, antworte mit:
 {"error": "not_food_image", "message": "Bitte ein Essensbild hochladen"}
 
-If it IS a valid food image, identify all food items and provide detailed nutritional information including:
-- Calories, protein, carbohydrates, fat for each item
-- Total nutritional values
-- Supplement and nutrition plan recommendations
+Falls es ein gültiges Essensbild ist, liefere folgende Analyse:
 
-Respond in JSON format:
+1. VALIDIERUNG: Prüfe ob alle Makros erkennbar sind
+2. EXAKTE NÄHRWERTE: Kalorien pro Makro (Protein×4, Carbs×4, Fat×9)
+3. MAKROVERTEILUNG: Prozentanteile berechnen
+4. DETAILANALYSE: Zucker, Wasser, Bioverfügbarkeit, Mikronährstoffe
+5. GESUNDHEITSBEWERTUNG: Sehr gesund / Mittel / Ungünstig
+6. VERBESSERUNGEN: Konkrete Zahlen zum Optimieren
+7. ALTERNATIVE: Ähnliches Gericht mit weniger kcal
+
+Antworte NUR mit validem JSON in diesem Format:
 {
   "items": [
     {
-      "name": "Food item name",
-      "portion": "estimated portion size",
+      "name": "Lebensmittelname",
+      "portion": "geschätzte Portion",
       "calories": number,
-      "protein": number (grams),
-      "carbs": number (grams),
-      "fat": number (grams)
+      "protein": number,
+      "carbs": number,
+      "fat": number,
+      "sugar": number,
+      "fiber": number
     }
   ],
   "total_calories": number,
   "total_protein": number,
   "total_carbs": number,
   "total_fat": number,
-  "category": "meat", "protein", "supplements", "vegetarian", or "vegan",
-  "notes": "Brief nutritional advice or observations",
+  "total_sugar": number,
+  "total_fiber": number,
+  "category": "meat" | "protein" | "supplements" | "vegetarian" | "vegan",
+  "macro_distribution": {
+    "protein_pct": number,
+    "carbs_pct": number,
+    "fat_pct": number
+  },
+  "calculated_calories": {
+    "from_protein": number,
+    "from_carbs": number,
+    "from_fat": number,
+    "total_calculated": number,
+    "deviation_pct": number
+  },
+  "health_evaluation": {
+    "rating": "sehr_gesund" | "mittel" | "ungünstig",
+    "calorie_density": "niedrig" | "mittel" | "hoch",
+    "nutrient_density": "niedrig" | "mittel" | "hoch",
+    "satiety_score": number,
+    "sugar_risk": "niedrig" | "mittel" | "hoch",
+    "fat_quality": "gut" | "mittel" | "schlecht"
+  },
+  "improvements": [
+    {
+      "action": "Beschreibung der Verbesserung",
+      "impact": "Auswirkung in kcal oder Gramm",
+      "reason": "Begründung"
+    }
+  ],
+  "alternative_meal": {
+    "name": "Alternativgericht",
+    "calories": number,
+    "protein": number,
+    "carbs": number,
+    "fat": number,
+    "calories_saved": number,
+    "why_better": "Begründung"
+  },
   "nutrition_plan": {
-    "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
-    "supplements": ["Supplement suggestion 1", "Supplement suggestion 2"],
-    "meal_timing": "Best time to consume this meal",
-    "hydration": "Recommended water intake with this meal"
-  }
-}
-Be accurate and provide realistic nutritional estimates. Only respond with valid JSON.`;
+    "recommendations": ["Empfehlung 1", "Empfehlung 2", "Empfehlung 3"],
+    "supplements": ["Supplement 1", "Supplement 2"],
+    "meal_timing": "Optimale Essenszeit",
+    "hydration": "Empfohlene Wasserzufuhr"
+  },
+  "trace_elements": {
+    "vitamin_a": "geschätzt",
+    "vitamin_c": "geschätzt",
+    "iron": "geschätzt",
+    "calcium": "geschätzt"
+  },
+  "notes": "Zusammenfassung und Empfehlungen",
+  "history_summary": "3-4 Sätze über das Gericht für die History"
+}`;
 
-    console.log("Calling OpenAI API for food analysis...");
+    console.log("Calling OpenAI API for detailed food analysis...");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -118,12 +158,12 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
           {
             role: "user",
             content: [
-              { type: "text", text: `Analyze this food image and provide detailed nutritional breakdown. Category hint: ${category || 'unknown'}` },
+              { type: "text", text: `Analysiere dieses Essensbild EXTREM DETAILLIERT. Kategorie-Hinweis: ${category || 'unknown'}. Berechne alle Makros, Mikronährstoffe, Gesundheitsbewertung und liefere Verbesserungsvorschläge.` },
               { type: "image_url", image_url: { url: imageBase64 } },
             ],
           },
         ],
-        max_tokens: 1500,
+        max_tokens: 3000,
       }),
     });
 
@@ -132,7 +172,7 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
       console.error("OpenAI API error:", response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -146,7 +186,7 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("OpenAI response received:", content?.substring(0, 200));
+    console.log("OpenAI response received:", content?.substring(0, 300));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {
@@ -155,7 +195,6 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
       });
     }
 
-    // Parse JSON response
     let analysisData;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -165,7 +204,6 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
         throw new Error("No JSON found");
       }
       
-      // Check if it's not a food image
       if (analysisData.error === "not_food_image") {
         return new Response(JSON.stringify({ 
           error: "invalid_image", 
@@ -177,10 +215,7 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      return new Response(JSON.stringify({ 
-        error: "parse_error", 
-        message: "AI response could not be parsed" 
-      }), {
+      return new Response(JSON.stringify({ error: "parse_error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -195,7 +230,14 @@ Be accurate and provide realistic nutritional estimates. Only respond with valid
         items: analysisData.items,
         total_calories: analysisData.total_calories,
         category: analysisData.category,
-        notes: analysisData.notes,
+        notes: JSON.stringify({
+          summary: analysisData.notes,
+          health_evaluation: analysisData.health_evaluation,
+          improvements: analysisData.improvements,
+          alternative: analysisData.alternative_meal,
+          trace_elements: analysisData.trace_elements,
+          macro_distribution: analysisData.macro_distribution
+        }),
       })
       .select()
       .single();
