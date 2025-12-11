@@ -34,9 +34,7 @@ const Settings = () => {
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   
   // Settings states
-  const [pushNotifications, setPushNotifications] = useState(false);
   const [updateNotifications, setUpdateNotifications] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   
   // Edit form
   const [editForm, setEditForm] = useState({
@@ -49,12 +47,6 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    // Check notification permission on mount
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-      setPushNotifications(Notification.permission === 'granted');
-    }
-
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         navigate("/login");
@@ -150,54 +142,6 @@ const Settings = () => {
     toast.success(t("saved"));
   };
 
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      toast.error(language === 'de' ? 'Benachrichtigungen werden nicht unterstützt' : 'Notifications not supported');
-      return false;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      
-      if (permission === 'granted') {
-        // Register service worker for push notifications if available
-        if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.ready;
-          console.log('Service Worker ready for notifications');
-        }
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      return false;
-    }
-  };
-
-  const handlePushNotificationToggle = async (value: boolean) => {
-    if (value) {
-      const granted = await requestNotificationPermission();
-      if (granted) {
-        setPushNotifications(true);
-        toast.success(language === 'de' ? 'Push-Benachrichtigungen aktiviert' : 'Push notifications enabled');
-        
-        // Show test notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('FitBlaqs', {
-            body: language === 'de' ? 'Benachrichtigungen sind jetzt aktiv!' : 'Notifications are now active!',
-            icon: '/pwa-192x192.png'
-          });
-        }
-      } else {
-        toast.error(language === 'de' ? 'Benachrichtigungen wurden blockiert' : 'Notifications were blocked');
-      }
-    } else {
-      setPushNotifications(false);
-      toast.success(language === 'de' ? 'Push-Benachrichtigungen deaktiviert' : 'Push notifications disabled');
-    }
-  };
-
   const handleUpdateNotificationToggle = (value: boolean) => {
     setUpdateNotifications(value);
     toast.success(t("saved"));
@@ -231,7 +175,7 @@ const Settings = () => {
     {
       icon: Bell,
       title: t("notifications"),
-      description: language === "de" ? "Push & Update Benachrichtigungen" : "Push & Update notifications",
+      description: language === "de" ? "Update Benachrichtigungen" : "Update notifications",
       onClick: () => setNotificationsDialogOpen(true),
     },
     {
@@ -445,18 +389,6 @@ const Settings = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">Push Notifications</div>
-                <div className="text-sm text-muted-foreground">
-                  {language === "de" ? "Erinnerungen erhalten" : "Receive reminders"}
-                </div>
-              </div>
-              <Switch 
-                checked={pushNotifications} 
-                onCheckedChange={handlePushNotificationToggle}
-              />
-            </div>
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Update Notifications</div>
