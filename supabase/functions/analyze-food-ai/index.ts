@@ -50,8 +50,8 @@ serve(async (req) => {
       });
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI service not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -139,16 +139,16 @@ Antworte NUR mit validem JSON in diesem Format:
   "NutritionTips": "Konkrete Empfehlungen"
 }`;
 
-    console.log("Calling OpenAI API for food analysis...");
+    console.log("Calling Lovable AI for food analysis...");
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -165,7 +165,7 @@ Antworte NUR mit validem JSON in diesem Format:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", response.status, errorText);
+      console.error("Lovable AI error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
@@ -182,7 +182,7 @@ Antworte NUR mit validem JSON in diesem Format:
 
     const aiResponse = await response.json();
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("OpenAI response received:", content?.substring(0, 500));
+    console.log("Lovable AI response received:", content?.substring(0, 500));
 
     if (!content) {
       return new Response(JSON.stringify({ error: "No analysis generated" }), {

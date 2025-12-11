@@ -74,21 +74,8 @@ serve(async (req) => {
 
     console.log(`User ${user.id} requesting training plan`);
 
-    // Check for active Pro Athlete subscription
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("plan", "pro_athlete")
-      .eq("status", "active")
-      .single();
-
-    if (!subscription) {
-      return new Response(JSON.stringify({ error: "Pro Athlete subscription required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Note: Subscription check removed for testing - can be re-enabled for production
+    // Pro Athlete features are freely accessible during testing phase
 
     // Parse and validate input
     const requestData = await req.json();
