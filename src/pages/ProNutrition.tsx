@@ -92,19 +92,27 @@ const ProNutrition = () => {
   };
 
   const loadCalculatedStats = async (uid: string) => {
-    // Load nutrition_logs for calculations
-    const { data: nutritionLogs } = await supabase
-      .from("nutrition_logs")
-      .select("*")
-      .eq("user_id", uid);
-
-    // Load weight for daily target calculation
-    const { data: weightLogs } = await supabase
-      .from("weight_logs")
-      .select("weight")
-      .eq("user_id", uid)
-      .order("measured_at", { ascending: false })
-      .limit(1);
+    // Load nutrition logs, weight and Pro Nutrition analysis in parallel
+    const [
+      { data: nutritionLogs },
+      { data: weightLogs },
+      { data: foodAnalysis },
+    ] = await Promise.all([
+      supabase
+        .from("nutrition_logs")
+        .select("*")
+        .eq("user_id", uid),
+      supabase
+        .from("weight_logs")
+        .select("weight")
+        .eq("user_id", uid)
+        .order("measured_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("food_analysis")
+        .select("*")
+        .eq("user_id", uid),
+    ]);
 
     const userWeight = weightLogs?.[0]?.weight || 70;
     const dailyCalorieTarget = userWeight * 30; // Rough TDEE estimate
@@ -119,22 +127,60 @@ const ProNutrition = () => {
     let totalFat = 0;
     let totalWater = 0;
 
-    nutritionLogs?.forEach(log => {
+    // Standard nutrition logs (from Nutrition page)
+    nutritionLogs?.forEach((log) => {
       totalCals += log.calories || 0;
       totalProt += Number(log.protein) || 0;
       totalCarbs += Number(log.carbs) || 0;
       totalFat += Number(log.fats) || 0;
-      
+
       // Parse water from notes if stored as JSON
       if (log.notes) {
         try {
-          const notesData = typeof log.notes === 'string' ? JSON.parse(log.notes) : log.notes;
+          const notesData = typeof log.notes === "string" ? JSON.parse(log.notes) : log.notes;
           if (notesData.water) {
             let waterMl = Number(notesData.water) || 0;
-            const waterUnit = notesData.water_unit || 'ml';
-            if (waterUnit === 'l') waterMl *= 1000;
-            else if (waterUnit === 'dl') waterMl *= 100;
+            const waterUnit = notesData.water_unit || "ml";
+            if (waterUnit === "l") waterMl *= 1000;
+            else if (waterUnit === "dl") waterMl *= 100;
             totalWater += waterMl;
+          }
+        } catch {}
+      }
+    });
+
+    // Pro Nutrition analysis entries (manual values & AI results)
+    foodAnalysis?.forEach((entry) => {
+      // Total calories from analysis table
+      totalCals += Number(entry.total_calories) || 0;
+
+      // Macros from AI items array
+      if (entry.items && Array.isArray(entry.items)) {
+        entry.items.forEach((item: any) => {
+          totalProt += Number(item.protein) || 0;
+          totalCarbs += Number(item.carbs) || 0;
+          totalFat += Number(item.fat) || 0;
+        });
+      }
+
+      // Additional data from manual values stored in notes
+      if (entry.notes) {
+        try {
+          const notesData = typeof entry.notes === "string" ? JSON.parse(entry.notes) : entry.notes;
+
+          if (notesData.manual_values) {
+            const mv = notesData.manual_values;
+            totalProt += Number(mv.protein) || 0;
+            totalCarbs += Number(mv.carbs) || 0;
+            totalFat += Number(mv.fat) || 0;
+
+            if (mv.water) {
+              let waterMl = Number(mv.water) || 0;
+              const waterUnit = mv.water_unit || notesData.units?.water || "ml";
+              if (waterUnit === "l") waterMl *= 1000;
+              else if (waterUnit === "dl") waterMl *= 100;
+              totalWater += waterMl;
+            }
           }
         } catch {}
       }
