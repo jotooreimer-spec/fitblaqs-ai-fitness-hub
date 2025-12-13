@@ -42,13 +42,33 @@ export const MilchprodukteDialog = ({ open, onOpenChange, userId, isGerman, onSu
     }
   };
 
+  const convertWaterToML = (value: number, unit: string) => {
+    switch (unit) {
+      case "dz": return value * 100;
+      case "liter": return value * 1000;
+      default: return value;
+    }
+  };
+
   const handleSave = async () => {
     if (!foodName) return;
 
     const proteinG = convertToGrams(parseFloat(protein) || 0, proteinUnit);
     const fatG = convertToGrams(parseFloat(fat) || 0, fatUnit);
     const carbsG = convertToGrams(parseFloat(carbs) || 0, carbsUnit);
+    const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
     const calories = Math.round((proteinG * 4) + (fatG * 9) + (carbsG * 4));
+
+    const notes = JSON.stringify({
+      category: "dairy",
+      protein: { value: parseFloat(protein) || 0, unit: proteinUnit },
+      vitamin: { value: parseFloat(vitamin) || 0, unit: vitaminUnit },
+      fat: { value: parseFloat(fat) || 0, unit: fatUnit },
+      sugar: { value: parseFloat(sugar) || 0, unit: sugarUnit },
+      carbs: { value: parseFloat(carbs) || 0, unit: carbsUnit },
+      water: { value: parseFloat(water) || 0, unit: waterUnit, ml: waterInML },
+      spurenelemente: { value: parseFloat(spurenelemente) || 0, unit: spurenelementeUnit }
+    });
 
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: userId,
@@ -58,7 +78,7 @@ export const MilchprodukteDialog = ({ open, onOpenChange, userId, isGerman, onSu
       protein: proteinG,
       carbs: carbsG,
       fats: fatG,
-      notes: `Vitamin: ${vitamin || 0}${vitaminUnit}, Sugar: ${sugar || 0}${sugarUnit}, Water: ${water || 0}${waterUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}`
+      notes
     });
 
     if (error) {

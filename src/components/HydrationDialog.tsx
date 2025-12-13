@@ -27,13 +27,18 @@ export const HydrationDialog = ({ open, onOpenChange, userId, isGerman, onSucces
     if (waterUnit === "dz") waterInML *= 100;
     if (waterUnit === "liter") waterInML *= 1000;
 
+    const notes = JSON.stringify({
+      category: "hydration",
+      water: { value: parseFloat(water), unit: waterUnit, ml: waterInML }
+    });
+
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: userId,
       food_name: "Hydration",
       meal_type: "snack",
       calories: 0,
       protein: 0,
-      notes: `Water: ${waterInML}`
+      notes
     });
 
     if (error) {
