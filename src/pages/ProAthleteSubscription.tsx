@@ -111,7 +111,7 @@ const ProAthleteSubscription = () => {
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Ernährungsauswertung & Food Tracker" : "Nutrition analysis & food tracker"}</span>
+                <span>{isGerman ? "Ernährungsauswertung & Makro-Berechnung" : "Nutrition analysis & macro calculation"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -119,15 +119,11 @@ const ProAthleteSubscription = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "KI-generierte Supplements & Kalorien" : "AI-generated supplements & calories"}</span>
+                <span>{isGerman ? "Automatische Prozentberechnung" : "Automatic percentage calculation"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>Food Tracker</span>
-              </li>
-              <li className="flex items-center gap-2 text-white">
-                <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Foto Upload Analyse" : "Photo upload analysis"}</span>
+                <span>{isGerman ? "Foto Upload & Speicherung" : "Photo upload & storage"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
