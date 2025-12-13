@@ -397,12 +397,15 @@ const CalendarPage = () => {
                     </div>
                   ))}
 
-                  {/* Body Analysis with small images - clickable */}
+                  {/* Body Analysis - both uploads and manual values */}
                   {selectedDayData.bodyAnalysis.length > 0 && (
                     <div className="mt-4">
-                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Athlete Body Upload" : "Pro Athlete Body Upload"}</div>
+                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Athlete" : "Pro Athlete"}</div>
                       {selectedDayData.bodyAnalysis.map((ba) => {
                         const healthNotes = ba.health_notes ? (typeof ba.health_notes === 'string' ? JSON.parse(ba.health_notes) : ba.health_notes) : null;
+                        const isUpload = ba.image_url && healthNotes?.upload_name;
+                        const isManualSave = healthNotes?.weight || healthNotes?.target_weight;
+                        
                         return (
                           <div 
                             key={ba.id} 
@@ -412,9 +415,34 @@ const CalendarPage = () => {
                             {ba.image_url && (
                               <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                             )}
+                            {!ba.image_url && isManualSave && (
+                              <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Target className="w-5 h-5 text-cyan-400" />
+                              </div>
+                            )}
                             <div className="flex-1">
-                              <div className="font-semibold text-cyan-400">{healthNotes?.upload_name || 'Body Upload'}</div>
-                              <div className="text-sm text-white capitalize">{healthNotes?.upload_category || '-'}</div>
+                              {isUpload ? (
+                                <>
+                                  <div className="font-semibold text-cyan-400">{healthNotes?.upload_name}</div>
+                                  <div className="text-sm text-white capitalize">{healthNotes?.upload_category}</div>
+                                </>
+                              ) : isManualSave ? (
+                                <>
+                                  <div className="font-semibold text-cyan-400">
+                                    {healthNotes?.weight && `${healthNotes.weight} ${healthNotes.weight_unit || 'kg'}`}
+                                    {healthNotes?.target_weight && ` → ${healthNotes.target_weight} ${healthNotes.target_weight_unit || 'kg'}`}
+                                  </div>
+                                  <div className="text-xs text-white/60">
+                                    {healthNotes?.activity_level && `${healthNotes.activity_level}`}
+                                    {healthNotes?.goal && ` | ${healthNotes.goal}`}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="font-semibold text-cyan-400">{isGerman ? "Eintrag" : "Entry"}</div>
+                                  <div className="text-sm text-white">{ba.body_fat_pct ? `${ba.body_fat_pct}%` : '-'}</div>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
