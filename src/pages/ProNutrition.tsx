@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Loader2, HelpCircle, Upload, X, Save, Trash2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +55,15 @@ const ProNutrition = () => {
     water: "", water_unit: "ml", category: "protein",
     traceElements: { iron: "", iron_unit: "mg", calcium: "", calcium_unit: "mg", magnesium: "", magnesium_unit: "mg", zinc: "", zinc_unit: "mg" }
   });
+
+  // Upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("");
+  
+  // History detail dialog
+  const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<FoodAnalysisEntry | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -164,9 +174,17 @@ const ProNutrition = () => {
     }
   };
 
-  const uploadImage = async () => {
+  const handleUploadClick = () => {
     if (!uploadedFileRaw) {
       toast({ title: isGerman ? "Bitte Bild hochladen" : "Please upload image", variant: "destructive" });
+      return;
+    }
+    setUploadDialogOpen(true);
+  };
+
+  const uploadImage = async () => {
+    if (!uploadedFileRaw || !uploadName || !uploadCategory) {
+      toast({ title: isGerman ? "Bitte Name und Kategorie eingeben" : "Please enter name and category", variant: "destructive" });
       return;
     }
     setIsUploading(true);
@@ -178,10 +196,8 @@ const ProNutrition = () => {
       const compressed = await compressImage(uploadedFileRaw);
       const fileName = `${session.user.id}/${Date.now()}.jpg`;
       
-      // Convert base64 to blob for upload using helper function
       const blob = base64ToBlob(compressed.base64, 'image/jpeg');
       
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(fileName, blob, { contentType: "image/jpeg" });
@@ -190,20 +206,26 @@ const ProNutrition = () => {
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
-      // Save to food_analysis table
+      // Save with name and category
       const { error: dbError } = await supabase.from("food_analysis").insert([{
         user_id: session.user.id,
         image_url: urlData.publicUrl,
         total_calories: null,
-        category: manualForm.category,
+        category: uploadCategory,
         items: null,
-        notes: null,
+        notes: JSON.stringify({
+          upload_name: uploadName,
+          upload_category: uploadCategory,
+        }),
       }]);
 
       if (dbError) throw dbError;
 
       setUploadedFile(null);
       setUploadedFileRaw(null);
+      setUploadName("");
+      setUploadCategory("");
+      setUploadDialogOpen(false);
       loadHistory(session.user.id);
       toast({ title: isGerman ? "Bild gespeichert" : "Image saved" });
     } catch (error) {
@@ -490,8 +512,8 @@ const ProNutrition = () => {
             <Trash2 className="w-4 h-4 mr-2" />
             {isGerman ? "Löschen" : "Delete"}
           </Button>
-          <Button onClick={uploadImage} disabled={!uploadedFile || isUploading} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
-            {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+          <Button onClick={handleUploadClick} disabled={!uploadedFile} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
+            <Upload className="w-4 h-4 mr-2" />
             Upload
           </Button>
         </div>
@@ -501,24 +523,25 @@ const ProNutrition = () => {
           <h3 className="text-white font-semibold mb-2">{isGerman ? "Verlauf" : "History"}</h3>
           {history.slice(0, 10).map((entry) => {
             const notesData = entry.notes ? (typeof entry.notes === 'string' ? JSON.parse(entry.notes) : entry.notes) : null;
-            const calculatedPcts = notesData?.calculated_stats;
             return (
-              <Card key={entry.id} className="bg-black/40 backdrop-blur-md border-white/10 p-3">
+              <Card 
+                key={entry.id} 
+                className="bg-black/40 backdrop-blur-md border-white/10 p-3 cursor-pointer hover:bg-white/10 transition-colors"
+                onClick={() => { setSelectedEntry(entry); setHistoryDetailOpen(true); }}
+              >
                 <div className="flex justify-between items-center gap-3">
                   {entry.image_url && (
                     <img src={entry.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-semibold ${getCategoryColor(entry.category || '')} mb-1 capitalize`}>{entry.category}</div>
-                    <div className="text-white text-sm truncate">{(entry.items as any)?.[0]?.name || "Food Entry"}</div>
-                    <div className="text-xs text-zinc-400">
-                      {entry.total_calories ? `${entry.total_calories} kcal` : ''}
-                      {calculatedPcts ? ` | ${calculatedPcts.caloriesPct?.toFixed(0) || 0}%` : ''}
+                    <div className="text-white text-sm truncate">{notesData?.upload_name || (entry.items as any)?.[0]?.name || "Food Entry"}</div>
+                    <div className={`text-xs ${getCategoryColor(notesData?.upload_category || entry.category || '')} capitalize`}>
+                      {notesData?.upload_category || entry.category || '-'}
                     </div>
                     <div className="text-xs text-zinc-500">{new Date(entry.created_at).toLocaleDateString()}</div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => deleteEntry(entry.id)} className="text-destructive hover:text-destructive h-8 w-8">
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }} className="text-destructive hover:text-destructive h-8 w-8">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -533,6 +556,64 @@ const ProNutrition = () => {
           )}
         </div>
       </div>
+
+      {/* Upload Dialog - Name & Category */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">{isGerman ? "Bild speichern" : "Save Image"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Input 
+                placeholder={isGerman ? "Name eingeben" : "Enter name"} 
+                value={uploadName} 
+                onChange={(e) => setUploadName(e.target.value)} 
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <div>
+              <Input 
+                placeholder={isGerman ? "Kategorie eingeben" : "Enter category"} 
+                value={uploadCategory} 
+                onChange={(e) => setUploadCategory(e.target.value)} 
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+            <Button onClick={uploadImage} disabled={isUploading || !uploadName || !uploadCategory} className="w-full">
+              {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {isGerman ? "Speichern" : "Save"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Detail Dialog - Only Name & Category */}
+      <Dialog open={historyDetailOpen} onOpenChange={setHistoryDetailOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Pro Nutrition Food Upload</DialogTitle>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="space-y-4">
+              {selectedEntry.image_url && (
+                <img src={selectedEntry.image_url} alt="Food" className="w-48 h-48 object-cover rounded-lg mx-auto" />
+              )}
+              {(() => {
+                const notes = selectedEntry.notes ? (typeof selectedEntry.notes === 'string' ? JSON.parse(selectedEntry.notes) : selectedEntry.notes) : null;
+                return (
+                  <div className="space-y-2 text-center">
+                    <div className="text-white font-semibold text-lg">{notes?.upload_name || 'Food Analysis'}</div>
+                    <div className="text-zinc-400">{notes?.upload_category || selectedEntry.category || '-'}</div>
+                    <div className="text-xs text-zinc-500">{new Date(selectedEntry.created_at).toLocaleDateString()}</div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <BottomNav />
     </div>
   );
