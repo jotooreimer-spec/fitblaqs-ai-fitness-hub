@@ -55,11 +55,13 @@ const ProAthlete = () => {
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadName, setUploadName] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("progress");
   
   // History detail dialog
   const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<BodyAnalysisEntry | null>(null);
+
+  const bodyCategories = ["progress", "front", "back", "side", "flexing"];
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -157,8 +159,8 @@ const ProAthlete = () => {
   };
 
   const uploadImage = async () => {
-    if (!uploadedFileRaw || !uploadName || !uploadCategory) {
-      toast({ title: isGerman ? "Bitte Name und Kategorie eingeben" : "Please enter name and category", variant: "destructive" });
+    if (!uploadedFileRaw || !uploadName) {
+      toast({ title: isGerman ? "Bitte Name eingeben" : "Please enter name", variant: "destructive" });
       return;
     }
     setIsUploading(true);
@@ -198,7 +200,7 @@ const ProAthlete = () => {
       setUploadedFile(null);
       setUploadedFileRaw(null);
       setUploadName("");
-      setUploadCategory("");
+      setUploadCategory("progress");
       setUploadDialogOpen(false);
       loadHistory(session.user.id);
       toast({ title: isGerman ? "Bild gespeichert" : "Image saved" });
@@ -482,14 +484,20 @@ const ProAthlete = () => {
               />
             </div>
             <div>
-              <Input 
-                placeholder={isGerman ? "Kategorie eingeben" : "Enter category"} 
-                value={uploadCategory} 
-                onChange={(e) => setUploadCategory(e.target.value)} 
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
+              <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder={isGerman ? "Kategorie wählen" : "Select category"} />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800">
+                  <SelectItem value="progress">{isGerman ? "Fortschritt" : "Progress"}</SelectItem>
+                  <SelectItem value="front">{isGerman ? "Vorne" : "Front"}</SelectItem>
+                  <SelectItem value="back">{isGerman ? "Hinten" : "Back"}</SelectItem>
+                  <SelectItem value="side">{isGerman ? "Seite" : "Side"}</SelectItem>
+                  <SelectItem value="flexing">Flexing</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Button onClick={uploadImage} disabled={isUploading || !uploadName || !uploadCategory} className="w-full">
+            <Button onClick={uploadImage} disabled={isUploading || !uploadName} className="w-full">
               {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               {isGerman ? "Speichern" : "Save"}
             </Button>
