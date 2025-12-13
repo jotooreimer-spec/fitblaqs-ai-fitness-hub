@@ -428,44 +428,65 @@ const ProAthlete = () => {
         </div>
 
         {/* History */}
-        <div className="space-y-2">
-          <h3 className="text-white font-semibold mb-2">{isGerman ? "Verlauf" : "History"}</h3>
+        <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
+          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "Verlauf" : "History"}</h3>
           {history.slice(0, 10).map((entry) => {
             const healthNotes = entry.health_notes ? (typeof entry.health_notes === 'string' ? JSON.parse(entry.health_notes) : entry.health_notes) : null;
+            const isUpload = entry.image_url && healthNotes?.upload_name;
+            const isManualSave = healthNotes?.weight || healthNotes?.target_weight;
+            
             return (
               <Card 
                 key={entry.id} 
-                className="bg-black/40 backdrop-blur-md border-white/10 p-3 cursor-pointer hover:bg-white/10 transition-colors"
+                className="bg-white/5 border-white/10 p-3 mb-2 cursor-pointer hover:bg-white/10 transition-colors"
                 onClick={() => { setSelectedEntry(entry); setHistoryDetailOpen(true); }}
               >
-                <div className="flex justify-between items-center gap-3">
+                <div className="flex items-center gap-3">
                   {entry.image_url && (
-                    <img src={entry.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                    <img src={entry.image_url} alt="Body" className="w-12 h-12 object-cover rounded-lg flex-shrink-0" />
+                  )}
+                  {!entry.image_url && isManualSave && (
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Save className="w-6 h-6 text-primary" />
+                    </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="text-white text-sm truncate">
-                      {healthNotes?.upload_name || healthNotes?.weight ? `${healthNotes.upload_name || healthNotes.weight} ${healthNotes.weight_unit || ''}` : 'Body Analysis'}
-                    </div>
-                    <div className="text-xs text-zinc-400">
-                      {healthNotes?.upload_category || (entry.body_fat_pct ? `${entry.body_fat_pct}%` : '')}
-                    </div>
-                    <div className="text-xs text-zinc-500">{new Date(entry.created_at).toLocaleDateString()}</div>
+                    {isUpload ? (
+                      <>
+                        <div className="text-white text-sm font-medium truncate">{healthNotes?.upload_name}</div>
+                        <div className="text-xs text-primary capitalize">{healthNotes?.upload_category}</div>
+                      </>
+                    ) : isManualSave ? (
+                      <>
+                        <div className="text-white text-sm font-medium">
+                          {healthNotes?.weight && `${healthNotes.weight} ${healthNotes.weight_unit || 'kg'}`}
+                          {healthNotes?.target_weight && ` → ${healthNotes.target_weight} ${healthNotes.target_weight_unit || 'kg'}`}
+                        </div>
+                        <div className="text-xs text-green-400">
+                          {healthNotes?.activity_level && `${healthNotes.activity_level}`}
+                          {healthNotes?.training_frequency && ` | ${healthNotes.training_frequency}x/Woche`}
+                          {healthNotes?.goal && ` | ${healthNotes.goal}`}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-white text-sm">{entry.body_fat_pct ? `${entry.body_fat_pct}%` : 'Entry'}</div>
+                        <div className="text-xs text-zinc-400">-</div>
+                      </>
+                    )}
+                    <div className="text-xs text-zinc-500 mt-1">{new Date(entry.created_at).toLocaleDateString()}</div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }} className="text-destructive hover:text-destructive h-8 w-8">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id); }} className="text-destructive hover:text-destructive h-8 w-8 flex-shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </Card>
             );
           })}
           {history.length === 0 && (
-            <Card className="bg-black/40 backdrop-blur-md border-white/10 p-4">
-              <p className="text-zinc-400 text-center text-sm">{isGerman ? "Noch keine Einträge" : "No entries yet"}</p>
-            </Card>
+            <p className="text-zinc-400 text-center text-sm py-4">{isGerman ? "Noch keine Einträge" : "No entries yet"}</p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Upload Dialog - Name & Category */}
@@ -508,29 +529,95 @@ const ProAthlete = () => {
         </DialogContent>
       </Dialog>
 
-      {/* History Detail Dialog - Only Name & Category */}
+      {/* History Detail Dialog - Shows both Uploads and Manual Values */}
       <Dialog open={historyDetailOpen} onOpenChange={setHistoryDetailOpen}>
         <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
           <DialogHeader>
-            <DialogTitle className="text-white">Pro Athlete Body Upload</DialogTitle>
+            <DialogTitle className="text-white">Pro Athlete</DialogTitle>
           </DialogHeader>
-          {selectedEntry && (
-            <div className="space-y-4">
-              {selectedEntry.image_url && (
-                <img src={selectedEntry.image_url} alt="Body" className="w-48 h-48 object-cover rounded-lg mx-auto" />
-              )}
-              {(() => {
-                const notes = selectedEntry.health_notes ? (typeof selectedEntry.health_notes === 'string' ? JSON.parse(selectedEntry.health_notes) : selectedEntry.health_notes) : null;
-                return (
+          {selectedEntry && (() => {
+            const notes = selectedEntry.health_notes ? (typeof selectedEntry.health_notes === 'string' ? JSON.parse(selectedEntry.health_notes) : selectedEntry.health_notes) : null;
+            const isUpload = selectedEntry.image_url && notes?.upload_name;
+            const isManualSave = notes?.weight || notes?.target_weight;
+            
+            return (
+              <div className="space-y-4">
+                {selectedEntry.image_url && (
+                  <img src={selectedEntry.image_url} alt="Body" className="w-48 h-48 object-cover rounded-lg mx-auto" />
+                )}
+                
+                {isUpload && (
                   <div className="space-y-2 text-center">
-                    <div className="text-white font-semibold text-lg">{notes?.upload_name || 'Body Analysis'}</div>
-                    <div className="text-zinc-400">{notes?.upload_category || '-'}</div>
-                    <div className="text-xs text-zinc-500">{new Date(selectedEntry.created_at).toLocaleDateString()}</div>
+                    <div className="text-white font-semibold text-lg">{notes?.upload_name}</div>
+                    <div className="text-primary capitalize">{notes?.upload_category}</div>
                   </div>
-                );
-              })()}
-            </div>
-          )}
+                )}
+                
+                {isManualSave && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {notes?.weight && (
+                        <div className="bg-white/5 p-3 rounded-lg">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Gewicht" : "Weight"}</div>
+                          <div className="text-white font-bold">{notes.weight} {notes.weight_unit || 'kg'}</div>
+                        </div>
+                      )}
+                      {notes?.target_weight && (
+                        <div className="bg-white/5 p-3 rounded-lg">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Ziel" : "Target"}</div>
+                          <div className="text-green-400 font-bold">{notes.target_weight} {notes.target_weight_unit || 'kg'}</div>
+                        </div>
+                      )}
+                      {notes?.height && (
+                        <div className="bg-white/5 p-3 rounded-lg">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Größe" : "Height"}</div>
+                          <div className="text-white font-bold">{notes.height} {notes.height_unit || 'cm'}</div>
+                        </div>
+                      )}
+                      {notes?.age && (
+                        <div className="bg-white/5 p-3 rounded-lg">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Alter" : "Age"}</div>
+                          <div className="text-white font-bold">{notes.age}</div>
+                        </div>
+                      )}
+                    </div>
+                    {notes?.activity_level && (
+                      <div className="bg-white/5 p-3 rounded-lg">
+                        <div className="text-xs text-zinc-400">{isGerman ? "Aktivitätslevel" : "Activity Level"}</div>
+                        <div className="text-white">{notes.activity_level}</div>
+                      </div>
+                    )}
+                    {notes?.training_frequency && (
+                      <div className="bg-white/5 p-3 rounded-lg">
+                        <div className="text-xs text-zinc-400">{isGerman ? "Training/Woche" : "Training/Week"}</div>
+                        <div className="text-white">{notes.training_frequency}x</div>
+                      </div>
+                    )}
+                    {notes?.goal && (
+                      <div className="bg-white/5 p-3 rounded-lg">
+                        <div className="text-xs text-zinc-400">{isGerman ? "Ziel" : "Goal"}</div>
+                        <div className="text-primary">{notes.goal}</div>
+                      </div>
+                    )}
+                    {notes?.calculated_stats && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="bg-primary/10 p-2 rounded-lg text-center">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Training Std." : "Workout Hrs"}</div>
+                          <div className="text-primary font-bold">{notes.calculated_stats.totalWorkoutHours}h</div>
+                        </div>
+                        <div className="bg-green-500/10 p-2 rounded-lg text-center">
+                          <div className="text-xs text-zinc-400">{isGerman ? "Distanz" : "Distance"}</div>
+                          <div className="text-green-400 font-bold">{notes.calculated_stats.totalDistance?.toFixed(1)} km</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="text-xs text-zinc-500 text-center">{new Date(selectedEntry.created_at).toLocaleDateString()}</div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
