@@ -520,7 +520,7 @@ const CalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Detail Dialog */}
+      {/* Upload Detail Dialog - Only Name & Category */}
       <Dialog open={uploadDetailOpen} onOpenChange={setUploadDetailOpen}>
         <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
           <DialogHeader>
@@ -542,134 +542,37 @@ const CalendarPage = () => {
                 />
               )}
               
-              {/* Values */}
-              <div className="space-y-2 text-sm">
+              {/* Only Name & Category */}
+              <div className="space-y-2 text-center">
                 {selectedUpload.type === 'body' ? (
                   <>
-                    {/* Body Analysis Values */}
                     {(() => {
                       const healthNotes = selectedUpload.data.health_notes 
                         ? (typeof selectedUpload.data.health_notes === 'string' 
                           ? JSON.parse(selectedUpload.data.health_notes) 
                           : selectedUpload.data.health_notes) 
                         : null;
-                      const stats = healthNotes?.calculated_stats;
                       return (
-                        <div className="grid grid-cols-2 gap-2">
-                          {healthNotes?.weight && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Gewicht" : "Weight"}</div>
-                              <div className="text-white font-medium">{healthNotes.weight} {healthNotes.weight_unit || 'kg'}</div>
-                            </div>
-                          )}
-                          {healthNotes?.target_weight && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Zielgewicht" : "Target"}</div>
-                              <div className="text-white font-medium">{healthNotes.target_weight} {healthNotes.target_weight_unit || 'kg'}</div>
-                            </div>
-                          )}
-                          {healthNotes?.height && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Größe" : "Height"}</div>
-                              <div className="text-white font-medium">{healthNotes.height} {healthNotes.height_unit || 'cm'}</div>
-                            </div>
-                          )}
-                          {healthNotes?.age && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Alter" : "Age"}</div>
-                              <div className="text-white font-medium">{healthNotes.age}</div>
-                            </div>
-                          )}
-                          {stats?.totalWorkoutHours !== undefined && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Training Std." : "Workout Hrs"}</div>
-                              <div className="text-white font-medium">{stats.totalWorkoutHours}h <span className="text-primary text-xs">{stats.totalWorkoutHoursPct?.toFixed(1)}%</span></div>
-                            </div>
-                          )}
-                          {stats?.totalDistance !== undefined && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Distanz" : "Distance"}</div>
-                              <div className="text-white font-medium">{stats.totalDistance?.toFixed(1)} km <span className="text-green-400 text-xs">{stats.totalDistancePct?.toFixed(1)}%</span></div>
-                            </div>
-                          )}
-                          {selectedUpload.data.body_fat_pct && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Körperfett" : "Body Fat"}</div>
-                              <div className="text-white font-medium">{selectedUpload.data.body_fat_pct}%</div>
-                            </div>
-                          )}
-                          {selectedUpload.data.muscle_mass_pct && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">{isGerman ? "Muskeln" : "Muscle"}</div>
-                              <div className="text-white font-medium">{selectedUpload.data.muscle_mass_pct}%</div>
-                            </div>
-                          )}
-                        </div>
+                        <>
+                          <div className="text-white font-semibold text-lg">{healthNotes?.upload_name || 'Body Analysis'}</div>
+                          <div className="text-zinc-400">{healthNotes?.upload_category || '-'}</div>
+                        </>
                       );
                     })()}
                   </>
                 ) : (
                   <>
-                    {/* Food Analysis Values */}
                     {(() => {
                       const notesData = selectedUpload.data.notes 
                         ? (typeof selectedUpload.data.notes === 'string' 
                           ? JSON.parse(selectedUpload.data.notes) 
                           : selectedUpload.data.notes) 
                         : null;
-                      const stats = notesData?.calculated_stats;
-                      const manualVals = notesData?.manual_values;
-                      const units = notesData?.units;
                       return (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 bg-white/5 rounded">
-                            <div className="text-xs text-white/60">Calories</div>
-                            <div className="text-white font-medium">
-                              {selectedUpload.data.total_calories || manualVals?.calories || 0} {units?.calories || 'kcal'}
-                              {stats?.caloriesPct !== undefined && <span className="text-orange-400 text-xs ml-1">{stats.caloriesPct?.toFixed(0)}%</span>}
-                            </div>
-                          </div>
-                          <div className="p-2 bg-white/5 rounded">
-                            <div className="text-xs text-white/60">Protein</div>
-                            <div className="text-white font-medium">
-                              {manualVals?.protein || 0}{units?.protein || 'g'}
-                              {stats?.proteinPct !== undefined && <span className="text-red-400 text-xs ml-1">{stats.proteinPct?.toFixed(0)}%</span>}
-                            </div>
-                          </div>
-                          <div className="p-2 bg-white/5 rounded">
-                            <div className="text-xs text-white/60">Carbs</div>
-                            <div className="text-white font-medium">
-                              {manualVals?.carbs || 0}{units?.carbs || 'g'}
-                              {stats?.carbsPct !== undefined && <span className="text-yellow-400 text-xs ml-1">{stats.carbsPct?.toFixed(0)}%</span>}
-                            </div>
-                          </div>
-                          <div className="p-2 bg-white/5 rounded">
-                            <div className="text-xs text-white/60">Fat</div>
-                            <div className="text-white font-medium">
-                              {manualVals?.fat || 0}{units?.fat || 'g'}
-                              {stats?.fatPct !== undefined && <span className="text-blue-400 text-xs ml-1">{stats.fatPct?.toFixed(0)}%</span>}
-                            </div>
-                          </div>
-                          <div className="p-2 bg-white/5 rounded">
-                            <div className="text-xs text-white/60">💧 Hydration</div>
-                            <div className="text-white font-medium">
-                              {manualVals?.water || 0}{units?.water || 'ml'}
-                              {stats?.waterPct !== undefined && <span className="text-cyan-400 text-xs ml-1">{stats.waterPct?.toFixed(0)}%</span>}
-                            </div>
-                          </div>
-                          {manualVals?.sugar && (
-                            <div className="p-2 bg-white/5 rounded">
-                              <div className="text-xs text-white/60">Sugar</div>
-                              <div className="text-white font-medium">{manualVals.sugar}{units?.sugar || 'g'}</div>
-                            </div>
-                          )}
-                          {selectedUpload.data.category && (
-                            <div className="p-2 bg-white/5 rounded col-span-2">
-                              <div className="text-xs text-white/60">Category</div>
-                              <div className="text-white font-medium capitalize">{selectedUpload.data.category}</div>
-                            </div>
-                          )}
-                        </div>
+                        <>
+                          <div className="text-white font-semibold text-lg">{notesData?.upload_name || 'Food Analysis'}</div>
+                          <div className="text-zinc-400">{notesData?.upload_category || selectedUpload.data.category || '-'}</div>
+                        </>
                       );
                     })()}
                   </>
