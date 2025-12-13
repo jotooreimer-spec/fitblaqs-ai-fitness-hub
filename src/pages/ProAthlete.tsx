@@ -273,7 +273,6 @@ const ProAthlete = () => {
 
         {/* Calculated Stats from History */}
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
-          <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "Berechnete Statistiken" : "Calculated Stats"}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/5 p-3 rounded-lg">
               <div className="text-xs text-zinc-400">{isGerman ? "Training Std." : "Workout Hrs"}</div>
@@ -298,7 +297,6 @@ const ProAthlete = () => {
               <div className="text-blue-400 text-xs">{calculatedStats.trainingSessionsPct.toFixed(1)}%</div>
             </div>
           </div>
-          <p className="text-xs text-zinc-500 text-center mt-2">{isGerman ? "Automatisch berechnet aus Verlauf" : "Auto-calculated from history"}</p>
         </Card>
 
         {/* Manual Input */}
@@ -384,6 +382,20 @@ const ProAthlete = () => {
           <Button onClick={saveManualValues} disabled={isSaving} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             {isGerman ? "Nur speichern" : "Save only"}
+          </Button>
+          <Button onClick={async () => {
+            const { data: entries } = await supabase.from("body_analysis").select("id").eq("user_id", userId);
+            if (entries) {
+              for (const entry of entries) {
+                await supabase.from("body_analysis").delete().eq("id", entry.id);
+              }
+            }
+            setCalculatedStats({ totalWorkoutHours: 0, totalWorkoutHoursPct: 0, totalDistance: 0, totalDistancePct: 0, avgWeight: 0, weightChangePct: 0, totalTrainingSessions: 0, trainingSessionsPct: 0 });
+            loadHistory(userId);
+            toast({ title: isGerman ? "Alle gelöscht" : "All deleted" });
+          }} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
+            <Trash2 className="w-4 h-4 mr-2" />
+            {isGerman ? "Löschen" : "Delete"}
           </Button>
           <Button onClick={uploadImage} disabled={!uploadedFile || isUploading} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
             {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
