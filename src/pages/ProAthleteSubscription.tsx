@@ -140,15 +140,6 @@ const ProAthleteSubscription = () => {
             </Button>
           </Card>
         </div>
-
-        {/* Info Text */}
-        <div className="mt-8 text-center">
-          <p className="text-white/50 text-sm">
-            {isGerman 
-              ? "Die Zahlung erfolgt über Google Play Billing in der Android App" 
-              : "Payment is processed via Google Play Billing in the Android app"}
-          </p>
-        </div>
       </div>
       <BottomNav />
     </div>

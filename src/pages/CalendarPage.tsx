@@ -26,6 +26,8 @@ interface DayData {
   nutrition: any[];
   jogging: any[];
   weight: any[];
+  bodyAnalysis: any[];
+  foodAnalysis: any[];
 }
 
 const CalendarPage = () => {
@@ -35,7 +37,7 @@ const CalendarPage = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [userId, setUserId] = useState<string>("");
   const [userWeight, setUserWeight] = useState(0);
-  const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [] });
+  const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [], bodyAnalysis: [], foodAnalysis: [] });
   const [monthlyChartData, setMonthlyChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -163,18 +165,22 @@ const CalendarPage = () => {
     dayEnd.setHours(23, 59, 59, 999);
 
     try {
-      const [workoutsRes, nutritionRes, joggingRes, weightRes] = await Promise.all([
+      const [workoutsRes, nutritionRes, joggingRes, weightRes, bodyAnalysisRes, foodAnalysisRes] = await Promise.all([
         supabase.from("workout_logs").select("*, exercises(name_de, name_en, category)").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
         supabase.from("nutrition_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
         supabase.from("jogging_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-        supabase.from("weight_logs").select("*").eq("user_id", userId).gte("measured_at", dayStart.toISOString()).lte("measured_at", dayEnd.toISOString())
+        supabase.from("weight_logs").select("*").eq("user_id", userId).gte("measured_at", dayStart.toISOString()).lte("measured_at", dayEnd.toISOString()),
+        supabase.from("body_analysis").select("*").eq("user_id", userId).gte("created_at", dayStart.toISOString()).lte("created_at", dayEnd.toISOString()),
+        supabase.from("food_analysis").select("*").eq("user_id", userId).gte("created_at", dayStart.toISOString()).lte("created_at", dayEnd.toISOString())
       ]);
 
       setSelectedDayData({
         workouts: workoutsRes.data || [],
         nutrition: nutritionRes.data || [],
         jogging: joggingRes.data || [],
-        weight: weightRes.data || []
+        weight: weightRes.data || [],
+        bodyAnalysis: bodyAnalysisRes.data || [],
+        foodAnalysis: foodAnalysisRes.data || []
       });
     } finally {
       setIsLoading(false);
@@ -231,7 +237,7 @@ const CalendarPage = () => {
     return Math.min(100, Math.max(0, (lost / totalToLose) * 100));
   };
 
-  const hasData = selectedDayData.workouts.length > 0 || selectedDayData.nutrition.length > 0 || selectedDayData.jogging.length > 0 || selectedDayData.weight.length > 0;
+  const hasData = selectedDayData.workouts.length > 0 || selectedDayData.nutrition.length > 0 || selectedDayData.jogging.length > 0 || selectedDayData.weight.length > 0 || selectedDayData.bodyAnalysis.length > 0 || selectedDayData.foodAnalysis.length > 0;
 
   // Calculate total training duration for selected day
   const totalDuration = selectedDayData.jogging.reduce((sum, j) => sum + (j.duration || 0), 0) + (selectedDayData.workouts.length * 30);
@@ -384,6 +390,38 @@ const CalendarPage = () => {
                     <div key={w.id} className="p-3 bg-white/5 rounded-lg">
                       <div className="font-semibold text-orange-400">{isGerman ? "Gewicht" : "Weight"}</div>
                       <div className="text-sm text-white">{w.weight} kg</div>
+                    </div>
+                  ))}
+
+                  {/* Body Analysis with small images */}
+                  {selectedDayData.bodyAnalysis.map((ba) => (
+                    <div key={ba.id} className="p-3 bg-white/5 rounded-lg flex gap-3 items-start">
+                      {ba.image_url && (
+                        <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-semibold text-cyan-400">Pro Athlete</div>
+                        <div className="text-sm text-white">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
+                        <div className="text-xs text-white/60 mt-1">
+                          {ba.body_fat_pct && `${isGerman ? "Körperfett" : "Body Fat"}: ${ba.body_fat_pct}%`}
+                          {ba.muscle_mass_pct && ` | ${isGerman ? "Muskeln" : "Muscle"}: ${ba.muscle_mass_pct}%`}
+                          {ba.fitness_level && ` | Level: ${ba.fitness_level}/10`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Food Analysis with small images */}
+                  {selectedDayData.foodAnalysis.map((fa) => (
+                    <div key={fa.id} className="p-3 bg-white/5 rounded-lg flex gap-3 items-start">
+                      {fa.image_url && (
+                        <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-semibold text-emerald-400">Pro Nutrition</div>
+                        <div className="text-sm text-white capitalize">{fa.category || "Food"}</div>
+                        <div className="text-xs text-white/60 mt-1">{fa.total_calories || 0} kcal</div>
+                      </div>
                     </div>
                   ))}
                 </div>

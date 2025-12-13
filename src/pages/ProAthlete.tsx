@@ -240,10 +240,28 @@ const ProAthlete = () => {
         <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
           <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "1. Manuelle Werte eingeben" : "1. Enter Manual Values"}</h3>
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <Input type="number" placeholder={isGerman ? "Gewicht (kg)" : "Weight (kg)"} value={athleteForm.weight} onChange={(e) => setAthleteForm({...athleteForm, weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder={isGerman ? "Zielgewicht (kg)" : "Target Weight (kg)"} value={athleteForm.target_weight} onChange={(e) => setAthleteForm({...athleteForm, target_weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <div className="flex gap-1">
+              <Input type="number" placeholder={isGerman ? "Gewicht" : "Weight"} value={athleteForm.weight} onChange={(e) => setAthleteForm({...athleteForm, weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={athleteForm.weight_unit} onValueChange={(v) => setAthleteForm({...athleteForm, weight_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-16"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="kg">kg</SelectItem><SelectItem value="lbs">lbs</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder={isGerman ? "Zielgewicht" : "Target"} value={athleteForm.target_weight} onChange={(e) => setAthleteForm({...athleteForm, target_weight: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={athleteForm.target_weight_unit} onValueChange={(v) => setAthleteForm({...athleteForm, target_weight_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-16"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="kg">kg</SelectItem><SelectItem value="lbs">lbs</SelectItem></SelectContent>
+              </Select>
+            </div>
             <Input type="number" placeholder={isGerman ? "Alter" : "Age"} value={athleteForm.age} onChange={(e) => setAthleteForm({...athleteForm, age: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder={isGerman ? "Größe (cm)" : "Height (cm)"} value={athleteForm.height} onChange={(e) => setAthleteForm({...athleteForm, height: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <div className="flex gap-1">
+              <Input type="number" placeholder={isGerman ? "Größe" : "Height"} value={athleteForm.height} onChange={(e) => setAthleteForm({...athleteForm, height: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={athleteForm.height_unit} onValueChange={(v) => setAthleteForm({...athleteForm, height_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-16"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="cm">cm</SelectItem><SelectItem value="ft">ft</SelectItem></SelectContent>
+              </Select>
+            </div>
             <Select value={athleteForm.activity_level} onValueChange={(v) => setAthleteForm({...athleteForm, activity_level: v})}>
               <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9"><SelectValue placeholder={isGerman ? "Aktivitätslevel" : "Activity Level"} /></SelectTrigger>
               <SelectContent className="bg-zinc-800">
@@ -282,7 +300,7 @@ const ProAthlete = () => {
           >
             {uploadedFile ? (
               <div className="relative w-full">
-                <img src={uploadedFile} alt="Uploaded" className="max-h-20 mx-auto rounded-lg" />
+                <img src={uploadedFile} alt="Uploaded" className="max-h-16 mx-auto rounded-lg" />
                 <Button variant="destructive" size="icon" className="absolute top-0 right-0 w-6 h-6" onClick={() => { setUploadedFile(null); setUploadedFileRaw(null); }}><X className="w-3 h-3" /></Button>
               </div>
             ) : (
@@ -302,8 +320,8 @@ const ProAthlete = () => {
             <Dumbbell className="w-4 h-4 mr-2" />{isGerman ? "Trainingsplan" : "Training Plan"}
           </Button>
           <Button onClick={analyzeBody} disabled={!uploadedFile || isAnalyzing} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
-            {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scan className="w-4 h-4 mr-2" />}
-            {isGerman ? "3. AI Analyse" : "3. AI Analyze"}
+            {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+            {isGerman ? "Upload" : "Upload"}
           </Button>
         </div>
 
@@ -313,10 +331,10 @@ const ProAthlete = () => {
         {/* Body Analysis Result with Charts */}
         {bodyAnalysis && !isAnalyzing && (
           <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4 mb-4">
-            {/* Show uploaded image at top */}
+            {/* Show uploaded image at top - smaller */}
             {uploadedFile && (
               <div className="mb-4">
-                <img src={uploadedFile} alt="Body Analysis" className="w-16 h-16 object-cover rounded-lg mx-auto" />
+                <img src={uploadedFile} alt="Body Analysis" className="w-12 h-12 object-cover rounded-lg mx-auto" />
               </div>
             )}
             <h2 className="text-lg font-bold text-white mb-4">Body Analyse</h2>

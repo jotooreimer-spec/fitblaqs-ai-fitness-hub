@@ -90,9 +90,10 @@ const ProNutrition = () => {
   const [analysisResult, setAnalysisResult] = useState<FoodAnalysis | null>(null);
   const [foodTrackerDialogOpen, setFoodTrackerDialogOpen] = useState(false);
   const [manualForm, setManualForm] = useState({ 
-    name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
-    category: "protein",
-    traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+    name: "", calories: "", calories_unit: "kcal", protein: "", protein_unit: "g", 
+    carbs: "", carbs_unit: "g", fat: "", fat_unit: "g", sugar: "", sugar_unit: "g", 
+    water: "", water_unit: "ml", category: "protein",
+    traceElements: { iron: "", iron_unit: "mg", calcium: "", calcium_unit: "mg", magnesium: "", magnesium_unit: "mg", zinc: "", zinc_unit: "mg" }
   });
   const [dailyTotals, setDailyTotals] = useState({ calories: 0, protein: 0, carbs: 0, fat: 0, water: 0 });
   const [history, setHistory] = useState<any[]>([]);
@@ -262,9 +263,10 @@ const ProNutrition = () => {
 
     setFoodTrackerDialogOpen(false);
     setManualForm({ 
-      name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
-      category: "protein",
-      traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+      name: "", calories: "", calories_unit: "kcal", protein: "", protein_unit: "g", 
+      carbs: "", carbs_unit: "g", fat: "", fat_unit: "g", sugar: "", sugar_unit: "g", 
+      water: "", water_unit: "ml", category: "protein",
+      traceElements: { iron: "", iron_unit: "mg", calcium: "", calcium_unit: "mg", magnesium: "", magnesium_unit: "mg", zinc: "", zinc_unit: "mg" }
     });
     loadHistory(userId);
     toast({ title: isGerman ? "Gespeichert" : "Saved" });
@@ -293,9 +295,10 @@ const ProNutrition = () => {
       setUploadedFileRaw(null);
       // Reset form
       setManualForm({ 
-        name: "", calories: "", protein: "", carbs: "", fat: "", sugar: "", water: "", 
-        category: "protein",
-        traceElements: { iron: "", calcium: "", magnesium: "", zinc: "" }
+        name: "", calories: "", calories_unit: "kcal", protein: "", protein_unit: "g", 
+        carbs: "", carbs_unit: "g", fat: "", fat_unit: "g", sugar: "", sugar_unit: "g", 
+        water: "", water_unit: "ml", category: "protein",
+        traceElements: { iron: "", iron_unit: "mg", calcium: "", calcium_unit: "mg", magnesium: "", magnesium_unit: "mg", zinc: "", zinc_unit: "mg" }
       });
     }
   };
@@ -379,21 +382,81 @@ const ProNutrition = () => {
                 <SelectItem value="supplements">Supplements</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="number" placeholder="Calories" value={manualForm.calories} onChange={(e) => setManualForm({...manualForm, calories: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder="Protein (g)" value={manualForm.protein} onChange={(e) => setManualForm({...manualForm, protein: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder="Carbs (g)" value={manualForm.carbs} onChange={(e) => setManualForm({...manualForm, carbs: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder="Fat (g)" value={manualForm.fat} onChange={(e) => setManualForm({...manualForm, fat: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder="Sugar (g)" value={manualForm.sugar} onChange={(e) => setManualForm({...manualForm, sugar: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
-            <Input type="number" placeholder="Water (ml)" value={manualForm.water} onChange={(e) => setManualForm({...manualForm, water: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9" />
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Calories" value={manualForm.calories} onChange={(e) => setManualForm({...manualForm, calories: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.calories_unit} onValueChange={(v) => setManualForm({...manualForm, calories_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-16"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="kcal">kcal</SelectItem><SelectItem value="kJ">kJ</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Protein" value={manualForm.protein} onChange={(e) => setManualForm({...manualForm, protein: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.protein_unit} onValueChange={(v) => setManualForm({...manualForm, protein_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-14"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="g">g</SelectItem><SelectItem value="mg">mg</SelectItem><SelectItem value="kg">kg</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Carbs" value={manualForm.carbs} onChange={(e) => setManualForm({...manualForm, carbs: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.carbs_unit} onValueChange={(v) => setManualForm({...manualForm, carbs_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-14"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="g">g</SelectItem><SelectItem value="mg">mg</SelectItem><SelectItem value="kg">kg</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Fat" value={manualForm.fat} onChange={(e) => setManualForm({...manualForm, fat: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.fat_unit} onValueChange={(v) => setManualForm({...manualForm, fat_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-14"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="g">g</SelectItem><SelectItem value="mg">mg</SelectItem><SelectItem value="kg">kg</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Sugar" value={manualForm.sugar} onChange={(e) => setManualForm({...manualForm, sugar: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.sugar_unit} onValueChange={(v) => setManualForm({...manualForm, sugar_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-14"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="g">g</SelectItem><SelectItem value="mg">mg</SelectItem><SelectItem value="kg">kg</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Water" value={manualForm.water} onChange={(e) => setManualForm({...manualForm, water: e.target.value})} className="bg-zinc-800/50 border-zinc-700 text-white text-sm h-9 flex-1" />
+              <Select value={manualForm.water_unit} onValueChange={(v) => setManualForm({...manualForm, water_unit: v})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-9 w-14"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="ml">ml</SelectItem><SelectItem value="dl">dl</SelectItem><SelectItem value="l">l</SelectItem></SelectContent>
+              </Select>
+            </div>
           </div>
           
-          {/* Trace Elements */}
+          {/* Trace Elements with units */}
           <div className="text-xs text-zinc-400 mb-2">{isGerman ? "Spurenelemente" : "Trace Elements"}</div>
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            <Input type="number" placeholder="Eisen mg" value={manualForm.traceElements.iron} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, iron: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
-            <Input type="number" placeholder="Calcium mg" value={manualForm.traceElements.calcium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, calcium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
-            <Input type="number" placeholder="Magnesium mg" value={manualForm.traceElements.magnesium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, magnesium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
-            <Input type="number" placeholder="Zink mg" value={manualForm.traceElements.zinc} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, zinc: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8" />
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Eisen" value={manualForm.traceElements.iron} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, iron: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 flex-1" />
+              <Select value={manualForm.traceElements.iron_unit} onValueChange={(v) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, iron_unit: v}})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 w-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="mg">mg</SelectItem><SelectItem value="g">g</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Calcium" value={manualForm.traceElements.calcium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, calcium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 flex-1" />
+              <Select value={manualForm.traceElements.calcium_unit} onValueChange={(v) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, calcium_unit: v}})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 w-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="mg">mg</SelectItem><SelectItem value="g">g</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Magnesium" value={manualForm.traceElements.magnesium} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, magnesium: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 flex-1" />
+              <Select value={manualForm.traceElements.magnesium_unit} onValueChange={(v) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, magnesium_unit: v}})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 w-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="mg">mg</SelectItem><SelectItem value="g">g</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-1">
+              <Input type="number" placeholder="Zink" value={manualForm.traceElements.zinc} onChange={(e) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, zinc: e.target.value}})} className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 flex-1" />
+              <Select value={manualForm.traceElements.zinc_unit} onValueChange={(v) => setManualForm({...manualForm, traceElements: {...manualForm.traceElements, zinc_unit: v}})}>
+                <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white text-xs h-8 w-12"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-800"><SelectItem value="mg">mg</SelectItem><SelectItem value="g">g</SelectItem></SelectContent>
+              </Select>
+            </div>
           </div>
 
           <h3 className="text-white font-semibold text-sm mb-3">{isGerman ? "2. Bild hochladen" : "2. Upload Image"}</h3>
@@ -405,7 +468,7 @@ const ProNutrition = () => {
           >
             {uploadedFile ? (
               <div className="relative w-full">
-                <img src={uploadedFile} alt="Food" className="max-h-20 mx-auto rounded-lg" />
+                <img src={uploadedFile} alt="Food" className="max-h-16 mx-auto rounded-lg" />
                 <Button variant="destructive" size="icon" className="absolute top-0 right-0 w-6 h-6" onClick={() => { setUploadedFile(null); setUploadedFileRaw(null); }}><X className="w-3 h-3" /></Button>
               </div>
             ) : (
@@ -426,11 +489,11 @@ const ProNutrition = () => {
         {/* Action Buttons */}
         <div className="flex gap-3 mb-4">
           <Button onClick={() => setFoodTrackerDialogOpen(true)} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
-            <Utensils className="w-4 h-4 mr-2" />{isGerman ? "Nur speichern" : "Save only"}
+            <Save className="w-4 h-4 mr-2" />{isGerman ? "Nur speichern" : "Save only"}
           </Button>
           <Button onClick={analyzeFood} disabled={!uploadedFile || isAnalyzing} className="flex-1 bg-primary hover:bg-primary/90 text-white border-0 rounded-full py-5">
-            {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Scan className="w-4 h-4 mr-2" />}
-            {isGerman ? "3. AI Analyse" : "3. AI Analyze"}
+            {isAnalyzing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+            {isGerman ? "Upload" : "Upload"}
           </Button>
         </div>
 
@@ -441,10 +504,10 @@ const ProNutrition = () => {
         {analysisResult && !isAnalyzing && (
           <div className="space-y-4 mb-4">
             <Card className="bg-black/40 backdrop-blur-md border-white/10 rounded-2xl p-4">
-              {/* Show uploaded image at top */}
+              {/* Show uploaded image at top - smaller */}
               {uploadedFile && (
                 <div className="mb-4">
-                  <img src={uploadedFile} alt="Analyzed Food" className="w-16 h-16 object-cover rounded-lg mx-auto" />
+                  <img src={uploadedFile} alt="Analyzed Food" className="w-12 h-12 object-cover rounded-lg mx-auto" />
                 </div>
               )}
               <h2 className="text-lg font-bold text-white mb-4">{isGerman ? "🥗 Analyse Ergebnis" : "🥗 Analysis Result"}</h2>
@@ -631,18 +694,21 @@ const ProNutrition = () => {
           </div>
         )}
 
-        {/* History */}
+        {/* History with smaller images */}
         <div className="space-y-2">
           <h3 className="text-white font-semibold mb-2">{isGerman ? "Verlauf" : "History"}</h3>
           {history.slice(0, 10).map((entry) => (
             <Card key={entry.id} className="bg-black/40 backdrop-blur-md border-white/10 p-3">
-              <div className="flex justify-between items-center">
-                <div>
+              <div className="flex justify-between items-center gap-3">
+                {entry.image_url && (
+                  <img src={entry.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
                   <div className={`text-xs font-semibold ${getCategoryColor(entry.category)} mb-1 capitalize`}>{entry.category}</div>
-                  <div className="text-white text-sm">{(entry.items as unknown as FoodItem[])?.[0]?.name || "Food Entry"}</div>
+                  <div className="text-white text-sm truncate">{(entry.items as unknown as FoodItem[])?.[0]?.name || "Food Entry"}</div>
                   <div className="text-xs text-zinc-400">{entry.total_calories} kcal</div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <Button variant="ghost" size="icon" className="text-primary hover:text-primary h-8 w-8">
                     <Save className="w-4 h-4" />
                   </Button>
