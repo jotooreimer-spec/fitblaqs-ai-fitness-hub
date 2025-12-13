@@ -106,6 +106,18 @@ const Nutrition = () => {
     });
   };
 
+  // Parse nutrition notes (JSON format)
+  const parseNutritionNotes = (notes: string | null) => {
+    if (!notes) return null;
+    try {
+      return JSON.parse(notes);
+    } catch {
+      // Legacy format fallback
+      const waterMatch = notes.match(/Water: ([\d.]+)/);
+      return waterMatch ? { water: { ml: parseFloat(waterMatch[1]) } } : null;
+    }
+  };
+
   // Auto-calculate daily totals - Start at 0, only count actual entries
   const calculateDailyTotals = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -117,14 +129,20 @@ const Nutrition = () => {
       totalCalories += log.calories || 0;
       totalProtein += log.protein || 0;
       
-      const waterMatch = log.notes?.match(/Water: ([\d.]+)/);
-      if (waterMatch) {
-        totalHydration += parseFloat(waterMatch[1]) || 0;
+      const parsed = parseNutritionNotes(log.notes);
+      if (parsed?.water?.ml) {
+        totalHydration += parsed.water.ml;
       }
     });
 
     // Always start at 0 - no default values based on weight
     return { calories: totalCalories, protein: totalProtein, hydration: totalHydration };
+  };
+
+  // Format nutrition value with unit for display
+  const formatNutritionValue = (item: { value: number; unit: string } | undefined) => {
+    if (!item || !item.value) return null;
+    return `${item.value}${item.unit}`;
   };
 
   const dailyTotals = calculateDailyTotals();
@@ -235,9 +253,7 @@ const Nutrition = () => {
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Heutiger Essensplan" : "Today's Meal Plan"}</h2>
           <div className="space-y-4">
             {todayLogs.map((log) => {
-              // Parse supplements from notes
-              const supplementsMatch = log.notes?.match(/Supplements?: ([^|]+)/i);
-              const supplementsInfo = supplementsMatch ? supplementsMatch[1].trim() : null;
+              const parsed = parseNutritionNotes(log.notes);
               
               return (
                 <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
@@ -249,19 +265,61 @@ const Nutrition = () => {
                       <div className="text-sm text-white/60 mt-1">
                         {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
                       </div>
-                      {/* Show Hydration if available */}
-                      {log.notes?.includes("Water:") && (
-                        <div className="text-xs text-blue-400 mt-1">
-                          💧 Hydration: {log.notes.match(/Water: ([\d.]+)/)?.[1] || 0} ml
+                      
+                      {/* Show all nutrition values with their original units */}
+                      {parsed && (
+                        <div className="text-xs text-white/70 mt-2 space-y-1">
+                          {/* Hydration */}
+                          {parsed.water?.value > 0 && (
+                            <div className="text-blue-400">💧 Hydration: {parsed.water.value}{parsed.water.unit}</div>
+                          )}
+                          {/* Category-specific fields */}
+                          {parsed.category === "supplements" && (
+                            <>
+                              {parsed.amount?.value > 0 && <div>📦 Menge: {parsed.amount.value}{parsed.amount.unit}</div>}
+                              {parsed.liquid?.value > 0 && <div>💧 Flüssigkeit: {parsed.liquid.value}{parsed.liquid.unit}</div>}
+                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
+                            </>
+                          )}
+                          {(parsed.category === "vegetarian" || parsed.category === "vegan") && (
+                            <>
+                              {parsed.carbs?.value > 0 && <div>🌾 Carbs: {parsed.carbs.value}{parsed.carbs.unit}</div>}
+                              {parsed.minerals?.value > 0 && <div>⚗️ Mineralstoffe: {parsed.minerals.value}{parsed.minerals.unit}</div>}
+                              {parsed.fiber?.value > 0 && <div>🥬 Ballaststoffe: {parsed.fiber.value}{parsed.fiber.unit}</div>}
+                              {parsed.vitamin?.value > 0 && <div>💊 Vitamin: {parsed.vitamin.value}{parsed.vitamin.unit}</div>}
+                              {parsed.aminoacids?.value > 0 && <div>🧬 Aminosäuren: {parsed.aminoacids.value}{parsed.aminoacids.unit}</div>}
+                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
+                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
+                            </>
+                          )}
+                          {parsed.category === "protein" && (
+                            <>
+                              {parsed.protein?.value > 0 && <div>🥩 Protein: {parsed.protein.value}{parsed.protein.unit}</div>}
+                              {parsed.iron?.value > 0 && <div>🔩 Eisen: {parsed.iron.value}{parsed.iron.unit}</div>}
+                              {parsed.fats?.value > 0 && <div>🧈 Fats: {parsed.fats.value}{parsed.fats.unit}</div>}
+                              {parsed.calcium?.value > 0 && <div>🦴 Calcium: {parsed.calcium.value}{parsed.calcium.unit}</div>}
+                              {parsed.aminoacids?.value > 0 && <div>🧬 Aminosäuren: {parsed.aminoacids.value}{parsed.aminoacids.unit}</div>}
+                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
+                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
+                            </>
+                          )}
+                          {parsed.category === "dairy" && (
+                            <>
+                              {parsed.protein?.value > 0 && <div>🥛 Protein: {parsed.protein.value}{parsed.protein.unit}</div>}
+                              {parsed.vitamin?.value > 0 && <div>💊 Vitamin: {parsed.vitamin.value}{parsed.vitamin.unit}</div>}
+                              {parsed.fat?.value > 0 && <div>🧈 Fett: {parsed.fat.value}{parsed.fat.unit}</div>}
+                              {parsed.carbs?.value > 0 && <div>🌾 Carbs: {parsed.carbs.value}{parsed.carbs.unit}</div>}
+                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
+                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
+                            </>
+                          )}
+                          {parsed.category === "hydration" && parsed.water?.value > 0 && (
+                            <div className="text-blue-400">💧 {parsed.water.value}{parsed.water.unit} ({parsed.water.ml}ml)</div>
+                          )}
                         </div>
                       )}
-                      {/* Show Supplements if available */}
-                      {supplementsInfo && (
-                        <div className="text-xs text-amber-400 mt-1">
-                          💊 Supplements: {supplementsInfo}
-                        </div>
-                      )}
-                      <div className="text-xs text-white/40 mt-1">
+                      
+                      <div className="text-xs text-white/40 mt-2">
                         {new Date(log.completed_at).toLocaleDateString(isGerman ? "de-DE" : "en-US")}
                       </div>
                     </div>

@@ -121,27 +121,65 @@ export const NutritionLogDialog = ({
     let fatsInG = 0;
     let notes = "";
 
+    // Build notes with original values AND units for display
     if (category === "supplements") {
-      notes = `Menge: ${amount || 0}${amountUnit}, Water: ${water || 0}${waterUnit}, Liquid: ${liquid || 0}${liquidUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
+      const liquidInML = liquid ? convertWaterToML(parseFloat(liquid), liquidUnit) : 0;
+      notes = JSON.stringify({
+        category: "supplements",
+        amount: { value: parseFloat(amount) || 0, unit: amountUnit },
+        water: { value: parseFloat(water) || 0, unit: waterUnit, ml: waterInML },
+        liquid: { value: parseFloat(liquid) || 0, unit: liquidUnit, ml: liquidInML },
+        sugar: { value: parseFloat(sugar) || 0, unit: sugarUnit }
+      });
     } else if (category === "vegetarian" || category === "vegan") {
-      // Vegetarian/Vegan: Fats → Mineralstoffe, Protein → Ballaststoffe
       proteinInG = fiber ? convertToGrams(parseFloat(fiber), fiberUnit) : 0;
       fatsInG = minerals ? convertToGrams(parseFloat(minerals), mineralsUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
-      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = JSON.stringify({
+        category: category,
+        carbs: { value: parseFloat(carbs) || 0, unit: carbsUnit },
+        minerals: { value: parseFloat(minerals) || 0, unit: mineralsUnit },
+        fiber: { value: parseFloat(fiber) || 0, unit: fiberUnit },
+        water: { value: parseFloat(water) || 0, unit: waterUnit, ml: waterInML },
+        vitamin: { value: parseFloat(vitamin) || 0, unit: vitaminUnit },
+        aminoacids: { value: parseFloat(aminoacids) || 0, unit: aminoacidsUnit },
+        spurenelemente: { value: parseFloat(spurenelemente) || 0, unit: spurenelementeUnit },
+        sugar: { value: parseFloat(sugar) || 0, unit: sugarUnit }
+      });
     } else if (category === "protein") {
-      // Protein Detail: Carbs → Eisen, Water → Aminosäuren
       proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
-      notes = `Iron: ${carbs || 0}${carbsUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Calcium: ${vitamin || 0}${vitaminUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = JSON.stringify({
+        category: "protein",
+        protein: { value: parseFloat(protein) || 0, unit: proteinUnit },
+        iron: { value: parseFloat(carbs) || 0, unit: carbsUnit },
+        aminoacids: { value: parseFloat(aminoacids) || 0, unit: aminoacidsUnit },
+        fats: { value: parseFloat(fats) || 0, unit: fatsUnit },
+        calcium: { value: parseFloat(vitamin) || 0, unit: vitaminUnit },
+        spurenelemente: { value: parseFloat(spurenelemente) || 0, unit: spurenelementeUnit },
+        sugar: { value: parseFloat(sugar) || 0, unit: sugarUnit }
+      });
     } else {
       proteinInG = protein ? convertToGrams(parseFloat(protein), proteinUnit) : 0;
       carbsInG = carbs ? convertToGrams(parseFloat(carbs), carbsUnit) : 0;
       fatsInG = fats ? convertToGrams(parseFloat(fats), fatsUnit) : 0;
       const waterInML = water ? convertWaterToML(parseFloat(water), waterUnit) : 0;
-      notes = `Water: ${waterInML}, Vitamin: ${vitamin || 0}${vitaminUnit}, Aminoacids: ${aminoacids || 0}${aminoacidsUnit}, Minerals: ${minerals || 0}${mineralsUnit}, Fiber: ${fiber || 0}${fiberUnit}, Spurenelemente: ${spurenelemente || 0}${spurenelementeUnit}, Sugar: ${sugar || 0}${sugarUnit}`;
+      notes = JSON.stringify({
+        category: category,
+        carbs: { value: parseFloat(carbs) || 0, unit: carbsUnit },
+        fats: { value: parseFloat(fats) || 0, unit: fatsUnit },
+        protein: { value: parseFloat(protein) || 0, unit: proteinUnit },
+        water: { value: parseFloat(water) || 0, unit: waterUnit, ml: waterInML },
+        vitamin: { value: parseFloat(vitamin) || 0, unit: vitaminUnit },
+        aminoacids: { value: parseFloat(aminoacids) || 0, unit: aminoacidsUnit },
+        minerals: { value: parseFloat(minerals) || 0, unit: mineralsUnit },
+        fiber: { value: parseFloat(fiber) || 0, unit: fiberUnit },
+        spurenelemente: { value: parseFloat(spurenelemente) || 0, unit: spurenelementeUnit },
+        sugar: { value: parseFloat(sugar) || 0, unit: sugarUnit }
+      });
     }
 
     const mealTypeMap = {
