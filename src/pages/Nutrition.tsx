@@ -106,6 +106,24 @@ const Nutrition = () => {
     });
   };
 
+  // Convert water value to ml based on unit
+  const parseWaterToMl = (waterData: any): number => {
+    if (!waterData || !waterData.value) return 0;
+    const value = parseFloat(waterData.value) || 0;
+    const unit = waterData.unit || 'ml';
+    
+    switch (unit) {
+      case 'l':
+      case 'liter':
+        return value * 1000;
+      case 'dl':
+        return value * 100;
+      case 'ml':
+      default:
+        return value;
+    }
+  };
+
   // Parse nutrition notes (JSON format)
   const parseNutritionNotes = (notes: string | null) => {
     if (!notes) return null;
@@ -114,11 +132,11 @@ const Nutrition = () => {
     } catch {
       // Legacy format fallback
       const waterMatch = notes.match(/Water: ([\d.]+)/);
-      return waterMatch ? { water: { ml: parseFloat(waterMatch[1]) } } : null;
+      return waterMatch ? { water: { value: parseFloat(waterMatch[1]), unit: 'ml', ml: parseFloat(waterMatch[1]) } } : null;
     }
   };
 
-  // Auto-calculate daily totals - Start at 0, only count actual entries
+  // Auto-calculate daily totals with proper unit conversion
   const calculateDailyTotals = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
@@ -130,12 +148,12 @@ const Nutrition = () => {
       totalProtein += log.protein || 0;
       
       const parsed = parseNutritionNotes(log.notes);
-      if (parsed?.water?.ml) {
-        totalHydration += parsed.water.ml;
+      if (parsed?.water) {
+        // Convert to ml using the unit from the saved data
+        totalHydration += parseWaterToMl(parsed.water);
       }
     });
 
-    // Always start at 0 - no default values based on weight
     return { calories: totalCalories, protein: totalProtein, hydration: totalHydration };
   };
 

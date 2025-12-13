@@ -34,6 +34,36 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     }
   }, [userId]);
 
+  // Parse nutrition notes (JSON format) with unit conversion to ml
+  const parseWaterToMl = (waterData: any): number => {
+    if (!waterData || !waterData.value) return 0;
+    const value = parseFloat(waterData.value) || 0;
+    const unit = waterData.unit || 'ml';
+    
+    // Convert all units to ml for consistent calculation
+    switch (unit) {
+      case 'l':
+      case 'liter':
+        return value * 1000;
+      case 'dl':
+        return value * 100;
+      case 'ml':
+      default:
+        return value;
+    }
+  };
+
+  const parseNutritionNotes = (notes: string | null) => {
+    if (!notes) return null;
+    try {
+      return JSON.parse(notes);
+    } catch {
+      // Legacy format fallback
+      const waterMatch = notes.match(/Water: ([\d.]+)/);
+      return waterMatch ? { water: { value: parseFloat(waterMatch[1]), unit: 'ml', ml: parseFloat(waterMatch[1]) } } : null;
+    }
+  };
+
   const loadStats = async () => {
     const today = new Date();
     const todayStart = new Date(today);
@@ -58,7 +88,6 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       .gte("completed_at", yearStart.toISOString());
 
     // Build monthly chart data with hours (calculated from saved entries)
-    // Only completed months show bars - current month stays at 0 until month ends
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
@@ -66,7 +95,6 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     const currentYear = today.getFullYear();
 
     const chartData = monthNames.map((month, index) => {
-      // Only show values for completed months (past months)
       const isCompletedMonth = index < currentMonth;
       
       if (!isCompletedMonth) {
@@ -82,10 +110,9 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         return d.getMonth() === index && d.getFullYear() === currentYear;
       }) || [];
       
-      // Estimate hours: each workout set is ~3 minutes average (including rest)
       const workoutHours = monthWorkouts.reduce((total, w) => {
         const setsCount = w.sets || 1;
-        const minutesPerSet = 3; // Average time per set including rest
+        const minutesPerSet = 3;
         return total + (setsCount * minutesPerSet / 60);
       }, 0);
 
@@ -96,12 +123,12 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       }) || [];
       
       const joggingHours = monthJogging.reduce((total, j) => {
-        return total + ((j.duration || 0) / 60); // duration in minutes, convert to hours
+        return total + ((j.duration || 0) / 60);
       }, 0);
 
       return { 
         month: isGerman ? monthNamesDE[index] : month,
-        count: Math.round((workoutHours + joggingHours) * 10) / 10 // Round to 1 decimal
+        count: Math.round((workoutHours + joggingHours) * 10) / 10
       };
     });
 
@@ -118,24 +145,22 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
     if (todayNutrition && todayNutrition.length > 0) {
       setHasNutritionData(true);
-      let totalCals = 0, totalProt = 0, totalVitamin = 0, totalSupplements = 0, totalFats = 0, totalWater = 0;
+      let totalCals = 0, totalProt = 0, totalVitamin = 0, totalFats = 0, totalWater = 0;
 
       todayNutrition.forEach(log => {
         totalCals += log.calories || 0;
         totalProt += log.protein || 0;
         totalFats += log.fats || 0;
         
-        // Parse notes for additional values
-        if (log.notes) {
-          const vitaminMatch = log.notes.match(/Vitamin: ([\d.]+)/);
-          const waterMatch = log.notes.match(/Water: ([\d.]+)/);
-          if (vitaminMatch) totalVitamin += parseFloat(vitaminMatch[1]) || 0;
-          if (waterMatch) totalWater += parseFloat(waterMatch[1]) || 0;
+        // Parse notes for water/hydration with proper unit conversion
+        const parsed = parseNutritionNotes(log.notes);
+        if (parsed?.water) {
+          totalWater += parseWaterToMl(parsed.water);
         }
-
-        // Count supplements
-        if (log.meal_type === 'snack') {
-          totalSupplements += log.calories || 0;
+        
+        // Parse vitamin from notes
+        if (parsed?.vitamin?.value) {
+          totalVitamin += parseFloat(parsed.vitamin.value) || 0;
         }
       });
 
@@ -146,12 +171,11 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         calories: totalCals,
         protein: totalProt,
         vitamin: totalVitamin,
-        supplements: totalSupplements,
+        supplements: 0, // Removed from hydration display
         fats: totalFats,
         water: totalWater
       });
     } else {
-      // No saved data - all zeros
       setHasNutritionData(false);
       setTodayCalories(0);
       setTodayProtein(0);
@@ -166,7 +190,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
       });
     }
 
-    // Load jogging distance - automatically calculated from saved entries
+    // Load jogging distance - automatically calculated from saved entries (in km)
     const { data: jogging } = await supabase
       .from("jogging_logs")
       .select("distance")
@@ -188,24 +212,22 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     water: '#3B82F6'
   };
 
-  // Only show pie data if we have saved entries
+  // Only show pie data if we have saved entries - Removed Supplements, only Hydration
   const pieData = hasNutritionData ? [
     { name: isGerman ? 'Kalorien' : 'Calories', value: nutritionBreakdown.calories, color: NUTRITION_COLORS.calories, key: 'calories' },
     { name: 'Protein', value: nutritionBreakdown.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
     { name: 'Vitamin', value: nutritionBreakdown.vitamin, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
-    { name: 'Supplements', value: nutritionBreakdown.supplements, color: NUTRITION_COLORS.supplements, key: 'supplements' },
     { name: isGerman ? 'Fette' : 'Fats', value: nutritionBreakdown.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
     { name: 'Hydration', value: nutritionBreakdown.water, color: NUTRITION_COLORS.water, key: 'water' },
   ].filter(item => item.value > 0) : [];
 
   const total = pieData.reduce((sum, item) => sum + item.value, 0);
 
-  // Zero state pie data for display
+  // Zero state pie data for display - Removed Supplements
   const zeroStatePieData = [
     { name: isGerman ? 'Kalorien' : 'Calories', value: 1, color: '#374151', key: 'calories' },
     { name: 'Protein', value: 1, color: '#374151', key: 'protein' },
     { name: 'Vitamin', value: 1, color: '#374151', key: 'vitamin' },
-    { name: 'Supplements', value: 1, color: '#374151', key: 'supplements' },
     { name: isGerman ? 'Fette' : 'Fats', value: 1, color: '#374151', key: 'fats' },
     { name: 'Hydration', value: 1, color: '#374151', key: 'water' },
   ];
