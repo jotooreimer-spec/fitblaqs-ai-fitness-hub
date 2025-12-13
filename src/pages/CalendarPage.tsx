@@ -50,6 +50,10 @@ const CalendarPage = () => {
   const [bodyworkoutDialogOpen, setBodyworkoutDialogOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
+  // Upload detail dialog state
+  const [uploadDetailOpen, setUploadDetailOpen] = useState(false);
+  const [selectedUpload, setSelectedUpload] = useState<{ type: 'body' | 'food'; data: any } | null>(null);
+  
   const bodyworkoutImages = [bodyworkoutplan1, bodyworkoutplan2, bodyworkoutplan3, bodyworkoutplan4, bodyworkoutplan5];
 
   useEffect(() => {
@@ -393,37 +397,55 @@ const CalendarPage = () => {
                     </div>
                   ))}
 
-                  {/* Body Analysis with small images */}
-                  {selectedDayData.bodyAnalysis.map((ba) => (
-                    <div key={ba.id} className="p-3 bg-white/5 rounded-lg flex gap-3 items-start">
-                      {ba.image_url && (
-                        <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold text-cyan-400">Pro Athlete</div>
-                        <div className="text-sm text-white">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
-                        <div className="text-xs text-white/60 mt-1">
-                          {ba.body_fat_pct && `${isGerman ? "Körperfett" : "Body Fat"}: ${ba.body_fat_pct}%`}
-                          {ba.muscle_mass_pct && ` | ${isGerman ? "Muskeln" : "Muscle"}: ${ba.muscle_mass_pct}%`}
-                          {ba.fitness_level && ` | Level: ${ba.fitness_level}/10`}
+                  {/* Body Analysis with small images - clickable */}
+                  {selectedDayData.bodyAnalysis.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Athlete Body Upload" : "Pro Athlete Body Upload"}</div>
+                      {selectedDayData.bodyAnalysis.map((ba) => (
+                        <div 
+                          key={ba.id} 
+                          className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
+                          onClick={() => { setSelectedUpload({ type: 'body', data: ba }); setUploadDetailOpen(true); }}
+                        >
+                          {ba.image_url && (
+                            <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                          )}
+                          <div className="flex-1">
+                            <div className="font-semibold text-cyan-400">Pro Athlete</div>
+                            <div className="text-sm text-white">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
+                            <div className="text-xs text-white/60 mt-1">
+                              {ba.body_fat_pct && `${isGerman ? "Körperfett" : "Body Fat"}: ${ba.body_fat_pct}%`}
+                              {ba.muscle_mass_pct && ` | ${isGerman ? "Muskeln" : "Muscle"}: ${ba.muscle_mass_pct}%`}
+                              {ba.fitness_level && ` | Level: ${ba.fitness_level}/10`}
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
 
-                  {/* Food Analysis with small images */}
-                  {selectedDayData.foodAnalysis.map((fa) => (
-                    <div key={fa.id} className="p-3 bg-white/5 rounded-lg flex gap-3 items-start">
-                      {fa.image_url && (
-                        <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold text-emerald-400">Pro Nutrition</div>
-                        <div className="text-sm text-white capitalize">{fa.category || "Food"}</div>
-                        <div className="text-xs text-white/60 mt-1">{fa.total_calories || 0} kcal</div>
-                      </div>
+                  {/* Food Analysis with small images - clickable */}
+                  {selectedDayData.foodAnalysis.length > 0 && (
+                    <div className="mt-4">
+                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Nutrition Food Upload" : "Pro Nutrition Food Upload"}</div>
+                      {selectedDayData.foodAnalysis.map((fa) => (
+                        <div 
+                          key={fa.id} 
+                          className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
+                          onClick={() => { setSelectedUpload({ type: 'food', data: fa }); setUploadDetailOpen(true); }}
+                        >
+                          {fa.image_url && (
+                            <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                          )}
+                          <div className="flex-1">
+                            <div className="font-semibold text-emerald-400">Pro Nutrition</div>
+                            <div className="text-sm text-white capitalize">{fa.category || "Food"}</div>
+                            <div className="text-xs text-white/60 mt-1">{fa.total_calories || 0} kcal</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
               
@@ -495,6 +517,170 @@ const CalendarPage = () => {
               </Button>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Detail Dialog */}
+      <Dialog open={uploadDetailOpen} onOpenChange={setUploadDetailOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {selectedUpload?.type === 'body' 
+                ? (isGerman ? "Pro Athlete Body Upload" : "Pro Athlete Body Upload")
+                : (isGerman ? "Pro Nutrition Food Upload" : "Pro Nutrition Food Upload")
+              }
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUpload && (
+            <div className="space-y-4">
+              {/* Medium-sized image */}
+              {selectedUpload.data.image_url && (
+                <img 
+                  src={selectedUpload.data.image_url} 
+                  alt={selectedUpload.type === 'body' ? "Body" : "Food"} 
+                  className="w-48 h-48 object-cover rounded-lg mx-auto"
+                />
+              )}
+              
+              {/* Values */}
+              <div className="space-y-2 text-sm">
+                {selectedUpload.type === 'body' ? (
+                  <>
+                    {/* Body Analysis Values */}
+                    {(() => {
+                      const healthNotes = selectedUpload.data.health_notes 
+                        ? (typeof selectedUpload.data.health_notes === 'string' 
+                          ? JSON.parse(selectedUpload.data.health_notes) 
+                          : selectedUpload.data.health_notes) 
+                        : null;
+                      const stats = healthNotes?.calculated_stats;
+                      return (
+                        <div className="grid grid-cols-2 gap-2">
+                          {healthNotes?.weight && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Gewicht" : "Weight"}</div>
+                              <div className="text-white font-medium">{healthNotes.weight} {healthNotes.weight_unit || 'kg'}</div>
+                            </div>
+                          )}
+                          {healthNotes?.target_weight && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Zielgewicht" : "Target"}</div>
+                              <div className="text-white font-medium">{healthNotes.target_weight} {healthNotes.target_weight_unit || 'kg'}</div>
+                            </div>
+                          )}
+                          {healthNotes?.height && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Größe" : "Height"}</div>
+                              <div className="text-white font-medium">{healthNotes.height} {healthNotes.height_unit || 'cm'}</div>
+                            </div>
+                          )}
+                          {healthNotes?.age && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Alter" : "Age"}</div>
+                              <div className="text-white font-medium">{healthNotes.age}</div>
+                            </div>
+                          )}
+                          {stats?.totalWorkoutHours !== undefined && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Training Std." : "Workout Hrs"}</div>
+                              <div className="text-white font-medium">{stats.totalWorkoutHours}h <span className="text-primary text-xs">{stats.totalWorkoutHoursPct?.toFixed(1)}%</span></div>
+                            </div>
+                          )}
+                          {stats?.totalDistance !== undefined && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Distanz" : "Distance"}</div>
+                              <div className="text-white font-medium">{stats.totalDistance?.toFixed(1)} km <span className="text-green-400 text-xs">{stats.totalDistancePct?.toFixed(1)}%</span></div>
+                            </div>
+                          )}
+                          {selectedUpload.data.body_fat_pct && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Körperfett" : "Body Fat"}</div>
+                              <div className="text-white font-medium">{selectedUpload.data.body_fat_pct}%</div>
+                            </div>
+                          )}
+                          {selectedUpload.data.muscle_mass_pct && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">{isGerman ? "Muskeln" : "Muscle"}</div>
+                              <div className="text-white font-medium">{selectedUpload.data.muscle_mass_pct}%</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <>
+                    {/* Food Analysis Values */}
+                    {(() => {
+                      const notesData = selectedUpload.data.notes 
+                        ? (typeof selectedUpload.data.notes === 'string' 
+                          ? JSON.parse(selectedUpload.data.notes) 
+                          : selectedUpload.data.notes) 
+                        : null;
+                      const stats = notesData?.calculated_stats;
+                      const manualVals = notesData?.manual_values;
+                      const units = notesData?.units;
+                      return (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 bg-white/5 rounded">
+                            <div className="text-xs text-white/60">Calories</div>
+                            <div className="text-white font-medium">
+                              {selectedUpload.data.total_calories || manualVals?.calories || 0} {units?.calories || 'kcal'}
+                              {stats?.caloriesPct !== undefined && <span className="text-orange-400 text-xs ml-1">{stats.caloriesPct?.toFixed(0)}%</span>}
+                            </div>
+                          </div>
+                          <div className="p-2 bg-white/5 rounded">
+                            <div className="text-xs text-white/60">Protein</div>
+                            <div className="text-white font-medium">
+                              {manualVals?.protein || 0}{units?.protein || 'g'}
+                              {stats?.proteinPct !== undefined && <span className="text-red-400 text-xs ml-1">{stats.proteinPct?.toFixed(0)}%</span>}
+                            </div>
+                          </div>
+                          <div className="p-2 bg-white/5 rounded">
+                            <div className="text-xs text-white/60">Carbs</div>
+                            <div className="text-white font-medium">
+                              {manualVals?.carbs || 0}{units?.carbs || 'g'}
+                              {stats?.carbsPct !== undefined && <span className="text-yellow-400 text-xs ml-1">{stats.carbsPct?.toFixed(0)}%</span>}
+                            </div>
+                          </div>
+                          <div className="p-2 bg-white/5 rounded">
+                            <div className="text-xs text-white/60">Fat</div>
+                            <div className="text-white font-medium">
+                              {manualVals?.fat || 0}{units?.fat || 'g'}
+                              {stats?.fatPct !== undefined && <span className="text-blue-400 text-xs ml-1">{stats.fatPct?.toFixed(0)}%</span>}
+                            </div>
+                          </div>
+                          <div className="p-2 bg-white/5 rounded">
+                            <div className="text-xs text-white/60">💧 Hydration</div>
+                            <div className="text-white font-medium">
+                              {manualVals?.water || 0}{units?.water || 'ml'}
+                              {stats?.waterPct !== undefined && <span className="text-cyan-400 text-xs ml-1">{stats.waterPct?.toFixed(0)}%</span>}
+                            </div>
+                          </div>
+                          {manualVals?.sugar && (
+                            <div className="p-2 bg-white/5 rounded">
+                              <div className="text-xs text-white/60">Sugar</div>
+                              <div className="text-white font-medium">{manualVals.sugar}{units?.sugar || 'g'}</div>
+                            </div>
+                          )}
+                          {selectedUpload.data.category && (
+                            <div className="p-2 bg-white/5 rounded col-span-2">
+                              <div className="text-xs text-white/60">Category</div>
+                              <div className="text-white font-medium capitalize">{selectedUpload.data.category}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+              
+              <div className="text-xs text-white/40 text-center">
+                {format(new Date(selectedUpload.data.created_at), "dd.MM.yyyy HH:mm")}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
