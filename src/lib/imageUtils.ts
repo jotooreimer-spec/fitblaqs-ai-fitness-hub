@@ -48,10 +48,13 @@ export const compressImage = async (file: File): Promise<CompressedImage> => {
           base64 = canvas.toDataURL('image/jpeg', quality);
         }
 
+        // Remove the data URL prefix to get pure base64
+        const pureBase64 = base64.replace(/^data:image\/jpeg;base64,/, '');
+        
         resolve({
-          base64,
+          base64: pureBase64,
           mimeType: 'image/jpeg',
-          size: base64.length
+          size: pureBase64.length
         });
       };
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -74,4 +77,15 @@ export const fileToBase64 = (file: File): Promise<string> => {
 export const isValidImageFile = (file: File): boolean => {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   return validTypes.includes(file.type);
+};
+
+// Convert base64 string to Blob without using fetch
+export const base64ToBlob = (base64: string, mimeType: string = 'image/jpeg'): Blob => {
+  const byteCharacters = atob(base64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: mimeType });
 };
