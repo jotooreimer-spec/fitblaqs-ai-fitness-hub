@@ -488,12 +488,15 @@ const ProAthlete = () => {
                 <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder={isGerman ? "Kategorie wählen" : "Select category"} />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-800">
+                <SelectContent className="bg-zinc-800 z-50">
                   <SelectItem value="progress">{isGerman ? "Fortschritt" : "Progress"}</SelectItem>
+                  <SelectItem value="fullbody">Fullbody</SelectItem>
+                  <SelectItem value="legs">{isGerman ? "Beine" : "Legs"}</SelectItem>
+                  <SelectItem value="stomach">{isGerman ? "Bauch" : "Stomach"}</SelectItem>
+                  <SelectItem value="muscle">{isGerman ? "Muskeln" : "Muscle"}</SelectItem>
+                  <SelectItem value="shoulders">{isGerman ? "Schultern" : "Shoulders"}</SelectItem>
+                  <SelectItem value="back">{isGerman ? "Rücken" : "Back"}</SelectItem>
                   <SelectItem value="front">{isGerman ? "Vorne" : "Front"}</SelectItem>
-                  <SelectItem value="back">{isGerman ? "Hinten" : "Back"}</SelectItem>
-                  <SelectItem value="side">{isGerman ? "Seite" : "Side"}</SelectItem>
-                  <SelectItem value="flexing">Flexing</SelectItem>
                 </SelectContent>
               </Select>
             </div>
