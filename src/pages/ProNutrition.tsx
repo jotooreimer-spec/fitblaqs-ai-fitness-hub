@@ -59,11 +59,13 @@ const ProNutrition = () => {
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [uploadName, setUploadName] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("protein");
   
   // History detail dialog
   const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<FoodAnalysisEntry | null>(null);
+
+  const validCategories = ["protein", "vegetarian", "vegan", "supplements", "meat"];
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -183,8 +185,8 @@ const ProNutrition = () => {
   };
 
   const uploadImage = async () => {
-    if (!uploadedFileRaw || !uploadName || !uploadCategory) {
-      toast({ title: isGerman ? "Bitte Name und Kategorie eingeben" : "Please enter name and category", variant: "destructive" });
+    if (!uploadedFileRaw || !uploadName) {
+      toast({ title: isGerman ? "Bitte Name eingeben" : "Please enter name", variant: "destructive" });
       return;
     }
     setIsUploading(true);
@@ -206,12 +208,12 @@ const ProNutrition = () => {
 
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
 
-      // Save with name and category
+      // Save with valid category and name in notes
       const { error: dbError } = await supabase.from("food_analysis").insert([{
         user_id: session.user.id,
         image_url: urlData.publicUrl,
         total_calories: null,
-        category: uploadCategory,
+        category: uploadCategory, // Valid enum value
         items: null,
         notes: JSON.stringify({
           upload_name: uploadName,
@@ -224,7 +226,7 @@ const ProNutrition = () => {
       setUploadedFile(null);
       setUploadedFileRaw(null);
       setUploadName("");
-      setUploadCategory("");
+      setUploadCategory("protein");
       setUploadDialogOpen(false);
       loadHistory(session.user.id);
       toast({ title: isGerman ? "Bild gespeichert" : "Image saved" });
@@ -573,14 +575,20 @@ const ProNutrition = () => {
               />
             </div>
             <div>
-              <Input 
-                placeholder={isGerman ? "Kategorie eingeben" : "Enter category"} 
-                value={uploadCategory} 
-                onChange={(e) => setUploadCategory(e.target.value)} 
-                className="bg-zinc-800 border-zinc-700 text-white"
-              />
+              <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder={isGerman ? "Kategorie wählen" : "Select category"} />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800">
+                  <SelectItem value="protein">Protein</SelectItem>
+                  <SelectItem value="vegetarian">{isGerman ? "Vegetarisch" : "Vegetarian"}</SelectItem>
+                  <SelectItem value="vegan">Vegan</SelectItem>
+                  <SelectItem value="supplements">Supplements</SelectItem>
+                  <SelectItem value="meat">{isGerman ? "Fleisch" : "Meat"}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Button onClick={uploadImage} disabled={isUploading || !uploadName || !uploadCategory} className="w-full">
+            <Button onClick={uploadImage} disabled={isUploading || !uploadName} className="w-full">
               {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               {isGerman ? "Speichern" : "Save"}
             </Button>

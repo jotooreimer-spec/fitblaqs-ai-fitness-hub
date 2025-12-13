@@ -401,26 +401,24 @@ const CalendarPage = () => {
                   {selectedDayData.bodyAnalysis.length > 0 && (
                     <div className="mt-4">
                       <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Athlete Body Upload" : "Pro Athlete Body Upload"}</div>
-                      {selectedDayData.bodyAnalysis.map((ba) => (
-                        <div 
-                          key={ba.id} 
-                          className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
-                          onClick={() => { setSelectedUpload({ type: 'body', data: ba }); setUploadDetailOpen(true); }}
-                        >
-                          {ba.image_url && (
-                            <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <div className="font-semibold text-cyan-400">Pro Athlete</div>
-                            <div className="text-sm text-white">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
-                            <div className="text-xs text-white/60 mt-1">
-                              {ba.body_fat_pct && `${isGerman ? "Körperfett" : "Body Fat"}: ${ba.body_fat_pct}%`}
-                              {ba.muscle_mass_pct && ` | ${isGerman ? "Muskeln" : "Muscle"}: ${ba.muscle_mass_pct}%`}
-                              {ba.fitness_level && ` | Level: ${ba.fitness_level}/10`}
+                      {selectedDayData.bodyAnalysis.map((ba) => {
+                        const healthNotes = ba.health_notes ? (typeof ba.health_notes === 'string' ? JSON.parse(ba.health_notes) : ba.health_notes) : null;
+                        return (
+                          <div 
+                            key={ba.id} 
+                            className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
+                            onClick={() => { setSelectedUpload({ type: 'body', data: ba }); setUploadDetailOpen(true); }}
+                          >
+                            {ba.image_url && (
+                              <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-semibold text-cyan-400">{healthNotes?.upload_name || 'Body Upload'}</div>
+                              <div className="text-sm text-white capitalize">{healthNotes?.upload_category || '-'}</div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -428,22 +426,24 @@ const CalendarPage = () => {
                   {selectedDayData.foodAnalysis.length > 0 && (
                     <div className="mt-4">
                       <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Nutrition Food Upload" : "Pro Nutrition Food Upload"}</div>
-                      {selectedDayData.foodAnalysis.map((fa) => (
-                        <div 
-                          key={fa.id} 
-                          className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
-                          onClick={() => { setSelectedUpload({ type: 'food', data: fa }); setUploadDetailOpen(true); }}
-                        >
-                          {fa.image_url && (
-                            <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                          )}
-                          <div className="flex-1">
-                            <div className="font-semibold text-emerald-400">Pro Nutrition</div>
-                            <div className="text-sm text-white capitalize">{fa.category || "Food"}</div>
-                            <div className="text-xs text-white/60 mt-1">{fa.total_calories || 0} kcal</div>
+                      {selectedDayData.foodAnalysis.map((fa) => {
+                        const notes = fa.notes ? (typeof fa.notes === 'string' ? JSON.parse(fa.notes) : fa.notes) : null;
+                        return (
+                          <div 
+                            key={fa.id} 
+                            className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
+                            onClick={() => { setSelectedUpload({ type: 'food', data: fa }); setUploadDetailOpen(true); }}
+                          >
+                            {fa.image_url && (
+                              <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-semibold text-emerald-400">{notes?.upload_name || 'Food Upload'}</div>
+                              <div className="text-sm text-white capitalize">{notes?.upload_category || fa.category || '-'}</div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
