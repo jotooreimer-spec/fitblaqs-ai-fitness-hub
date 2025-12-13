@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, HelpCircle, Upload, X, Save, Trash2, BarChart3 } fr
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
-import { compressImage, isValidImageFile } from "@/lib/imageUtils";
+import { compressImage, isValidImageFile, base64ToBlob } from "@/lib/imageUtils";
 import proNutritionBg from "@/assets/pro-nutrition-bg.png";
 import performanceButtonBg from "@/assets/performance-button.png";
 
@@ -178,9 +178,8 @@ const ProNutrition = () => {
       const compressed = await compressImage(uploadedFileRaw);
       const fileName = `${session.user.id}/${Date.now()}.jpg`;
       
-      // Convert base64 to blob for upload
-      const base64Response = await fetch(`data:image/jpeg;base64,${compressed.base64}`);
-      const blob = await base64Response.blob();
+      // Convert base64 to blob for upload using helper function
+      const blob = base64ToBlob(compressed.base64, 'image/jpeg');
       
       // Upload to storage
       const { error: uploadError } = await supabase.storage
