@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock, Info } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -34,7 +34,7 @@ const Settings = () => {
   const [privacyContentDialogOpen, setPrivacyContentDialogOpen] = useState(false);
   const [termsContentDialogOpen, setTermsContentDialogOpen] = useState(false);
   const [shopDialogOpen, setShopDialogOpen] = useState(false);
-  const [ageRatingDialogOpen, setAgeRatingDialogOpen] = useState(false);
+  
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   
   // Settings states
@@ -209,12 +209,6 @@ const Settings = () => {
       customIcon: fitblaqsSupportIcon,
     },
     {
-      icon: Info,
-      title: language === "de" ? "Altersfreigabe" : "Age Rating",
-      description: "12+",
-      onClick: () => setAgeRatingDialogOpen(true),
-    },
-    {
       icon: Shield,
       title: t("privacy"),
       description: language === "de" ? "Daten & Sicherheit" : "Data & Security",
@@ -373,29 +367,6 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Age Rating Dialog */}
-      <Dialog open={ageRatingDialogOpen} onOpenChange={setAgeRatingDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
-              {language === "de" ? "Altersfreigabe" : "Age Rating"}
-              <Button variant="ghost" size="icon" onClick={() => setAgeRatingDialogOpen(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-3xl font-bold text-primary">12+</span>
-            </div>
-            <p className="text-muted-foreground">
-              {language === "de" 
-                ? "Diese App ist für Benutzer ab 12 Jahren geeignet."
-                : "This app is suitable for users aged 12 and above."}
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Notifications Dialog - Now with real PWA functionality */}
       <Dialog open={notificationsDialogOpen} onOpenChange={setNotificationsDialogOpen}>
