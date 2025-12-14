@@ -7,6 +7,52 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation function for manual food data
+function validateManualData(data: Record<string, unknown>): { valid: boolean; error?: string } {
+  // Validate numeric fields with reasonable ranges
+  const numericFields: { [key: string]: { min: number; max: number } } = {
+    calories: { min: 0, max: 10000 },
+    protein: { min: 0, max: 500 },
+    carbs: { min: 0, max: 1000 },
+    fat: { min: 0, max: 500 },
+    sugar: { min: 0, max: 500 },
+    water: { min: 0, max: 10000 },
+  };
+  
+  for (const [field, range] of Object.entries(numericFields)) {
+    if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+      const value = Number(data[field]);
+      if (isNaN(value) || value < range.min || value > range.max) {
+        return { valid: false, error: `${field} out of range (${range.min}-${range.max})` };
+      }
+    }
+  }
+  
+  // Limit string field lengths to prevent prompt injection
+  const stringFields = ['name', 'category', 'traceElements'];
+  for (const field of stringFields) {
+    if (data[field] !== undefined && data[field] !== null) {
+      const value = String(data[field]);
+      if (value.length > 200) {
+        return { valid: false, error: `${field} too long (max 200 characters)` };
+      }
+      // Check for suspicious patterns that could be prompt injection
+      if (value.includes('```') || value.includes('IGNORE') || value.includes('SYSTEM:')) {
+        return { valid: false, error: `${field} contains invalid characters` };
+      }
+    }
+  }
+  
+  return { valid: true };
+}
+
+// Validate category is a known value
+function validateCategory(category: unknown): boolean {
+  if (!category) return true; // Optional field
+  const validCategories = ['protein', 'vegetarian', 'vegan', 'supplements', 'dairy', 'hydration'];
+  return validCategories.includes(String(category).toLowerCase());
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -48,6 +94,34 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Validate image base64 format
+    if (typeof imageBase64 !== 'string' || imageBase64.length > 10000000) {
+      return new Response(JSON.stringify({ error: "Invalid image format or size too large (max 10MB)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate category
+    if (!validateCategory(category)) {
+      return new Response(JSON.stringify({ error: "Invalid category. Must be one of: protein, vegetarian, vegan, supplements, dairy, hydration" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate manualData if provided
+    if (manualData && typeof manualData === 'object') {
+      const validation = validateManualData(manualData as Record<string, unknown>);
+      if (!validation.valid) {
+        console.error("Input validation failed:", validation.error);
+        return new Response(JSON.stringify({ error: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

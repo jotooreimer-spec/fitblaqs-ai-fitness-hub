@@ -7,6 +7,62 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation function for user data
+function validateUserData(data: Record<string, unknown>): { valid: boolean; error?: string } {
+  // Validate numeric ranges
+  if (data.weight !== undefined && data.weight !== null) {
+    const weight = Number(data.weight);
+    if (isNaN(weight) || weight < 20 || weight > 500) {
+      return { valid: false, error: 'Weight out of range (20-500kg)' };
+    }
+  }
+  
+  if (data.targetWeight !== undefined && data.targetWeight !== null) {
+    const targetWeight = Number(data.targetWeight);
+    if (isNaN(targetWeight) || targetWeight < 20 || targetWeight > 500) {
+      return { valid: false, error: 'Target weight out of range (20-500kg)' };
+    }
+  }
+  
+  if (data.height !== undefined && data.height !== null) {
+    const height = Number(data.height);
+    if (isNaN(height) || height < 50 || height > 300) {
+      return { valid: false, error: 'Height out of range (50-300cm)' };
+    }
+  }
+  
+  if (data.age !== undefined && data.age !== null) {
+    const age = Number(data.age);
+    if (isNaN(age) || age < 1 || age > 120) {
+      return { valid: false, error: 'Age out of range (1-120)' };
+    }
+  }
+  
+  if (data.trainingFrequency !== undefined && data.trainingFrequency !== null) {
+    const freq = Number(data.trainingFrequency);
+    if (isNaN(freq) || freq < 0 || freq > 40) {
+      return { valid: false, error: 'Training frequency out of range (0-40 hours/week)' };
+    }
+  }
+  
+  // Limit string field lengths to prevent prompt injection
+  const stringFields = ['bodyType', 'goal', 'activityLevel'];
+  for (const field of stringFields) {
+    if (data[field] !== undefined && data[field] !== null) {
+      const value = String(data[field]);
+      if (value.length > 200) {
+        return { valid: false, error: `${field} too long (max 200 characters)` };
+      }
+      // Check for suspicious patterns that could be prompt injection
+      if (value.includes('```') || value.includes('IGNORE') || value.includes('SYSTEM:')) {
+        return { valid: false, error: `${field} contains invalid characters` };
+      }
+    }
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,6 +102,26 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Validate image base64 format
+    if (typeof imageBase64 !== 'string' || imageBase64.length > 10000000) {
+      return new Response(JSON.stringify({ error: "Invalid image format or size too large (max 10MB)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate userData if provided
+    if (userData && typeof userData === 'object') {
+      const validation = validateUserData(userData as Record<string, unknown>);
+      if (!validation.valid) {
+        console.error("Input validation failed:", validation.error);
+        return new Response(JSON.stringify({ error: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
