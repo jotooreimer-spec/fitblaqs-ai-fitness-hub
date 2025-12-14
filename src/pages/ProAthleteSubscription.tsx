@@ -46,8 +46,8 @@ const ProAthleteSubscription = () => {
           {/* Pro Athlete Training */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-10 h-10 object-contain" />
+              <div className="w-12 h-12 rounded-full overflow-hidden">
+                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
@@ -106,8 +106,8 @@ const ProAthleteSubscription = () => {
           {/* Pro Nutrition */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center overflow-hidden">
-                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-10 h-10 object-contain" />
+              <div className="w-12 h-12 rounded-full overflow-hidden">
+                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
