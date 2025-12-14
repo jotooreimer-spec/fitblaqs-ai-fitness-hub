@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Dumbbell, Utensils, Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
 import StripeButton from "@/components/StripeButton";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
-import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import fitblaqsLogoWhite from "@/assets/fitblaqs-logo-white.png";
 
 const ProAthleteSubscription = () => {
   const navigate = useNavigate();
@@ -45,12 +45,9 @@ const ProAthleteSubscription = () => {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Pro Athlete Training */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <img src={fitblaqsLogo} alt="FitBlaq" className="w-8 h-8 object-contain" />
-            </div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <Dumbbell className="w-6 h-6 text-primary" />
+              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-10 h-10 object-contain" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
@@ -108,12 +105,9 @@ const ProAthleteSubscription = () => {
 
           {/* Pro Nutrition */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <img src={fitblaqsLogo} alt="FitBlaq" className="w-8 h-8 object-contain" />
-            </div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Utensils className="w-6 h-6 text-green-400" />
+              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center overflow-hidden">
+                <img src={fitblaqsLogoWhite} alt="FitBlaq" className="w-10 h-10 object-contain" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
