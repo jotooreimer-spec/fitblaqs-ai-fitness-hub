@@ -45,9 +45,10 @@ const TermsOfService = () => {
                 <li>Personalisierte Fitnesspläne und Empfehlungen</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Nutzerkonten</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Nutzerkonten & Altersfreigabe</h3>
+              <p className="text-white/80 mb-2"><strong>Altersfreigabe: 12+</strong></p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Sie müssen mindestens 16 Jahre alt sein, um ein Konto zu erstellen</li>
+                <li>Diese App ist für Nutzer ab 12 Jahren geeignet</li>
                 <li>Sie sind für die Sicherheit Ihres Kontos verantwortlich</li>
                 <li>Sie müssen genaue und wahrheitsgemäße Informationen angeben</li>
                 <li>Ein Konto pro Person ist erlaubt</li>
@@ -62,18 +63,12 @@ const TermsOfService = () => {
                 <li>Brechen Sie die Aktivität ab und suchen Sie medizinische Hilfe, wenn Sie Beschwerden haben</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Abonnements und Zahlungen</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro-Zugang</h3>
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.1 Kostenlose Funktionen</h4>
               <p className="text-white/80">Basis-Tracking-Funktionen sind kostenlos verfügbar.</p>
               
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro-Abonnements</h4>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Pro Athlete:</strong> 19,99 € für 12 Monate – KI-Trainingspläne, Körperanalyse</li>
-                <li><strong>Pro Nutrition:</strong> 14,99 € für 12 Monate – KI-Essensanalyse, erweitertes Tracking</li>
-              </ul>
-              
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.3 Kündigungsrichtlinie</h4>
-              <p className="text-white/80">Abonnements können nach 6 Monaten per E-Mail an Supportservice@Fitblaq.com gekündigt werden. Rückerstattungen erfolgen anteilig für den verbleibenden Zeitraum.</p>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro-Aktivierung</h4>
+              <p className="text-white/80">Pro-Zugang wird über unsere Website aktiviert. Für weitere Informationen kontaktieren Sie uns unter Supportservice@Fitblaq.com</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Nutzerverhalten</h3>
               <p className="text-white/80 mb-2">Sie erklären sich einverstanden, Folgendes NICHT zu tun:</p>
@@ -131,9 +126,10 @@ const TermsOfService = () => {
                 <li>Personalized fitness plans and recommendations</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. User Accounts</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. User Accounts & Age Rating</h3>
+              <p className="text-white/80 mb-2"><strong>Age Rating: 12+</strong></p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>You must be at least 16 years old to create an account</li>
+                <li>This app is suitable for users aged 12 and above</li>
                 <li>You are responsible for maintaining account security</li>
                 <li>You must provide accurate and truthful information</li>
                 <li>One account per person is allowed</li>
@@ -148,18 +144,12 @@ const TermsOfService = () => {
                 <li>Stop activity and seek medical help if you experience discomfort</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Subscriptions and Payments</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro Access</h3>
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.1 Free Features</h4>
               <p className="text-white/80">Basic tracking features are available for free.</p>
               
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro Subscriptions</h4>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li><strong>Pro Athlete:</strong> €19.99 for 12 months – AI training plans, body analysis</li>
-                <li><strong>Pro Nutrition:</strong> €14.99 for 12 months – AI food analysis, advanced tracking</li>
-              </ul>
-              
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.3 Cancellation Policy</h4>
-              <p className="text-white/80">Subscriptions can be cancelled after 6 months by emailing Supportservice@Fitblaq.com. Refunds will be prorated for the remaining period.</p>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro Activation</h4>
+              <p className="text-white/80">Pro access is activated via our website. For more information, contact us at Supportservice@Fitblaq.com</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. User Conduct</h3>
               <p className="text-white/80 mb-2">You agree NOT to:</p>
