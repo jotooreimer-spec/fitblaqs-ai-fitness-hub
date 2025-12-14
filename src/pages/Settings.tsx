@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, CreditCard, Store, Mail, Lock } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock, Info } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -16,7 +16,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { languages, useLanguage } from "@/contexts/LanguageContext";
 import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 import settingsBg from "@/assets/settings-bg.jpg";
-import fitblaqShopIcon from "@/assets/fitblaq-shop.png";
+import fitblaqsSupportIcon from "@/assets/fitblaqs-support-icon.png";
 import fitblaqsLogoSmall from "@/assets/fitblaqs-logo-small.png";
 
 const Settings = () => {
@@ -34,7 +34,7 @@ const Settings = () => {
   const [privacyContentDialogOpen, setPrivacyContentDialogOpen] = useState(false);
   const [termsContentDialogOpen, setTermsContentDialogOpen] = useState(false);
   const [shopDialogOpen, setShopDialogOpen] = useState(false);
-  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
+  const [ageRatingDialogOpen, setAgeRatingDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   
   // Settings states
@@ -190,12 +190,6 @@ const Settings = () => {
       onClick: () => setPasswordDialogOpen(true),
     },
     {
-      icon: CreditCard,
-      title: t("subscription"),
-      description: "Pro Athlete & Pro Nutrition",
-      onClick: () => setSubscriptionDialogOpen(true),
-    },
-    {
       icon: Bell,
       title: t("notifications"),
       description: language === "de" ? "Update Benachrichtigungen" : "Update notifications",
@@ -208,11 +202,17 @@ const Settings = () => {
       onClick: () => setLanguageDialogOpen(true),
     },
     {
-      icon: Store,
+      icon: Mail,
       title: "Fitblaqs Support Service",
       description: "Supportservice@Fitblaq.com",
       onClick: () => setShopDialogOpen(true),
-      customIcon: fitblaqShopIcon,
+      customIcon: fitblaqsSupportIcon,
+    },
+    {
+      icon: Info,
+      title: language === "de" ? "Altersfreigabe" : "Age Rating",
+      description: "12+",
+      onClick: () => setAgeRatingDialogOpen(true),
     },
     {
       icon: Shield,
@@ -373,43 +373,26 @@ const Settings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Subscription Dialog */}
-      <Dialog open={subscriptionDialogOpen} onOpenChange={setSubscriptionDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+      {/* Age Rating Dialog */}
+      <Dialog open={ageRatingDialogOpen} onOpenChange={setAgeRatingDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
-              {t("subscription")}
-              <Button variant="ghost" size="icon" onClick={() => setSubscriptionDialogOpen(false)}>
+              {language === "de" ? "Altersfreigabe" : "Age Rating"}
+              <Button variant="ghost" size="icon" onClick={() => setAgeRatingDialogOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Card className="p-4 border-primary/50">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">Pro Athlete</h3>
-                <span className="text-2xl font-bold">€19.99/yr</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                AI training plans, body analysis
-              </p>
-              <Button onClick={() => navigate("/pro-subscription")} className="w-full">
-                {t("learnMore")}
-              </Button>
-            </Card>
-            
-            <Card className="p-4 border-green-500/50">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold">Pro Nutrition</h3>
-                <span className="text-2xl font-bold">€14.99/yr</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Food tracker, AI food analysis
-              </p>
-              <Button onClick={() => navigate("/pro-subscription")} className="w-full bg-green-600 hover:bg-green-700">
-                {t("learnMore")}
-              </Button>
-            </Card>
+          <div className="space-y-4 text-center">
+            <div className="w-20 h-20 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
+              <span className="text-3xl font-bold text-primary">12+</span>
+            </div>
+            <p className="text-muted-foreground">
+              {language === "de" 
+                ? "Diese App ist für Benutzer ab 12 Jahren geeignet."
+                : "This app is suitable for users aged 12 and above."}
+            </p>
           </div>
         </DialogContent>
       </Dialog>
@@ -631,12 +614,8 @@ const Settings = () => {
                 <h3 className="font-bold text-lg mt-4">2. Nutzerkonto</h3>
                 <p>Zur Nutzung der App ist ein Benutzerkonto erforderlich.</p>
 
-                <h3 className="font-bold text-lg mt-4">3. Pro-Abonnements</h3>
-                <ul className="list-disc pl-6 space-y-1">
-                  <li><strong>Pro Athlete:</strong> €19,99 für 12 Monate</li>
-                  <li><strong>Pro Nutrition:</strong> €14,99 für 12 Monate</li>
-                </ul>
-                <p>Abonnements können nach 6 Monaten gekündigt werden.</p>
+                <h3 className="font-bold text-lg mt-4">3. Pro-Zugang</h3>
+                <p>Pro-Zugang wird über unsere Website aktiviert. Für weitere Informationen kontaktieren Sie uns bitte.</p>
 
                 <h3 className="font-bold text-lg mt-4">4. KI-Funktionen</h3>
                 <p>Die KI-gestützte Analyse dient nur zu Informationszwecken.</p>
@@ -652,9 +631,12 @@ const Settings = () => {
                 <p>Konsultieren Sie vor Beginn eines Trainingsprogramms einen Arzt.</p>
 
                 <h3 className="font-bold text-lg mt-4">7. Kündigung</h3>
-                <p>Konto jederzeit in Einstellungen löschbar. Abonnements nach 6 Monaten per E-Mail kündbar.</p>
+                <p>Konto jederzeit in Einstellungen löschbar.</p>
 
-                <h3 className="font-bold text-lg mt-4">8. Kontakt</h3>
+                <h3 className="font-bold text-lg mt-4">8. Altersfreigabe</h3>
+                <p>Diese App ist für Benutzer ab 12 Jahren (12+) geeignet.</p>
+
+                <h3 className="font-bold text-lg mt-4">9. Kontakt</h3>
                 <p>Supportservice@Fitblaq.com</p>
               </>
             ) : (
@@ -665,12 +647,8 @@ const Settings = () => {
                 <h3 className="font-bold text-lg mt-4">2. User Account</h3>
                 <p>A user account is required to use the app.</p>
 
-                <h3 className="font-bold text-lg mt-4">3. Pro Subscriptions</h3>
-                <ul className="list-disc pl-6 space-y-1">
-                  <li><strong>Pro Athlete:</strong> €19.99 for 12 months</li>
-                  <li><strong>Pro Nutrition:</strong> €14.99 for 12 months</li>
-                </ul>
-                <p>Subscriptions can be cancelled after 6 months.</p>
+                <h3 className="font-bold text-lg mt-4">3. Pro Access</h3>
+                <p>Pro access is activated via our website. For more information, please contact us.</p>
 
                 <h3 className="font-bold text-lg mt-4">4. AI Features</h3>
                 <p>AI-powered analysis is for informational purposes only.</p>
@@ -686,9 +664,12 @@ const Settings = () => {
                 <p>Consult a physician before starting any training program.</p>
 
                 <h3 className="font-bold text-lg mt-4">7. Termination</h3>
-                <p>Delete account anytime in Settings. Subscriptions cancellable after 6 months via email.</p>
+                <p>Delete account anytime in Settings.</p>
 
-                <h3 className="font-bold text-lg mt-4">8. Contact</h3>
+                <h3 className="font-bold text-lg mt-4">8. Age Rating</h3>
+                <p>This app is suitable for users aged 12 and above (12+).</p>
+
+                <h3 className="font-bold text-lg mt-4">9. Contact</h3>
                 <p>Supportservice@Fitblaq.com</p>
               </>
             )}
@@ -703,29 +684,29 @@ const Settings = () => {
         userEmail={userData?.email || ""}
       />
 
-      {/* FitBlaq Shop Dialog */}
+      {/* Fitblaqs Support Service Dialog */}
       <Dialog open={shopDialogOpen} onOpenChange={setShopDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex justify-between items-center">
-              FitBlaq Shop
+              Fitblaqs Support Service
               <Button variant="ghost" size="icon" onClick={() => setShopDialogOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-center">
-            <img src={fitblaqShopIcon} alt="FitBlaq Shop" className="w-20 h-20 mx-auto rounded-xl" />
+            <img src={fitblaqsSupportIcon} alt="Fitblaqs Support Service" className="w-20 h-20 mx-auto rounded-xl" />
             <div>
               <p className="text-lg font-semibold mb-2">{language === "de" ? "Kontaktiere uns" : "Contact Us"}</p>
               <p className="text-muted-foreground mb-4">
                 {language === "de" 
-                  ? "Für Bestellungen und Anfragen erreichst du uns unter:" 
-                  : "For orders and inquiries, reach us at:"}
+                  ? "Für Anfragen und Support erreichst du uns unter:" 
+                  : "For inquiries and support, reach us at:"}
               </p>
             </div>
             <Card className="p-4 bg-primary/10 border-primary/30 cursor-pointer hover:bg-primary/20 transition-colors"
-              onClick={() => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaq%20Shop%20Inquiry"}
+              onClick={() => window.location.href = "mailto:Supportservice@Fitblaq.com?subject=FitBlaqs%20Support%20Inquiry"}
             >
               <div className="flex items-center justify-center gap-2">
                 <Mail className="w-5 h-5 text-primary" />
