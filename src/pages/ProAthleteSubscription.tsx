@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Dumbbell, Utensils, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
+import StripeButton from "@/components/StripeButton";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 
@@ -51,26 +52,33 @@ const ProAthleteSubscription = () => {
               <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                 <Dumbbell className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Pro Athlete</h2>
+              <div>
+                <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
+                <p className="text-sm text-primary">Pro-Athlete Abo</p>
+              </div>
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€19,99<span className="text-lg font-normal text-white/60">/{isGerman ? "Jahr" : "year"}</span></div>
-              <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
+              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/{isGerman ? "12 Monate" : "12 monthly"}</span></div>
+              <p className="text-sm text-white/60">{isGerman ? "Nach 6 Monaten kündbar" : "Cancellable after 6 months"}</p>
             </div>
 
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Upload deiner Fitness-Bilder" : "Upload your fitness photos"}</span>
+                <span>{isGerman ? "Keine Werbung" : "No-Advert"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Body Analyse mit KI" : "Body analysis with AI"}</span>
+                <span>{isGerman ? "Upload deiner Body Fotos" : "Upload your Photo Body"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Persönliche Trainingspläne (4-12 Wochen)" : "Personal training plans (4-12 weeks)"}</span>
+                <span>{isGerman ? "Statistik & Analyse" : "Stastic & Analyse"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Trainingspläne" : "Training plans"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -86,12 +94,19 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <Button onClick={() => navigate("/pro-athlete")} className="w-full" size="lg">
-              Pro Athlete
-            </Button>
+            <a 
+              href="https://buy.stripe.com/bJe00lgJIabj4uA2KB2Fa02" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block w-full"
+            >
+              <Button className="w-full" size="lg">
+                Pro Athlete
+              </Button>
+            </a>
           </Card>
 
-          {/* Pro Athlete Nutrition */}
+          {/* Pro Nutrition */}
           <Card className="bg-black/40 backdrop-blur-md border-white/10 p-6 relative overflow-hidden">
             <div className="absolute top-4 right-4">
               <img src={fitblaqsLogo} alt="FitBlaq" className="w-8 h-8 object-contain" />
@@ -100,30 +115,41 @@ const ProAthleteSubscription = () => {
               <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                 <Utensils className="w-6 h-6 text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Pro Nutrition</h2>
+              <div>
+                <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
+                <p className="text-sm text-green-400">Pro-Nutrition Abo</p>
+              </div>
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€14,99<span className="text-lg font-normal text-white/60">/{isGerman ? "Jahr" : "year"}</span></div>
-              <p className="text-sm text-white/60">{isGerman ? "12 Monate Abo • nach 6 Monaten kündbar" : "12 months • cancellable after 6 months"}</p>
+              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/{isGerman ? "12 Monate" : "12 monthly"}</span></div>
+              <p className="text-sm text-white/60">{isGerman ? "Nach 6 Monaten kündbar" : "Cancellable after 6 months"}</p>
             </div>
 
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Ernährungsauswertung & Makro-Berechnung" : "Nutrition analysis & macro calculation"}</span>
+                <span>{isGerman ? "Keine Werbung" : "No-Advert"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Individuelle Kalorien- & Makroempfehlungen" : "Individual calorie & macro recommendations"}</span>
+                <span>{isGerman ? "Ernährungs-Statistik & Analyse" : "Nutrition Stastic & Analysis"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Automatische Prozentberechnung" : "Automatic percentage calculation"}</span>
+                <span>{isGerman ? "Food Tracker" : "Food Tracker"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Foto Upload & Speicherung" : "Photo upload & storage"}</span>
+                <span>{isGerman ? "Individuelle Kalorien- & Makroempfehlungen, KI-generiert" : "Individual Calories & macro recommendations, AI-generated"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Supplements & Kalorien Historie" : "Supplements & Calorieris History"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Foto Upload" : "Photo upload"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -131,9 +157,16 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <Button onClick={() => navigate("/pro-nutrition")} className="w-full bg-green-600 hover:bg-green-700" size="lg">
-              Pro Nutrition
-            </Button>
+            <a 
+              href="https://buy.stripe.com/cNi4gBdxwbfnd16fxn2Fa03" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block w-full"
+            >
+              <Button className="w-full bg-green-600 hover:bg-green-700" size="lg">
+                Pro Nutrition
+              </Button>
+            </a>
           </Card>
         </div>
       </div>
