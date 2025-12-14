@@ -37,8 +37,8 @@ const ProAthleteSubscription = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
-            <h1 className="text-4xl font-bold text-white">Pro Subscriptions</h1>
-            <p className="text-white/70">{isGerman ? "Wähle dein Abo" : "Choose your subscription"}</p>
+            <h1 className="text-3xl font-bold text-white">Fitblaqs Power & Healthy</h1>
+            <p className="text-white/70">PRO - Athlete & Nutrition entdecken</p>
           </div>
         </div>
 
@@ -51,13 +51,13 @@ const ProAthleteSubscription = () => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
-                <p className="text-sm text-primary">Pro-Athlete Abo</p>
+                <p className="text-sm text-primary">Pro-Athlete</p>
               </div>
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/{isGerman ? "12 Monate" : "12 monthly"}</span></div>
-              <p className="text-sm text-white/60">{isGerman ? "Nach 6 Monaten kündbar" : "Cancellable after 6 months"}</p>
+              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/12 monthly</span></div>
+              <p className="text-sm text-white/60">Cancellable after 6 months</p>
             </div>
 
             <ul className="space-y-3 mb-6">
@@ -98,7 +98,7 @@ const ProAthleteSubscription = () => {
               className="block w-full"
             >
               <Button className="w-full" size="lg">
-                Pro Athlete
+                Become FitBlaq's Pro-Athlete Click here
               </Button>
             </a>
           </Card>
@@ -111,13 +111,13 @@ const ProAthleteSubscription = () => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Fitblaqs Power & Healthy</h2>
-                <p className="text-sm text-green-400">Pro-Nutrition Abo</p>
+                <p className="text-sm text-green-400">Pro-Nutrition</p>
               </div>
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/{isGerman ? "12 Monate" : "12 monthly"}</span></div>
-              <p className="text-sm text-white/60">{isGerman ? "Nach 6 Monaten kündbar" : "Cancellable after 6 months"}</p>
+              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/12 monthly</span></div>
+              <p className="text-sm text-white/60">Cancellable after 6 months</p>
             </div>
 
             <ul className="space-y-3 mb-6">
@@ -158,7 +158,7 @@ const ProAthleteSubscription = () => {
               className="block w-full"
             >
               <Button className="w-full bg-green-600 hover:bg-green-700" size="lg">
-                Pro Nutrition
+                Become FitBlaq's Pro-Nutrition Click here
               </Button>
             </a>
           </Card>
