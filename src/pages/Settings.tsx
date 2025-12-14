@@ -17,6 +17,7 @@ import { languages, useLanguage } from "@/contexts/LanguageContext";
 import { PasswordChangeDialog } from "@/components/PasswordChangeDialog";
 import settingsBg from "@/assets/settings-bg.jpg";
 import fitblaqShopIcon from "@/assets/fitblaq-shop.png";
+import fitblaqsLogoSmall from "@/assets/fitblaqs-logo-small.png";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -208,8 +209,8 @@ const Settings = () => {
     },
     {
       icon: Store,
-      title: "FitBlaq Shop",
-      description: "FitBlaqstore.com",
+      title: "Fitblaqs Support Service",
+      description: "Supportservice@Fitblaq.com",
       onClick: () => setShopDialogOpen(true),
       customIcon: fitblaqShopIcon,
     },
@@ -277,7 +278,7 @@ const Settings = () => {
                     <div className="font-semibold text-white">{section.title}</div>
                     <div className="text-sm text-white/70">{section.description}</div>
                   </div>
-                  {section.title === "FitBlaq Shop" && (
+                  {section.title === "Fitblaqs Support Service" && (
                     <Mail className="w-4 h-4 text-white/50" />
                   )}
                 </div>
@@ -297,9 +298,9 @@ const Settings = () => {
           {t("logout")}
         </Button>
 
-        {/* App Version */}
-        <div className="text-center mt-8 text-sm text-white/50">
-          FitBlaqs v1.0.0
+        {/* App Logo */}
+        <div className="flex justify-center mt-8">
+          <img src={fitblaqsLogoSmall} alt="FitBlaqs" className="w-16 h-16 object-contain" />
         </div>
       </div>
 

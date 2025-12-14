@@ -56,8 +56,6 @@ const ProAthleteSubscription = () => {
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/12 monthly</span></div>
-              <p className="text-sm text-white/60">Cancellable after 6 months</p>
             </div>
 
             <ul className="space-y-3 mb-6">
@@ -116,8 +114,6 @@ const ProAthleteSubscription = () => {
             </div>
             
             <div className="mb-6">
-              <div className="text-4xl font-bold text-white mb-1">€9,99<span className="text-lg font-normal text-white/60">/12 monthly</span></div>
-              <p className="text-sm text-white/60">Cancellable after 6 months</p>
             </div>
 
             <ul className="space-y-3 mb-6">

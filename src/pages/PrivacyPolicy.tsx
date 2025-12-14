@@ -118,8 +118,9 @@ const PrivacyPolicy = () => {
               </ul>
               <p className="text-white/80 mt-2">Nach der Löschung werden alle Ihre personenbezogenen Daten, einschließlich Gesundheits- und Fitnessdaten, dauerhaft innerhalb von 30 Tagen aus unseren Systemen entfernt.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Kinderdatenschutz</h3>
-              <p className="text-white/80">Unser Dienst richtet sich nicht an Personen unter 16 Jahren. Wir erheben wissentlich keine personenbezogenen Daten von Kindern unter 16 Jahren. Wenn Sie unter 16 sind, nutzen Sie diese App bitte nicht.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Kinderdatenschutz & Altersfreigabe</h3>
+              <p className="text-white/80"><strong>Altersfreigabe: 12+</strong></p>
+              <p className="text-white/80 mt-2">Diese App ist für Nutzer ab 12 Jahren geeignet. Wir erheben wissentlich keine personenbezogenen Daten von Kindern unter 12 Jahren. Eltern sollten die Nutzung ihrer Kinder im Alter von 12-16 Jahren beaufsichtigen.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Cookies und Tracking</h3>
               <p className="text-white/80">Wir verwenden nur technisch notwendige Cookies zur Authentifizierung und Sitzungsverwaltung. Wir verwenden KEINE:</p>
@@ -228,8 +229,9 @@ const PrivacyPolicy = () => {
               </ul>
               <p className="text-white/80 mt-2">Upon deletion, all your personal data including health and fitness data will be permanently removed from our systems within 30 days.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Children's Privacy</h3>
-              <p className="text-white/80">Our Service is not directed to anyone under the age of 16. We do not knowingly collect personal data from children under 16. If you are under 16, please do not use this app.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Children's Privacy & Age Rating</h3>
+              <p className="text-white/80"><strong>Age Rating: 12+</strong></p>
+              <p className="text-white/80 mt-2">This app is suitable for users aged 12 and above. We do not knowingly collect personal data from children under 12. Parents should supervise their children's usage for ages 12-16.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Cookies and Tracking</h3>
               <p className="text-white/80">We only use technically necessary cookies for authentication and session management. We do NOT use:</p>
