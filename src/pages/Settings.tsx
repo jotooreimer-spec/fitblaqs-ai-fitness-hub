@@ -382,7 +382,7 @@ const Settings = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Update Notifications</div>
+                <div className="font-medium">{language === "de" ? "Update Benachrichtigungen" : "Update Notifications"}</div>
                 <div className="text-sm text-muted-foreground">
                   {language === "de" ? "Über neue Features informiert werden" : "Get notified about new features"}
                 </div>

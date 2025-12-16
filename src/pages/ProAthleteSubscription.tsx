@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BottomNav from "@/components/BottomNav";
-import StripeButton from "@/components/StripeButton";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
 import fitblaqsLogoWhite from "@/assets/fitblaqs-logo-white.png";
 
@@ -89,16 +88,9 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <a 
-              href="https://buy.stripe.com/bJe00lgJIabj4uA2KB2Fa02" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block w-full"
-            >
-              <Button className="w-full" size="lg">
-                Become FitBlaq's Pro-Athlete Click here
-              </Button>
-            </a>
+            <Button className="w-full" size="lg" onClick={() => navigate("/pro-athlete")}>
+              {isGerman ? "Werde FitBlaq's Pro-Athlete" : "Become FitBlaq's Pro-Athlete"}
+            </Button>
           </Card>
 
           {/* Pro Nutrition */}
@@ -147,16 +139,9 @@ const ProAthleteSubscription = () => {
               </li>
             </ul>
 
-            <a 
-              href="https://buy.stripe.com/cNi4gBdxwbfnd16fxn2Fa03" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block w-full"
-            >
-              <Button className="w-full bg-green-600 hover:bg-green-700" size="lg">
-                Become FitBlaq's Pro-Nutrition Click here
-              </Button>
-            </a>
+            <Button className="w-full bg-green-600 hover:bg-green-700" size="lg" onClick={() => navigate("/pro-nutrition")}>
+              {isGerman ? "Werde FitBlaq's Pro-Nutrition" : "Become FitBlaq's Pro-Nutrition"}
+            </Button>
           </Card>
         </div>
       </div>
