@@ -70,7 +70,7 @@ const ProAthlete = () => {
       setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
       loadHistory(session.user.id);
-      loadCalculatedStats(session.user.id);
+      // Stats stay at 0 until manual values are saved - no auto-load
     });
   }, [navigate]);
 
@@ -85,47 +85,6 @@ const ProAthlete = () => {
     if (data) {
       setHistory(data);
     }
-  };
-
-  const loadCalculatedStats = async (uid: string) => {
-    // Load workout_logs for training hours calculation
-    const { data: workoutLogs } = await supabase
-      .from("workout_logs")
-      .select("*")
-      .eq("user_id", uid);
-
-    // Load jogging_logs for distance calculation
-    const { data: joggingLogs } = await supabase
-      .from("jogging_logs")
-      .select("*")
-      .eq("user_id", uid);
-
-    // Load weight_logs for weight tracking
-    const { data: weightLogs } = await supabase
-      .from("weight_logs")
-      .select("*")
-      .eq("user_id", uid)
-      .order("measured_at", { ascending: false });
-
-    const totalSessions = workoutLogs?.length || 0;
-    const totalDistanceKm = joggingLogs?.reduce((sum, log) => sum + (Number(log.distance) || 0), 0) || 0;
-    const latestWeight = weightLogs?.[0]?.weight || 0;
-    const firstWeight = weightLogs?.[weightLogs.length - 1]?.weight || latestWeight;
-    const weightChange = latestWeight && firstWeight ? ((latestWeight - firstWeight) / firstWeight * 100) : 0;
-
-    // Calculate total workout hours (assuming each session is about 1 hour)
-    const totalHours = totalSessions;
-
-    setCalculatedStats({
-      totalWorkoutHours: totalHours,
-      totalWorkoutHoursPct: Math.min((totalHours / 100) * 100, 100),
-      totalDistance: totalDistanceKm,
-      totalDistancePct: Math.min((totalDistanceKm / 500) * 100, 100),
-      avgWeight: latestWeight,
-      weightChangePct: Math.abs(weightChange),
-      totalTrainingSessions: totalSessions,
-      trainingSessionsPct: Math.min((totalSessions / 100) * 100, 100),
-    });
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -223,13 +182,32 @@ const ProAthlete = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Save manual values to body_analysis with calculated percentages
+      const weight = parseFloat(athleteForm.weight) || 0;
+      const targetWeight = parseFloat(athleteForm.target_weight) || 0;
+      const trainingFreq = parseFloat(athleteForm.training_frequency) || 0;
+
+      // Calculate stats from manual values ONLY
+      const workoutHours = trainingFreq * 4; // Assuming 4 weeks in month
+      const weightChange = weight && targetWeight ? Math.abs(((weight - targetWeight) / weight) * 100) : 0;
+
+      setCalculatedStats({
+        totalWorkoutHours: workoutHours,
+        totalWorkoutHoursPct: Math.min((workoutHours / 100) * 100, 100),
+        totalDistance: 0,
+        totalDistancePct: 0,
+        avgWeight: weight,
+        weightChangePct: weightChange,
+        totalTrainingSessions: trainingFreq * 4,
+        trainingSessionsPct: Math.min((trainingFreq * 4 / 100) * 100, 100),
+      });
+
+      // Save manual values to body_analysis
       const { error } = await supabase.from("body_analysis").insert([{
         user_id: session.user.id,
         image_url: null,
-        body_fat_pct: calculatedStats.totalWorkoutHoursPct,
-        muscle_mass_pct: calculatedStats.trainingSessionsPct,
-        fitness_level: Math.round(calculatedStats.totalDistancePct / 10),
+        body_fat_pct: null,
+        muscle_mass_pct: null,
+        fitness_level: null,
         health_notes: JSON.stringify({
           weight: athleteForm.weight,
           weight_unit: athleteForm.weight_unit,
@@ -241,7 +219,7 @@ const ProAthlete = () => {
           activity_level: athleteForm.activity_level,
           training_frequency: athleteForm.training_frequency,
           goal: athleteForm.goal,
-          calculated_stats: calculatedStats,
+          body_type: athleteForm.body_type,
         }),
       }]);
 
