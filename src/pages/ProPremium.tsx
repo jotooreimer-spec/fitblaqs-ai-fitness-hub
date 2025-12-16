@@ -8,7 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import proSubscriptionBg from "@/assets/pro-subscription-bg.png";
 import fitblaqsLogoWhite from "@/assets/fitblaqs-logo-white.png";
 
-const ProAthleteSubscription = () => {
+const ProPremium = () => {
   const navigate = useNavigate();
   const [isGerman, setIsGerman] = useState(true);
 
@@ -36,8 +36,8 @@ const ProAthleteSubscription = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-white">Fitblaqs Power & Healthy</h1>
-            <p className="text-white/70">PRO - Athlete & Nutrition entdecken</p>
+            <h1 className="text-3xl font-bold text-white">Fitblaqs Pro-Premium</h1>
+            <p className="text-white/70">{isGerman ? "PRO - Athlete & Nutrition entdecken" : "Discover PRO - Athlete & Nutrition"}</p>
           </div>
         </div>
 
@@ -150,4 +150,4 @@ const ProAthleteSubscription = () => {
   );
 };
 
-export default ProAthleteSubscription;
+export default ProPremium;
