@@ -35,7 +35,7 @@ const ProNutrition = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [history, setHistory] = useState<FoodAnalysisEntry[]>([]);
 
-  // Calculated percentages from nutrition history
+  // Stats - only from manual input, NOT from history or image upload
   const [calculatedStats, setCalculatedStats] = useState({
     totalCalories: 0,
     caloriesPct: 0,
@@ -74,7 +74,7 @@ const ProNutrition = () => {
       setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
       loadHistory(session.user.id);
-      loadCalculatedStats(session.user.id);
+      // Stats stay at 0 until manual values are saved - no auto-load
     });
   }, [navigate]);
 
@@ -89,115 +89,6 @@ const ProNutrition = () => {
     if (data) {
       setHistory(data);
     }
-  };
-
-  const loadCalculatedStats = async (uid: string) => {
-    // Load nutrition logs, weight and Pro Nutrition analysis in parallel
-    const [
-      { data: nutritionLogs },
-      { data: weightLogs },
-      { data: foodAnalysis },
-    ] = await Promise.all([
-      supabase
-        .from("nutrition_logs")
-        .select("*")
-        .eq("user_id", uid),
-      supabase
-        .from("weight_logs")
-        .select("weight")
-        .eq("user_id", uid)
-        .order("measured_at", { ascending: false })
-        .limit(1),
-      supabase
-        .from("food_analysis")
-        .select("*")
-        .eq("user_id", uid),
-    ]);
-
-    const userWeight = weightLogs?.[0]?.weight || 70;
-    const dailyCalorieTarget = userWeight * 30; // Rough TDEE estimate
-    const dailyProteinTarget = userWeight * 2; // 2g per kg
-    const dailyCarbsTarget = 300;
-    const dailyFatTarget = 80;
-    const dailyWaterTarget = userWeight * 35; // 35ml per kg
-
-    let totalCals = 0;
-    let totalProt = 0;
-    let totalCarbs = 0;
-    let totalFat = 0;
-    let totalWater = 0;
-
-    // Standard nutrition logs (from Nutrition page)
-    nutritionLogs?.forEach((log) => {
-      totalCals += log.calories || 0;
-      totalProt += Number(log.protein) || 0;
-      totalCarbs += Number(log.carbs) || 0;
-      totalFat += Number(log.fats) || 0;
-
-      // Parse water from notes if stored as JSON
-      if (log.notes) {
-        try {
-          const notesData = typeof log.notes === "string" ? JSON.parse(log.notes) : log.notes;
-          if (notesData.water) {
-            let waterMl = Number(notesData.water) || 0;
-            const waterUnit = notesData.water_unit || "ml";
-            if (waterUnit === "l") waterMl *= 1000;
-            else if (waterUnit === "dl") waterMl *= 100;
-            totalWater += waterMl;
-          }
-        } catch {}
-      }
-    });
-
-    // Pro Nutrition analysis entries (manual values & AI results)
-    foodAnalysis?.forEach((entry) => {
-      // Total calories from analysis table
-      totalCals += Number(entry.total_calories) || 0;
-
-      // Macros from AI items array
-      if (entry.items && Array.isArray(entry.items)) {
-        entry.items.forEach((item: any) => {
-          totalProt += Number(item.protein) || 0;
-          totalCarbs += Number(item.carbs) || 0;
-          totalFat += Number(item.fat) || 0;
-        });
-      }
-
-      // Additional data from manual values stored in notes
-      if (entry.notes) {
-        try {
-          const notesData = typeof entry.notes === "string" ? JSON.parse(entry.notes) : entry.notes;
-
-          if (notesData.manual_values) {
-            const mv = notesData.manual_values;
-            totalProt += Number(mv.protein) || 0;
-            totalCarbs += Number(mv.carbs) || 0;
-            totalFat += Number(mv.fat) || 0;
-
-            if (mv.water) {
-              let waterMl = Number(mv.water) || 0;
-              const waterUnit = mv.water_unit || notesData.units?.water || "ml";
-              if (waterUnit === "l") waterMl *= 1000;
-              else if (waterUnit === "dl") waterMl *= 100;
-              totalWater += waterMl;
-            }
-          }
-        } catch {}
-      }
-    });
-
-    setCalculatedStats({
-      totalCalories: totalCals,
-      caloriesPct: Math.min((totalCals / dailyCalorieTarget) * 100, 100),
-      totalProtein: totalProt,
-      proteinPct: Math.min((totalProt / dailyProteinTarget) * 100, 100),
-      totalCarbs: totalCarbs,
-      carbsPct: Math.min((totalCarbs / dailyCarbsTarget) * 100, 100),
-      totalFat: totalFat,
-      fatPct: Math.min((totalFat / dailyFatTarget) * 100, 100),
-      totalWater: totalWater,
-      waterPct: Math.min((totalWater / dailyWaterTarget) * 100, 100),
-    });
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -291,26 +182,54 @@ const ProNutrition = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Save manual values with calculated percentages
+      const calories = parseFloat(manualForm.calories) || 0;
+      const protein = parseFloat(manualForm.protein) || 0;
+      const carbs = parseFloat(manualForm.carbs) || 0;
+      const fat = parseFloat(manualForm.fat) || 0;
+      let water = parseFloat(manualForm.water) || 0;
+      
+      // Convert water to ml
+      if (manualForm.water_unit === "l") water *= 1000;
+      else if (manualForm.water_unit === "dl") water *= 100;
+
+      // Calculate percentages based on daily targets (rough estimates)
+      const userWeight = 70; // Default
+      const dailyCalorieTarget = userWeight * 30;
+      const dailyProteinTarget = userWeight * 2;
+      const dailyCarbsTarget = 300;
+      const dailyFatTarget = 80;
+      const dailyWaterTarget = userWeight * 35;
+
+      // Update stats display from manual values ONLY
+      setCalculatedStats({
+        totalCalories: calories,
+        caloriesPct: Math.min((calories / dailyCalorieTarget) * 100, 100),
+        totalProtein: protein,
+        proteinPct: Math.min((protein / dailyProteinTarget) * 100, 100),
+        totalCarbs: carbs,
+        carbsPct: Math.min((carbs / dailyCarbsTarget) * 100, 100),
+        totalFat: fat,
+        fatPct: Math.min((fat / dailyFatTarget) * 100, 100),
+        totalWater: water,
+        waterPct: Math.min((water / dailyWaterTarget) * 100, 100),
+      });
+
+      // Save manual values
       const items = [{
         name: manualForm.name || "Manual Entry",
         portion: "1 serving",
-        calories: parseFloat(manualForm.calories) || 0,
-        protein: parseFloat(manualForm.protein) || 0,
-        carbs: parseFloat(manualForm.carbs) || 0,
-        fat: parseFloat(manualForm.fat) || 0,
+        calories, protein, carbs, fat,
         sugar: parseFloat(manualForm.sugar) || 0,
       }];
 
       const { error } = await supabase.from("food_analysis").insert([{
         user_id: session.user.id,
         image_url: null,
-        total_calories: items[0].calories,
+        total_calories: calories,
         category: manualForm.category,
         items: items as unknown as null,
         notes: JSON.stringify({
           manual_values: manualForm,
-          calculated_stats: calculatedStats,
           units: {
             calories: manualForm.calories_unit,
             protein: manualForm.protein_unit,
@@ -326,7 +245,6 @@ const ProNutrition = () => {
       if (error) throw error;
 
       loadHistory(session.user.id);
-      loadCalculatedStats(session.user.id);
       toast({ title: isGerman ? "Werte gespeichert" : "Values saved" });
       
       // Reset form
@@ -348,7 +266,6 @@ const ProNutrition = () => {
     const { error } = await supabase.from("food_analysis").delete().eq("id", id);
     if (!error) {
       loadHistory(userId);
-      loadCalculatedStats(userId);
       toast({ title: isGerman ? "Gelöscht" : "Deleted" });
     }
   };
