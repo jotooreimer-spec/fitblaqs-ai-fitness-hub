@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { compressImage, isValidImageFile, base64ToBlob } from "@/lib/imageUtils";
+import { useLiveData } from "@/contexts/LiveDataContext";
 import proAthleteBg from "@/assets/pro-athlete-bg.png";
 import performanceButtonBg from "@/assets/performance-button.png";
 
@@ -26,16 +27,16 @@ interface BodyAnalysisEntry {
 const ProAthlete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { bodyAnalysis, workoutLogs, joggingLogs, stats, setUserId, refetch } = useLiveData();
   const [isGerman, setIsGerman] = useState(true);
-  const [userId, setUserId] = useState<string>("");
+  const [userId, setLocalUserId] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [uploadedFileRaw, setUploadedFileRaw] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [history, setHistory] = useState<BodyAnalysisEntry[]>([]);
   
-  // Calculated percentages from history
+  // Calculated percentages from live data
   const [calculatedStats, setCalculatedStats] = useState({
     totalWorkoutHours: 0,
     totalWorkoutHoursPct: 0,
@@ -63,29 +64,35 @@ const ProAthlete = () => {
 
   const bodyCategories = ["progress", "front", "back", "side", "flexing"];
 
+  // Use live body analysis data as history
+  const history = bodyAnalysis as BodyAnalysisEntry[];
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { navigate("/login"); return; }
       const metadata = session.user.user_metadata;
       setIsGerman(metadata.language === "de");
+      setLocalUserId(session.user.id);
       setUserId(session.user.id);
-      loadHistory(session.user.id);
-      // Stats stay at 0 until manual values are saved - no auto-load
     });
-  }, [navigate]);
+  }, [navigate, setUserId]);
 
-  const loadHistory = async (uid: string) => {
-    const { data } = await supabase
-      .from("body_analysis")
-      .select("*")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    if (data) {
-      setHistory(data);
-    }
-  };
+  // Calculate stats from live data
+  useEffect(() => {
+    const workoutHours = stats.monthlyWorkoutHours;
+    const totalSessions = workoutLogs.length + joggingLogs.length;
+    
+    setCalculatedStats({
+      totalWorkoutHours: Math.round(workoutHours * 10) / 10,
+      totalWorkoutHoursPct: Math.min((workoutHours / 100) * 100, 100),
+      totalDistance: stats.totalDistance,
+      totalDistancePct: Math.min((stats.totalDistance / 100) * 100, 100),
+      avgWeight: stats.currentWeight,
+      weightChangePct: 0,
+      totalTrainingSessions: totalSessions,
+      trainingSessionsPct: Math.min((totalSessions / 100) * 100, 100),
+    });
+  }, [stats, workoutLogs, joggingLogs]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -161,7 +168,7 @@ const ProAthlete = () => {
       setUploadName("");
       setUploadCategory("progress");
       setUploadDialogOpen(false);
-      loadHistory(session.user.id);
+      refetch();
       toast({ title: isGerman ? "Bild gespeichert" : "Image saved" });
     } catch (error) {
       console.error("Upload error:", error);
@@ -225,7 +232,7 @@ const ProAthlete = () => {
 
       if (error) throw error;
 
-      loadHistory(session.user.id);
+      refetch();
       toast({ title: isGerman ? "Werte gespeichert" : "Values saved" });
       
       // Reset form
@@ -244,7 +251,7 @@ const ProAthlete = () => {
   const deleteEntry = async (id: string) => {
     const { error } = await supabase.from("body_analysis").delete().eq("id", id);
     if (!error) {
-      loadHistory(userId);
+      refetch();
       toast({ title: isGerman ? "Gelöscht" : "Deleted" });
     }
   };
@@ -393,7 +400,7 @@ const ProAthlete = () => {
               }
             }
             setCalculatedStats({ totalWorkoutHours: 0, totalWorkoutHoursPct: 0, totalDistance: 0, totalDistancePct: 0, avgWeight: 0, weightChangePct: 0, totalTrainingSessions: 0, trainingSessionsPct: 0 });
-            loadHistory(userId);
+            refetch();
             toast({ title: isGerman ? "Alle gelöscht" : "All deleted" });
           }} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
             <Trash2 className="w-4 h-4 mr-2" />

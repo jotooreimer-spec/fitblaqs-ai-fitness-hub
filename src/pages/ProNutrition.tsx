@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { compressImage, isValidImageFile, base64ToBlob } from "@/lib/imageUtils";
+import { useLiveData } from "@/contexts/LiveDataContext";
 import proNutritionBg from "@/assets/pro-nutrition-bg.png";
 import performanceButtonBg from "@/assets/performance-button.png";
 
@@ -26,14 +27,17 @@ interface FoodAnalysisEntry {
 const ProNutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { foodAnalysis, stats, setUserId, refetch } = useLiveData();
   const [isGerman, setIsGerman] = useState(true);
-  const [userId, setUserId] = useState<string>("");
+  const [userId, setLocalUserId] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [uploadedFileRaw, setUploadedFileRaw] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [history, setHistory] = useState<FoodAnalysisEntry[]>([]);
+
+  // Use live food analysis data as history
+  const history = foodAnalysis as FoodAnalysisEntry[];
 
   // Stats - only from manual input, NOT from history or image upload
   const [calculatedStats, setCalculatedStats] = useState({
@@ -72,24 +76,10 @@ const ProNutrition = () => {
       if (!session) { navigate("/login"); return; }
       const metadata = session.user.user_metadata;
       setIsGerman(metadata.language === "de");
+      setLocalUserId(session.user.id);
       setUserId(session.user.id);
-      loadHistory(session.user.id);
-      // Stats stay at 0 until manual values are saved - no auto-load
     });
-  }, [navigate]);
-
-  const loadHistory = async (uid: string) => {
-    const { data } = await supabase
-      .from("food_analysis")
-      .select("*")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    if (data) {
-      setHistory(data);
-    }
-  };
+  }, [navigate, setUserId]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -165,7 +155,7 @@ const ProNutrition = () => {
       setUploadName("");
       setUploadCategory("protein");
       setUploadDialogOpen(false);
-      loadHistory(session.user.id);
+      refetch();
       toast({ title: isGerman ? "Bild gespeichert" : "Image saved" });
     } catch (error) {
       console.error("Upload error:", error);
@@ -244,7 +234,7 @@ const ProNutrition = () => {
 
       if (error) throw error;
 
-      loadHistory(session.user.id);
+      refetch();
       toast({ title: isGerman ? "Werte gespeichert" : "Values saved" });
       
       // Reset form
@@ -265,7 +255,7 @@ const ProNutrition = () => {
   const deleteEntry = async (id: string) => {
     const { error } = await supabase.from("food_analysis").delete().eq("id", id);
     if (!error) {
-      loadHistory(userId);
+      refetch();
       toast({ title: isGerman ? "Gelöscht" : "Deleted" });
     }
   };
@@ -471,7 +461,7 @@ const ProNutrition = () => {
               }
             }
             setCalculatedStats({ totalCalories: 0, caloriesPct: 0, totalProtein: 0, proteinPct: 0, totalCarbs: 0, carbsPct: 0, totalFat: 0, fatPct: 0, totalWater: 0, waterPct: 0 });
-            loadHistory(userId);
+            refetch();
             toast({ title: isGerman ? "Alle gelöscht" : "All deleted" });
           }} className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white border-0 rounded-full py-5">
             <Trash2 className="w-4 h-4 mr-2" />

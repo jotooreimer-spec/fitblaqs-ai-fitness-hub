@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Activity, Flame, MapPin, Droplets } from "lucide-react";
-import { startOfYear } from "date-fns";
+import { useLiveData } from "@/contexts/LiveDataContext";
 
 interface Props {
   isGerman: boolean;
@@ -11,116 +10,49 @@ interface Props {
 }
 
 const DashboardStats = ({ isGerman, userId }: Props) => {
-  const [monthlyWorkoutData, setMonthlyWorkoutData] = useState<any[]>([]);
-  const [totalWorkouts, setTotalWorkouts] = useState(0);
-  const [todayCalories, setTodayCalories] = useState(0);
-  const [todayProtein, setTodayProtein] = useState(0);
-  const [todayWater, setTodayWater] = useState(0);
-  const [totalDistance, setTotalDistance] = useState(0);
-  const [nutritionBreakdown, setNutritionBreakdown] = useState({
-    calories: 0,
-    protein: 0,
-    vitamin: 0,
-    supplements: 0,
-    fats: 0,
-    water: 0
-  });
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const [hasNutritionData, setHasNutritionData] = useState(false);
+  const { 
+    nutritionLogs, 
+    workoutLogs, 
+    joggingLogs, 
+    stats, 
+    setUserId,
+    isLoading 
+  } = useLiveData();
 
   useEffect(() => {
     if (userId) {
-      loadStats();
+      setUserId(userId);
     }
-  }, [userId]);
+  }, [userId, setUserId]);
 
-  // Parse nutrition notes (JSON format) with unit conversion to ml
-  const parseWaterToMl = (waterData: any): number => {
-    if (!waterData || !waterData.value) return 0;
-    const value = parseFloat(waterData.value) || 0;
-    const unit = waterData.unit || 'ml';
-    
-    // Convert all units to ml for consistent calculation
-    switch (unit) {
-      case 'l':
-      case 'liter':
-        return value * 1000;
-      case 'dl':
-        return value * 100;
-      case 'ml':
-      default:
-        return value;
-    }
-  };
-
-  const parseNutritionNotes = (notes: string | null) => {
-    if (!notes) return null;
-    try {
-      return JSON.parse(notes);
-    } catch {
-      // Legacy format fallback
-      const waterMatch = notes.match(/Water: ([\d.]+)/);
-      return waterMatch ? { water: { value: parseFloat(waterMatch[1]), unit: 'ml', ml: parseFloat(waterMatch[1]) } } : null;
-    }
-  };
-
-  const loadStats = async () => {
+  // Build monthly chart data from live data
+  const buildMonthlyChartData = () => {
     const today = new Date();
-    const todayStart = new Date(today);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
-    const yearStart = startOfYear(today);
-
-    // Load workout logs for yearly bar chart - calculate hours from saved entries
-    const { data: workouts } = await supabase
-      .from("workout_logs")
-      .select("*")
-      .eq("user_id", userId)
-      .gte("completed_at", yearStart.toISOString())
-      .order("completed_at", { ascending: true });
-
-    // Load jogging logs for yearly chart - calculate hours from duration
-    const { data: joggingLogs } = await supabase
-      .from("jogging_logs")
-      .select("*")
-      .eq("user_id", userId)
-      .gte("completed_at", yearStart.toISOString());
-
-    // Build monthly chart data with hours (calculated from saved entries)
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    const chartData = monthNames.map((month, index) => {
+    return monthNames.map((month, index) => {
       const isCompletedMonth = index < currentMonth;
       
       if (!isCompletedMonth) {
-        return { 
-          month: isGerman ? monthNamesDE[index] : month,
-          count: 0 
-        };
+        return { month: isGerman ? monthNamesDE[index] : month, count: 0 };
       }
       
-      // Calculate workout hours from saved entries
-      const monthWorkouts = workouts?.filter(w => {
+      const monthWorkouts = workoutLogs.filter(w => {
         const d = new Date(w.completed_at);
         return d.getMonth() === index && d.getFullYear() === currentYear;
-      }) || [];
+      });
       
       const workoutHours = monthWorkouts.reduce((total, w) => {
-        const setsCount = w.sets || 1;
-        const minutesPerSet = 3;
-        return total + (setsCount * minutesPerSet / 60);
+        return total + ((w.sets || 1) * 3 / 60);
       }, 0);
 
-      // Calculate jogging hours from duration (duration is in minutes)
-      const monthJogging = joggingLogs?.filter(j => {
+      const monthJogging = joggingLogs.filter(j => {
         const d = new Date(j.completed_at);
         return d.getMonth() === index && d.getFullYear() === currentYear;
-      }) || [];
+      });
       
       const joggingHours = monthJogging.reduce((total, j) => {
         return total + ((j.duration || 0) / 60);
@@ -131,99 +63,69 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
         count: Math.round((workoutHours + joggingHours) * 10) / 10
       };
     });
-
-    setMonthlyWorkoutData(chartData);
-    setTotalWorkouts((workouts?.length || 0) + (joggingLogs?.length || 0));
-
-    // Load today's nutrition - Start at 0, only count actual saved entries
-    const { data: todayNutrition } = await supabase
-      .from("nutrition_logs")
-      .select("*")
-      .eq("user_id", userId)
-      .gte("completed_at", todayStart.toISOString())
-      .lte("completed_at", todayEnd.toISOString());
-
-    if (todayNutrition && todayNutrition.length > 0) {
-      setHasNutritionData(true);
-      let totalCals = 0, totalProt = 0, totalVitamin = 0, totalFats = 0, totalWater = 0;
-
-      todayNutrition.forEach(log => {
-        totalCals += log.calories || 0;
-        totalProt += log.protein || 0;
-        totalFats += log.fats || 0;
-        
-        // Parse notes for water/hydration with proper unit conversion
-        const parsed = parseNutritionNotes(log.notes);
-        if (parsed?.water) {
-          totalWater += parseWaterToMl(parsed.water);
-        }
-        
-        // Parse vitamin from notes
-        if (parsed?.vitamin?.value) {
-          totalVitamin += parseFloat(parsed.vitamin.value) || 0;
-        }
-      });
-
-      setTodayCalories(totalCals);
-      setTodayProtein(totalProt);
-      setTodayWater(totalWater);
-      setNutritionBreakdown({
-        calories: totalCals,
-        protein: totalProt,
-        vitamin: totalVitamin,
-        supplements: 0, // Removed from hydration display
-        fats: totalFats,
-        water: totalWater
-      });
-    } else {
-      setHasNutritionData(false);
-      setTodayCalories(0);
-      setTodayProtein(0);
-      setTodayWater(0);
-      setNutritionBreakdown({
-        calories: 0,
-        protein: 0,
-        vitamin: 0,
-        supplements: 0,
-        fats: 0,
-        water: 0
-      });
-    }
-
-    // Load jogging distance - automatically calculated from saved entries (in km)
-    const { data: jogging } = await supabase
-      .from("jogging_logs")
-      .select("distance")
-      .eq("user_id", userId);
-
-    if (jogging) {
-      const total = jogging.reduce((sum: number, log: any) => sum + parseFloat(log.distance || 0), 0);
-      setTotalDistance(total);
-    }
   };
 
-  // Nutrition pie chart colors
+  // Calculate today's nutrition from live data
+  const getTodayNutrition = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todayLogs = nutritionLogs.filter(n => {
+      const date = new Date(n.completed_at);
+      return date >= today && date <= todayEnd;
+    });
+
+    let calories = 0, protein = 0, fats = 0, vitamins = 0, water = 0;
+
+    todayLogs.forEach(log => {
+      calories += log.calories || 0;
+      protein += log.protein || 0;
+      fats += log.fats || 0;
+
+      if (log.notes) {
+        try {
+          const parsed = JSON.parse(log.notes);
+          if (parsed?.water?.value) {
+            const value = parseFloat(parsed.water.value) || 0;
+            const unit = parsed.water.unit || 'ml';
+            if (unit === 'l' || unit === 'liter') water += value * 1000;
+            else if (unit === 'dl') water += value * 100;
+            else water += value;
+          }
+          if (parsed?.vitamin?.value) {
+            vitamins += parseFloat(parsed.vitamin.value) || 0;
+          }
+        } catch {}
+      }
+    });
+
+    return { calories, protein, fats, vitamins, water, hasData: todayLogs.length > 0 };
+  };
+
+  const monthlyWorkoutData = buildMonthlyChartData();
+  const todayNutrition = getTodayNutrition();
+  const hasNutritionData = todayNutrition.hasData;
+
   const NUTRITION_COLORS = {
     calories: '#F97316',
     protein: '#EF4444',
     vitamin: '#22C55E',
-    supplements: '#A16207',
     fats: '#D4A574',
     water: '#3B82F6'
   };
 
-  // Only show pie data if we have saved entries - Removed Supplements, only Hydration
   const pieData = hasNutritionData ? [
-    { name: isGerman ? 'Kalorien' : 'Calories', value: nutritionBreakdown.calories, color: NUTRITION_COLORS.calories, key: 'calories' },
-    { name: 'Protein', value: nutritionBreakdown.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
-    { name: 'Vitamin', value: nutritionBreakdown.vitamin, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
-    { name: isGerman ? 'Fette' : 'Fats', value: nutritionBreakdown.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
-    { name: 'Hydration', value: nutritionBreakdown.water, color: NUTRITION_COLORS.water, key: 'water' },
+    { name: isGerman ? 'Kalorien' : 'Calories', value: todayNutrition.calories, color: NUTRITION_COLORS.calories, key: 'calories' },
+    { name: 'Protein', value: todayNutrition.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
+    { name: 'Vitamin', value: todayNutrition.vitamins, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
+    { name: isGerman ? 'Fette' : 'Fats', value: todayNutrition.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
+    { name: 'Hydration', value: todayNutrition.water, color: NUTRITION_COLORS.water, key: 'water' },
   ].filter(item => item.value > 0) : [];
 
   const total = pieData.reduce((sum, item) => sum + item.value, 0);
 
-  // Zero state pie data for display - Removed Supplements
   const zeroStatePieData = [
     { name: isGerman ? 'Kalorien' : 'Calories', value: 1, color: '#374151', key: 'calories' },
     { name: 'Protein', value: 1, color: '#374151', key: 'protein' },
@@ -249,14 +151,14 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
   return (
     <div className="space-y-6 mb-8">
-      {/* Quick Stats - Auto-calculated from saved entries */}
+      {/* Quick Stats - Live from context */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <div className="flex items-center gap-3 mb-2">
             <Activity className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">Workouts</span>
           </div>
-          <div className="text-3xl font-bold">{totalWorkouts}</div>
+          <div className="text-3xl font-bold">{stats.totalWorkouts}</div>
           <div className="text-xs text-muted-foreground mt-1">
             {isGerman ? "Dieses Jahr" : "This year"}
           </div>
@@ -269,7 +171,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               {isGerman ? "Kalorien" : "Calories"}
             </span>
           </div>
-          <div className="text-3xl font-bold">{todayCalories.toLocaleString()}</div>
+          <div className="text-3xl font-bold">{stats.todayCalories.toLocaleString()}</div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
@@ -282,7 +184,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               {isGerman ? "Distanz" : "Distance"}
             </span>
           </div>
-          <div className="text-3xl font-bold">{totalDistance.toFixed(1)} km</div>
+          <div className="text-3xl font-bold">{stats.totalDistance.toFixed(1)} km</div>
           <div className="text-xs text-muted-foreground mt-1">Total</div>
         </Card>
 
@@ -291,7 +193,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
             <Droplets className="w-5 h-5 text-cyan-400" />
             <span className="text-sm text-muted-foreground">Hydration</span>
           </div>
-          <div className="text-3xl font-bold">{todayWater > 0 ? (todayWater / 1000).toFixed(1) : "0"} L</div>
+          <div className="text-3xl font-bold">{stats.todayWater > 0 ? (stats.todayWater / 1000).toFixed(1) : "0"} L</div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
@@ -300,7 +202,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Weight Watcher Pie Chart - Shows 0% when no saved data */}
+        {/* Weight Watcher Pie Chart */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">Weight Watcher</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -327,25 +229,12 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          {/* Legend with clickable items */}
           <div className="flex flex-wrap justify-center gap-3 mt-4">
             {(hasNutritionData ? pieData : zeroStatePieData).map((item, index) => (
-              <div 
-                key={index}
-                className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-white/10 transition-colors"
-                onMouseEnter={() => setHoveredCategory(item.key)}
-                onMouseLeave={() => setHoveredCategory(null)}
-              >
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: hasNutritionData ? item.color : '#374151' }}
-                />
+              <div key={index} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 transition-colors">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: hasNutritionData ? item.color : '#374151' }} />
                 <span className="text-xs text-muted-foreground">{item.name}</span>
-                {hoveredCategory === item.key && (
-                  <span className="text-xs font-bold">
-                    {hasNutritionData ? `${Math.round((item.value / total) * 100)}%` : '0%'}
-                  </span>
-                )}
+                <span className="text-xs font-bold">{hasNutritionData ? `${Math.round((item.value / total) * 100)}%` : '0%'}</span>
               </div>
             ))}
           </div>
@@ -356,7 +245,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
           )}
         </Card>
 
-        {/* Workout Activity Bar Chart - Auto-calculated hours from saved entries */}
+        {/* Workout Activity Bar Chart */}
         <Card className="gradient-card card-shadow border-white/10 p-6">
           <h3 className="text-lg font-bold mb-4">
             {isGerman ? "Workout Aktivität" : "Workout Activity"}
@@ -391,7 +280,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
             </BarChart>
           </ResponsiveContainer>
           <div className="text-center text-xs text-muted-foreground mt-2">
-            {isGerman ? "Stunden (automatisch berechnet)" : "Hours (auto-calculated)"}
+            {isGerman ? "Stunden (Live-Update)" : "Hours (Live Update)"}
           </div>
         </Card>
       </div>

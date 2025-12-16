@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
+import { useLiveData } from "@/contexts/LiveDataContext";
 import performanceBg from "@/assets/performance-bg.png";
 import bodyworkoutplan1 from "@/assets/bodyworkoutplan-1.png";
 import bodyworkoutplan2 from "@/assets/bodyworkoutplan-2.png";
@@ -33,13 +34,22 @@ interface DayData {
 const CalendarPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { 
+    workoutLogs, 
+    nutritionLogs, 
+    joggingLogs, 
+    weightLogs, 
+    bodyAnalysis, 
+    foodAnalysis, 
+    profile, 
+    setUserId,
+    isLoading: dataLoading 
+  } = useLiveData();
+  
   const [isGerman, setIsGerman] = useState(true);
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [userId, setUserId] = useState<string>("");
+  const [userId, setLocalUserId] = useState<string>("");
   const [userWeight, setUserWeight] = useState(0);
-  const [selectedDayData, setSelectedDayData] = useState<DayData>({ workouts: [], nutrition: [], jogging: [], weight: [], bodyAnalysis: [], foodAnalysis: [] });
-  const [monthlyChartData, setMonthlyChartData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   
   // Challenges state
   const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
@@ -65,27 +75,14 @@ const CalendarPage = () => {
 
       const metadata = session.user.user_metadata;
       setIsGerman(metadata.language === "de");
+      setLocalUserId(session.user.id);
       setUserId(session.user.id);
-
-      // Load user weight for challenges
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("weight")
-        .eq("user_id", session.user.id)
-        .single();
-      
-      if (profile?.weight) {
-        setUserWeight(profile.weight);
-        setBodyWeight(profile.weight.toString());
-      }
 
       // Load saved challenge
       const saved = localStorage.getItem(`challenge_${session.user.id}`);
       if (saved) {
         setSavedGoal(JSON.parse(saved));
       }
-
-      loadMonthData(session.user.id, new Date());
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -95,101 +92,88 @@ const CalendarPage = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, setUserId]);
 
+  // Update user weight from profile
   useEffect(() => {
-    if (userId && date) {
-      loadDayData(date);
-      loadMonthData(userId, date);
+    if (profile?.weight) {
+      setUserWeight(profile.weight);
+      setBodyWeight(profile.weight.toString());
     }
-  }, [date, userId]);
+  }, [profile]);
 
-  const loadMonthData = async (uid: string, selectedDate: Date) => {
-    const yearStart = new Date(selectedDate.getFullYear(), 0, 1);
-    const yearEnd = new Date(selectedDate.getFullYear(), 11, 31, 23, 59, 59);
+  // Calculate selected day data from live data
+  const selectedDayData = useMemo((): DayData => {
+    if (!date) return { workouts: [], nutrition: [], jogging: [], weight: [], bodyAnalysis: [], foodAnalysis: [] };
+    
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
 
-    const { data: workoutData } = await supabase
-      .from("workout_logs")
-      .select("*")
-      .eq("user_id", uid)
-      .gte("completed_at", yearStart.toISOString())
-      .lte("completed_at", yearEnd.toISOString());
+    return {
+      workouts: workoutLogs.filter(w => {
+        const d = new Date(w.completed_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+      nutrition: nutritionLogs.filter(n => {
+        const d = new Date(n.completed_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+      jogging: joggingLogs.filter(j => {
+        const d = new Date(j.completed_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+      weight: weightLogs.filter(w => {
+        const d = new Date(w.measured_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+      bodyAnalysis: bodyAnalysis.filter(b => {
+        const d = new Date(b.created_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+      foodAnalysis: foodAnalysis.filter(f => {
+        const d = new Date(f.created_at);
+        return d >= dayStart && d <= dayEnd;
+      }),
+    };
+  }, [date, workoutLogs, nutritionLogs, joggingLogs, weightLogs, bodyAnalysis, foodAnalysis]);
 
-    const { data: joggingData } = await supabase
-      .from("jogging_logs")
-      .select("calories, duration, completed_at")
-      .eq("user_id", uid)
-      .gte("completed_at", yearStart.toISOString())
-      .lte("completed_at", yearEnd.toISOString());
-
-    // Build monthly chart data - only completed months show values
+  // Calculate monthly chart data from live data
+  const monthlyChartData = useMemo(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const selectedYear = date?.getFullYear() || currentYear;
+    
     const monthNames = isGerman 
       ? ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const selectedYear = selectedDate.getFullYear();
-    
-    const chartData = monthNames.map((month, index) => {
-      // Only show values for completed months (past months)
-      // Current month shows 0 until month ends
+    return monthNames.map((month, index) => {
       const isCompletedMonth = selectedYear < currentYear || (selectedYear === currentYear && index < currentMonth);
       
       if (!isCompletedMonth) {
         return { month, hours: 0 };
       }
       
-      const monthWorkouts = workoutData?.filter(w => {
+      const monthWorkouts = workoutLogs.filter(w => {
         const d = new Date(w.completed_at);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
-      }) || [];
-      const monthJogging = joggingData?.filter(j => {
+      });
+      const monthJogging = joggingLogs.filter(j => {
         const d = new Date(j.completed_at);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
-      }) || [];
+      });
       
-      // Calculate hours from duration (jogging in minutes, workouts estimate 30min each)
       const joggingHours = monthJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
-      const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0); // ~3min per set
+      const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0);
 
       return { month, hours: Math.min(Math.round((joggingHours + workoutHours) * 10) / 10, 100) };
     });
+  }, [date, workoutLogs, joggingLogs, isGerman]);
 
-    setMonthlyChartData(chartData);
-  };
-
-  const loadDayData = async (selectedDate: Date) => {
-    if (!userId) return;
-    setIsLoading(true);
-
-    const dayStart = new Date(selectedDate);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(selectedDate);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    try {
-      const [workoutsRes, nutritionRes, joggingRes, weightRes, bodyAnalysisRes, foodAnalysisRes] = await Promise.all([
-        supabase.from("workout_logs").select("*, exercises(name_de, name_en, category)").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-        supabase.from("nutrition_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-        supabase.from("jogging_logs").select("*").eq("user_id", userId).gte("completed_at", dayStart.toISOString()).lte("completed_at", dayEnd.toISOString()),
-        supabase.from("weight_logs").select("*").eq("user_id", userId).gte("measured_at", dayStart.toISOString()).lte("measured_at", dayEnd.toISOString()),
-        supabase.from("body_analysis").select("*").eq("user_id", userId).gte("created_at", dayStart.toISOString()).lte("created_at", dayEnd.toISOString()),
-        supabase.from("food_analysis").select("*").eq("user_id", userId).gte("created_at", dayStart.toISOString()).lte("created_at", dayEnd.toISOString())
-      ]);
-
-      setSelectedDayData({
-        workouts: workoutsRes.data || [],
-        nutrition: nutritionRes.data || [],
-        jogging: joggingRes.data || [],
-        weight: weightRes.data || [],
-        bodyAnalysis: bodyAnalysisRes.data || [],
-        foodAnalysis: foodAnalysisRes.data || []
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // isLoading is now dataLoading from context
 
   const handleSaveChallenge = () => {
     if (!goalWeight || !months || !bodyWeight) {
@@ -354,7 +338,7 @@ const CalendarPage = () => {
                 </div>
               </div>
 
-              {isLoading ? (
+              {dataLoading ? (
                 <CalendarSkeleton />
               ) : !hasData ? (
                 <p className="text-white/60 text-center py-8">{isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}</p>
