@@ -117,7 +117,6 @@ const JoggingTracker = () => {
   const autoSaveJoggingLog = async (totalSeconds: number) => {
     if (!userId) return;
 
-    const durationMinutes = Math.floor(totalSeconds / 60);
     const distanceKm = calculateFallbackDistance(totalSeconds);
     const estimatedCalories = calculateCalories(distanceKm, totalSeconds);
 
@@ -125,7 +124,7 @@ const JoggingTracker = () => {
       .from("jogging_logs")
       .insert({
         user_id: userId,
-        duration: durationMinutes,
+        duration: totalSeconds, // Store as seconds for precision
         distance: parseFloat(distanceKm.toFixed(2)),
         calories: estimatedCalories
       });
@@ -156,7 +155,6 @@ const JoggingTracker = () => {
     setIsActive(false);
     
     // Calculate final values
-    const durationMinutes = Math.floor(seconds / 60);
     const distanceKm = calculateFallbackDistance(seconds);
     const estimatedCalories = calculateCalories(distanceKm, seconds);
 
@@ -165,12 +163,12 @@ const JoggingTracker = () => {
       return;
     }
 
-    // Save to database
+    // Save to database - duration in seconds
     const { error } = await supabase
       .from("jogging_logs")
       .insert({
         user_id: userId,
-        duration: durationMinutes > 0 ? durationMinutes : 1,
+        duration: seconds, // Store seconds directly
         distance: parseFloat(distanceKm.toFixed(2)),
         calories: estimatedCalories
       });
@@ -180,7 +178,7 @@ const JoggingTracker = () => {
     } else {
       toast({ 
         title: isGerman ? "Gespeichert" : "Saved", 
-        description: `${distanceKm.toFixed(2)} km • ${durationMinutes} min • ${estimatedCalories} kcal` 
+        description: `${distanceKm.toFixed(2)} km • ${formatTime(seconds)} • ${estimatedCalories} kcal` 
       });
       loadLogs(userId);
     }
@@ -203,36 +201,13 @@ const JoggingTracker = () => {
     return Math.round(MET * userWeight * hours);
   }, [userWeight]);
 
-  const saveJoggingLog = async () => {
-    if (seconds < 60) {
-      toast({ title: isGerman ? "Fehler" : "Error", description: isGerman ? "Mindestens 1 Minute laufen" : "Run for at least 1 minute", variant: "destructive" });
-      return;
-    }
-
-    if (!userId) return;
-
-    const durationMinutes = Math.floor(seconds / 60);
-    const distanceKm = calculateFallbackDistance(seconds);
-    const estimatedCalories = calculateCalories(distanceKm, seconds);
-
-    const { error } = await supabase
-      .from("jogging_logs")
-      .insert({
-        user_id: userId,
-        duration: durationMinutes,
-        distance: parseFloat(distanceKm.toFixed(2)),
-        calories: estimatedCalories
-      });
-
-    if (error) {
-      toast({ title: isGerman ? "Fehler" : "Error", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    toast({ title: isGerman ? "Gespeichert" : "Saved", description: isGerman ? "Lauf + Kalender gespeichert" : "Run + Calendar saved" });
-    reset();
-    loadLogs(userId);
-  };
+  // Calculate speed in km/h
+  const calculateSpeed = useCallback((totalSeconds: number) => {
+    if (totalSeconds === 0) return 0;
+    const hours = totalSeconds / 3600;
+    const distance = calculateFallbackDistance(totalSeconds);
+    return distance / hours;
+  }, [calculateFallbackDistance]);
 
   const saveToCalendar = (log: JoggingLog) => {
     toast({ title: isGerman ? "Gespeichert" : "Saved", description: isGerman ? "Im Kalender gespeichert" : "Saved to calendar" });
@@ -246,12 +221,24 @@ const JoggingTracker = () => {
     }
   };
 
-  // Format time as HH:MM:SS (smaller display)
+  // Format time as HH:MM:SS
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const secs = totalSeconds % 60;
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Format duration from stored value (could be seconds or minutes)
+  const formatDuration = (duration: number) => {
+    // If duration is large (>100), assume it's in seconds
+    if (duration > 100) {
+      return formatTime(duration);
+    }
+    // Otherwise assume minutes (legacy data)
+    const hours = Math.floor(duration / 60);
+    const mins = duration % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:00`;
   };
 
   const setTimer = () => {
@@ -266,6 +253,7 @@ const JoggingTracker = () => {
   // Real-time calculated values
   const liveDistance = calculateFallbackDistance(seconds);
   const liveCalories = calculateCalories(liveDistance, seconds);
+  const liveSpeed = calculateSpeed(seconds);
 
   // Calculate animated circle position
   const circleRadius = 80;
@@ -356,7 +344,7 @@ const JoggingTracker = () => {
               </svg>
             </div>
             
-            {/* Stats display - smaller time */}
+            {/* Stats display - HH:MM:SS format */}
             <div className="flex-1 text-white">
               <div className="text-3xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
               <div className="text-xl font-semibold text-green-400 mb-2">{liveDistance.toFixed(2)} km</div>
@@ -398,7 +386,7 @@ const JoggingTracker = () => {
           </div>
         </Card>
 
-        {/* Live Stats - Distance, Time, kcal (Pace removed) */}
+        {/* Live Stats - Distance (km), Time (HH:MM:SS), kcal / kmh */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
@@ -406,15 +394,15 @@ const JoggingTracker = () => {
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Zeit" : "Time"}</div>
-            <div className="text-lg font-bold text-white">{Math.floor(seconds / 60)} min</div>
+            <div className="text-lg font-bold text-white">{formatTime(seconds)}</div>
           </Card>
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">kcal</div>
-            <div className="text-lg font-bold text-white">{liveCalories}</div>
+            <div className="text-xs text-white/60 mb-1">kcal / km/h</div>
+            <div className="text-lg font-bold text-white">{liveCalories} / {liveSpeed.toFixed(1)}</div>
           </Card>
         </div>
 
-        {/* History */}
+        {/* History - Shows all values with units */}
         <h2 className="text-xl font-bold mb-4 text-white">{isGerman ? "Verlauf" : "History"}</h2>
         <div className="space-y-3">
           {logs.map((log) => (
@@ -422,8 +410,10 @@ const JoggingTracker = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <div className="font-medium text-white">{log.distance.toFixed(2)} km</div>
-                  <div className="text-sm text-white/60">{log.duration} min • {log.calories || 0} kcal</div>
-                  <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy")}</div>
+                  <div className="text-sm text-white/60">
+                    {formatDuration(log.duration)} • {log.calories || 0} kcal • {(log.distance / (log.duration > 100 ? log.duration / 3600 : log.duration / 60)).toFixed(1)} km/h
+                  </div>
+                  <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy HH:mm")}</div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="icon" onClick={() => saveToCalendar(log)} className="text-primary">
@@ -461,6 +451,7 @@ const JoggingTracker = () => {
           </DialogContent>
         </Dialog>
       </div>
+
       <BottomNav />
     </div>
   );

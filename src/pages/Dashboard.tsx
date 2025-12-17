@@ -16,6 +16,8 @@ import lowerbodyImg from "@/assets/lowerbody.png";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 import dashboardBg from "@/assets/dashboard-bg.png";
 
+type BodyPartType = "lower_body" | "upper_body" | "middle_body" | "fullbody" | null;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState<any>(null);
@@ -23,6 +25,7 @@ const Dashboard = () => {
   const [isGerman, setIsGerman] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
+  const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPartType>(null);
   const [refreshHistory, setRefreshHistory] = useState(0);
   const [monthlyProgress, setMonthlyProgress] = useState(0);
 
@@ -85,26 +88,35 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate, refreshHistory]);
 
+  const handleModuleClick = (bodyPart: BodyPartType) => {
+    setSelectedBodyPart(bodyPart);
+    setIsTrainingDialogOpen(true);
+  };
+
   const trainingModules = [
     { 
       image: upperbodyImg,
       title: "Upper Body",
       description: isGerman ? "Brust, Rücken, Schultern, Arme" : "Chest, Back, Shoulders, Arms",
+      bodyPart: "upper_body" as BodyPartType,
     },
     { 
       image: middlebodyImg,
-      title: "Middle Body",
+      title: "Core",
       description: isGerman ? "Core, Bauch" : "Core, Abs",
+      bodyPart: "middle_body" as BodyPartType,
     },
     { 
       image: lowerbodyImg,
       title: "Lower Body",
       description: isGerman ? "Beine, Po, Waden" : "Legs, Glutes, Calves",
+      bodyPart: "lower_body" as BodyPartType,
     },
     { 
       image: dashboardBg,
       title: "Fullbody",
       description: isGerman ? "Ganzkörper Training" : "Full Body Workout",
+      bodyPart: "fullbody" as BodyPartType,
     }
   ];
 
@@ -146,12 +158,16 @@ const Dashboard = () => {
           {userId && <DashboardStats isGerman={isGerman} userId={userId} />}
         </div>
 
-        {/* Training Modules - Now includes Fullbody */}
+        {/* Training Modules - Each opens dialog with specific body part */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingsmodule" : "Training Modules"}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {trainingModules.map((module, index) => (
-              <Card key={index} onClick={() => setIsTrainingDialogOpen(true)} className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48 md:h-56">
+              <Card 
+                key={index} 
+                onClick={() => handleModuleClick(module.bodyPart)} 
+                className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-48 md:h-56"
+              >
                 <img src={module.image} alt={module.title} className="absolute inset-0 w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
@@ -160,6 +176,9 @@ const Dashboard = () => {
                     <h3 className="text-lg font-bold">{module.title}</h3>
                   </div>
                   <p className="text-xs text-white/80">{module.description}</p>
+                  <p className="text-xs text-primary mt-1">
+                    {isGerman ? `Körperbereich: ${module.title}` : `Body Part: ${module.title}`}
+                  </p>
                 </div>
               </Card>
             ))}
@@ -195,7 +214,14 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <TrainingLogDialog open={isTrainingDialogOpen} onOpenChange={setIsTrainingDialogOpen} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshHistory(prev => prev + 1)} />
+      <TrainingLogDialog 
+        open={isTrainingDialogOpen} 
+        onOpenChange={setIsTrainingDialogOpen} 
+        userId={userId} 
+        isGerman={isGerman} 
+        onSuccess={() => setRefreshHistory(prev => prev + 1)}
+        defaultBodyPart={selectedBodyPart}
+      />
       <BottomNav />
     </div>
   );

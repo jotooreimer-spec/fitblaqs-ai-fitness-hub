@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,9 +18,10 @@ interface TrainingLogDialogProps {
   userId: string;
   isGerman: boolean;
   onSuccess: () => void;
+  defaultBodyPart?: "lower_body" | "upper_body" | "middle_body" | "fullbody" | null;
 }
 
-// Exercise categories
+// Exercise categories - only show exercises for the selected body part
 const lowerBodyExercises = [
   "Squats", "Lunges", "Leg Press", "Leg Extension", "Leg Curl",
   "Standing Calf Raise", "Seated Calf Raise", "Single Leg Calf Raise",
@@ -47,14 +48,12 @@ const middleBodyExercises = [
   "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
 ];
 
-// Fullbody exercises - Empty array, user can add custom exercises
-const fullBodyExercises: string[] = [];
-
-export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess }: TrainingLogDialogProps) => {
+export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess, defaultBodyPart }: TrainingLogDialogProps) => {
   const { toast } = useToast();
-  const [bodyPart, setBodyPart] = useState("");
+  const [bodyPart, setBodyPart] = useState(defaultBodyPart || "");
   const [exercise, setExercise] = useState("");
   const [customExercise, setCustomExercise] = useState("");
+  const [customBodyPart, setCustomBodyPart] = useState("");
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [weight, setWeight] = useState("0");
@@ -62,6 +61,16 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   const [date, setDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
+
+  // Update body part when defaultBodyPart changes
+  useEffect(() => {
+    if (defaultBodyPart) {
+      setBodyPart(defaultBodyPart);
+      setExercise("");
+      setCustomExercise("");
+      setCustomBodyPart("");
+    }
+  }, [defaultBodyPart]);
 
   const getExercises = () => {
     switch (bodyPart) {
@@ -72,14 +81,30 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       case "middle_body":
         return middleBodyExercises;
       case "fullbody":
-        return fullBodyExercises;
+        return []; // Empty - user inputs custom
       default:
         return [];
     }
   };
 
+  const getBodyPartLabel = () => {
+    switch (bodyPart) {
+      case "lower_body":
+        return isGerman ? "Unterkörper (Lower Body)" : "Lower Body";
+      case "upper_body":
+        return isGerman ? "Oberkörper (Upper Body)" : "Upper Body";
+      case "middle_body":
+        return isGerman ? "Core (Middle Body)" : "Core";
+      case "fullbody":
+        return isGerman ? "Ganzkörper (Fullbody)" : "Fullbody";
+      default:
+        return "";
+    }
+  };
+
   const handleSave = async () => {
     const exerciseName = bodyPart === "fullbody" ? customExercise : exercise;
+    const finalBodyPart = bodyPart === "fullbody" && customBodyPart ? customBodyPart : bodyPart;
     
     if (!bodyPart || (!exerciseName && bodyPart !== "fullbody") || (bodyPart === "fullbody" && !customExercise) || !sets || !reps) {
       toast({
@@ -122,7 +147,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
         weight: parseFloat(weight),
         unit: unit,
         completed_at: completedAt.toISOString(),
-        notes: `${exerciseName} (${bodyPart}) | ${startTime}-${endTime}`
+        notes: `${exerciseName} (${getBodyPartLabel()}) | ${startTime}-${endTime}`
       });
 
     if (error) {
@@ -139,9 +164,10 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
       description: isGerman ? "Training wurde eingetragen" : "Training was logged"
     });
 
-    setBodyPart("");
+    setBodyPart(defaultBodyPart || "");
     setExercise("");
     setCustomExercise("");
+    setCustomBodyPart("");
     setSets("3");
     setReps("10");
     setWeight("0");
@@ -161,38 +187,54 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
           <DialogTitle>{isGerman ? "Training eintragen" : "Log Training"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          {/* Body Part Selection */}
+          {/* Body Part - Locked to selection from Dashboard */}
           <div>
             <Label>{isGerman ? "Körperbereich" : "Body Part"}</Label>
-            <Select value={bodyPart} onValueChange={(v) => { setBodyPart(v); setExercise(""); setCustomExercise(""); }}>
-              <SelectTrigger>
-                <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lower_body">{isGerman ? "Unterkörper (Beine, Waden, Squats, Po)" : "Lower Body (Legs, Calves, Squats, Glutes)"}</SelectItem>
-                <SelectItem value="upper_body">{isGerman ? "Oberkörper (Brust, Schulter, Trizeps, Bizeps)" : "Upper Body (Chest, Shoulders, Triceps, Biceps)"}</SelectItem>
-                <SelectItem value="middle_body">{isGerman ? "Core (Bauch, Rücken)" : "Middle Body (Core)"}</SelectItem>
-                <SelectItem value="fullbody">{isGerman ? "Ganzkörper (Eigene Übungen)" : "Fullbody (Custom Exercises)"}</SelectItem>
-              </SelectContent>
-            </Select>
+            {defaultBodyPart ? (
+              <div className="p-2 bg-primary/10 rounded-md text-sm font-medium">
+                {getBodyPartLabel()}
+              </div>
+            ) : (
+              <Select value={bodyPart} onValueChange={(v) => { setBodyPart(v); setExercise(""); setCustomExercise(""); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isGerman ? "Wählen..." : "Select..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lower_body">{isGerman ? "Unterkörper (Beine, Waden, Squats, Po)" : "Lower Body (Legs, Calves, Squats, Glutes)"}</SelectItem>
+                  <SelectItem value="upper_body">{isGerman ? "Oberkörper (Brust, Schulter, Trizeps, Bizeps)" : "Upper Body (Chest, Shoulders, Triceps, Biceps)"}</SelectItem>
+                  <SelectItem value="middle_body">{isGerman ? "Core (Bauch, Rücken)" : "Core (Abs, Back)"}</SelectItem>
+                  <SelectItem value="fullbody">{isGerman ? "Ganzkörper (Eigene Übungen)" : "Fullbody (Custom Exercises)"}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Exercise Selection or Custom Input */}
           {isFullbody ? (
-            <div>
-              <Label>{isGerman ? "Eigene Übung" : "Custom Exercise"}</Label>
-              <Input
-                value={customExercise}
-                onChange={(e) => setCustomExercise(e.target.value)}
-                placeholder={isGerman ? "z.B. Burpees, Kettlebell Swings..." : "e.g. Burpees, Kettlebell Swings..."}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {isGerman ? "Schreibe deine eigene Übung" : "Write your own exercise"}
-              </p>
-            </div>
+            <>
+              <div>
+                <Label>{isGerman ? "Körperbereich (eigene Eingabe)" : "Body Part (custom)"}</Label>
+                <Input
+                  value={customBodyPart}
+                  onChange={(e) => setCustomBodyPart(e.target.value)}
+                  placeholder={isGerman ? "z.B. Ganzkörper, Cardio..." : "e.g. Full Body, Cardio..."}
+                />
+              </div>
+              <div>
+                <Label>{isGerman ? "Eigene Übung" : "Custom Exercise"}</Label>
+                <Input
+                  value={customExercise}
+                  onChange={(e) => setCustomExercise(e.target.value)}
+                  placeholder={isGerman ? "z.B. Burpees, Kettlebell Swings..." : "e.g. Burpees, Kettlebell Swings..."}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isGerman ? "Schreibe deine eigene Übung" : "Write your own exercise"}
+                </p>
+              </div>
+            </>
           ) : (
             <div>
-              <Label>{isGerman ? "Übung" : "Exercise"}</Label>
+              <Label>{isGerman ? "Übung" : "Exercise"} ({getBodyPartLabel()} {isGerman ? "nur" : "only"})</Label>
               <Select value={exercise} onValueChange={setExercise} disabled={!bodyPart}>
                 <SelectTrigger>
                   <SelectValue placeholder={isGerman ? "Übung wählen..." : "Select exercise..."} />
