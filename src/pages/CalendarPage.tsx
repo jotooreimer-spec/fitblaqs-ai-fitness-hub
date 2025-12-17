@@ -66,6 +66,9 @@ const CalendarPage = () => {
   
   const bodyworkoutImages = [bodyworkoutplan1, bodyworkoutplan2, bodyworkoutplan3, bodyworkoutplan4, bodyworkoutplan5];
 
+  // Challenge finished notification
+  const [challengeNotified, setChallengeNotified] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
@@ -101,6 +104,20 @@ const CalendarPage = () => {
       setBodyWeight(profile.weight.toString());
     }
   }, [profile]);
+
+  // Check if challenge is finished and notify
+  useEffect(() => {
+    if (savedGoal && !challengeNotified) {
+      const daysRemaining = calculateDaysRemaining();
+      if (daysRemaining === 0) {
+        toast({
+          title: "🎉 Challenge Finish!",
+          description: isGerman ? "Deine Challenge ist beendet!" : "Your challenge has ended!",
+        });
+        setChallengeNotified(true);
+      }
+    }
+  }, [savedGoal, challengeNotified, isGerman]);
 
   // Calculate selected day data from live data
   const selectedDayData = useMemo((): DayData => {
@@ -139,7 +156,7 @@ const CalendarPage = () => {
     };
   }, [date, workoutLogs, nutritionLogs, joggingLogs, weightLogs, bodyAnalysis, foodAnalysis]);
 
-  // Calculate monthly chart data from live data
+  // Calculate monthly chart data from live data - LIVE from all training logs
   const monthlyChartData = useMemo(() => {
     const today = new Date();
     const currentMonth = today.getMonth();
@@ -151,12 +168,7 @@ const CalendarPage = () => {
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
     return monthNames.map((month, index) => {
-      const isCompletedMonth = selectedYear < currentYear || (selectedYear === currentYear && index < currentMonth);
-      
-      if (!isCompletedMonth) {
-        return { month, hours: 0 };
-      }
-      
+      // Calculate hours from ALL workout logs for this month
       const monthWorkouts = workoutLogs.filter(w => {
         const d = new Date(w.completed_at);
         return d.getMonth() === index && d.getFullYear() === selectedYear;
@@ -166,14 +178,19 @@ const CalendarPage = () => {
         return d.getMonth() === index && d.getFullYear() === selectedYear;
       });
       
-      const joggingHours = monthJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
+      // Calculate hours from jogging (duration in seconds or minutes)
+      const joggingHours = monthJogging.reduce((sum, j) => {
+        const duration = j.duration || 0;
+        // If > 100, assume seconds
+        return sum + (duration > 100 ? duration / 3600 : duration / 60);
+      }, 0);
+      
+      // Calculate hours from workouts (estimate 3 min per set)
       const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0);
 
       return { month, hours: Math.min(Math.round((joggingHours + workoutHours) * 10) / 10, 100) };
     });
   }, [date, workoutLogs, joggingLogs, isGerman]);
-
-  // isLoading is now dataLoading from context
 
   const handleSaveChallenge = () => {
     if (!goalWeight || !months || !bodyWeight) {
@@ -195,6 +212,7 @@ const CalendarPage = () => {
     localStorage.setItem(`challenge_${userId}`, JSON.stringify(challenge));
     setSavedGoal(challenge);
     setIsChallengeDialogOpen(false);
+    setChallengeNotified(false);
 
     toast({
       title: isGerman ? "Challenge gespeichert!" : "Challenge saved!",
@@ -227,12 +245,33 @@ const CalendarPage = () => {
 
   const hasData = selectedDayData.workouts.length > 0 || selectedDayData.nutrition.length > 0 || selectedDayData.jogging.length > 0 || selectedDayData.weight.length > 0 || selectedDayData.bodyAnalysis.length > 0 || selectedDayData.foodAnalysis.length > 0;
 
-  // Calculate total training duration for selected day
-  const totalDuration = selectedDayData.jogging.reduce((sum, j) => sum + (j.duration || 0), 0) + (selectedDayData.workouts.length * 30);
+  // Calculate total training duration for selected day - LIVE
+  const totalDuration = useMemo(() => {
+    const joggingMins = selectedDayData.jogging.reduce((sum, j) => {
+      const duration = j.duration || 0;
+      // If > 100, assume seconds
+      return sum + (duration > 100 ? duration / 60 : duration);
+    }, 0);
+    const workoutMins = selectedDayData.workouts.length * 30; // Estimate 30 min per workout
+    return Math.round(joggingMins + workoutMins);
+  }, [selectedDayData]);
 
   const daysRemaining = calculateDaysRemaining();
   const weightRemaining = calculateWeightRemaining();
   const progress = calculateProgress();
+
+  // Format jogging duration for display
+  const formatJoggingDuration = (duration: number) => {
+    if (duration > 100) {
+      // Duration in seconds
+      const hours = Math.floor(duration / 3600);
+      const mins = Math.floor((duration % 3600) / 60);
+      const secs = duration % 60;
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    // Duration in minutes (legacy)
+    return `${Math.floor(duration / 60).toString().padStart(2, '0')}:${(duration % 60).toString().padStart(2, '0')}:00`;
+  };
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -247,7 +286,7 @@ const CalendarPage = () => {
           <p className="text-white/60">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
         </div>
 
-        {/* Challenges Box - Opens dialog like Fullbody */}
+        {/* Challenges Box - Renamed labels: Weight, Weight Goal, Tage verbleibend */}
         <Card 
           className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-6 cursor-pointer hover:scale-[1.02] transition-all"
           onClick={() => setIsChallengeDialogOpen(true)}
@@ -261,12 +300,12 @@ const CalendarPage = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Zielgewicht" : "Goal Weight"}</div>
-                  <div className="text-2xl font-bold text-green-400">{savedGoal.goal} kg</div>
+                  <div className="text-xs text-white/60 mb-1">Weight</div>
+                  <div className="text-2xl font-bold text-white">{userWeight} kg</div>
                 </div>
                 <div>
-                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Noch abzunehmen" : "Weight to lose"}</div>
-                  <div className="text-2xl font-bold text-orange-400">{weightRemaining.toFixed(1)} kg</div>
+                  <div className="text-xs text-white/60 mb-1">Weight Goal</div>
+                  <div className="text-2xl font-bold text-green-400">{savedGoal.goal} kg</div>
                 </div>
                 <div>
                   <div className="text-xs text-white/60 mb-1">{isGerman ? "Tage verbleibend" : "Days remaining"}</div>
@@ -306,7 +345,7 @@ const CalendarPage = () => {
               <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md" />
             </Card>
 
-            {/* Performance Bar Chart - Monthly */}
+            {/* Performance Bar Chart - Monthly - LIVE from all training logs */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
               <h3 className="text-lg font-bold mb-4 text-white">Performance</h3>
               <div className="h-40">
@@ -319,7 +358,7 @@ const CalendarPage = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-xs text-white/60 mt-2">{isGerman ? "Trainingsdauer pro Monat (Stunden)" : "Training Duration per Month (Hours)"}</div>
+              <div className="text-center text-xs text-white/60 mt-2">{isGerman ? "Trainingsdauer pro Monat (Stunden) - Live" : "Training Duration per Month (Hours) - Live"}</div>
             </Card>
           </div>
 
@@ -350,7 +389,7 @@ const CalendarPage = () => {
                       <div className="font-semibold text-blue-400">{isGerman ? "Training" : "Workout"}</div>
                       <div className="text-sm text-white">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
                       <div className="text-xs text-white/60 mt-1">
-                        {isGerman ? "Kategorie" : "Category"}: {w.exercises?.category} | Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'} | {(w.sets * w.reps * 2)} kcal
+                        Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'} | {(w.sets * w.reps * 2)} kcal
                       </div>
                     </div>
                   ))}
@@ -364,12 +403,12 @@ const CalendarPage = () => {
                     </div>
                   ))}
 
-                  {/* Jogging */}
+                  {/* Jogging - with HH:MM:SS format */}
                   {selectedDayData.jogging.map((j) => (
                     <div key={j.id} className="p-3 bg-white/5 rounded-lg">
                       <div className="font-semibold text-purple-400">Jogging</div>
-                      <div className="text-sm text-white">{j.distance} km | {j.duration} min</div>
-                      <div className="text-xs text-white/60 mt-1">{j.calories || 0} kcal</div>
+                      <div className="text-sm text-white">{j.distance} km | {formatJoggingDuration(j.duration)}</div>
+                      <div className="text-xs text-white/60 mt-1">{j.calories || 0} kcal | {(j.distance / (j.duration > 100 ? j.duration / 3600 : j.duration / 60)).toFixed(1)} km/h</div>
                     </div>
                   ))}
 
@@ -381,100 +420,49 @@ const CalendarPage = () => {
                     </div>
                   ))}
 
-                  {/* Body Analysis - both uploads and manual values */}
-                  {selectedDayData.bodyAnalysis.length > 0 && (
-                    <div className="mt-4">
-                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Athlete" : "Pro Athlete"}</div>
-                      {selectedDayData.bodyAnalysis.map((ba) => {
-                        const healthNotes = ba.health_notes ? (typeof ba.health_notes === 'string' ? JSON.parse(ba.health_notes) : ba.health_notes) : null;
-                        const isUpload = ba.image_url && healthNotes?.upload_name;
-                        const isManualSave = healthNotes?.weight || healthNotes?.target_weight;
-                        
-                        return (
-                          <div 
-                            key={ba.id} 
-                            className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
-                            onClick={() => { setSelectedUpload({ type: 'body', data: ba }); setUploadDetailOpen(true); }}
-                          >
-                            {ba.image_url && (
-                              <img src={ba.image_url} alt="Body" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                            )}
-                            {!ba.image_url && isManualSave && (
-                              <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Target className="w-5 h-5 text-cyan-400" />
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              {isUpload ? (
-                                <>
-                                  <div className="font-semibold text-cyan-400">{healthNotes?.upload_name}</div>
-                                  <div className="text-sm text-white capitalize">{healthNotes?.upload_category}</div>
-                                </>
-                              ) : isManualSave ? (
-                                <>
-                                  <div className="font-semibold text-cyan-400">
-                                    {healthNotes?.weight && `${healthNotes.weight} ${healthNotes.weight_unit || 'kg'}`}
-                                    {healthNotes?.target_weight && ` → ${healthNotes.target_weight} ${healthNotes.target_weight_unit || 'kg'}`}
-                                  </div>
-                                  <div className="text-xs text-white/60">
-                                    {healthNotes?.activity_level && `${healthNotes.activity_level}`}
-                                    {healthNotes?.goal && ` | ${healthNotes.goal}`}
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="font-semibold text-cyan-400">{isGerman ? "Eintrag" : "Entry"}</div>
-                                  <div className="text-sm text-white">{ba.body_fat_pct ? `${ba.body_fat_pct}%` : '-'}</div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {/* Body Analysis */}
+                  {selectedDayData.bodyAnalysis.map((ba) => {
+                    const healthNotes = ba.health_notes ? (typeof ba.health_notes === 'string' ? JSON.parse(ba.health_notes) : ba.health_notes) : null;
+                    return (
+                      <div key={ba.id} className="p-3 bg-white/5 rounded-lg">
+                        <div className="font-semibold text-cyan-400">Pro Athlete</div>
+                        {ba.image_url && <img src={ba.image_url} alt="" className="w-12 h-12 rounded object-cover mt-1" />}
+                        {healthNotes?.weight && <div className="text-xs text-white/60 mt-1">{healthNotes.weight}{healthNotes.weight_unit || 'kg'}</div>}
+                        {healthNotes?.training_time && <div className="text-xs text-white/60">{healthNotes.training_time}h Training</div>}
+                      </div>
+                    );
+                  })}
 
-                  {/* Food Analysis with small images - clickable */}
-                  {selectedDayData.foodAnalysis.length > 0 && (
-                    <div className="mt-4">
-                      <div className="text-xs text-white/50 mb-2 font-semibold">{isGerman ? "Pro Nutrition Food Upload" : "Pro Nutrition Food Upload"}</div>
-                      {selectedDayData.foodAnalysis.map((fa) => {
-                        const notes = fa.notes ? (typeof fa.notes === 'string' ? JSON.parse(fa.notes) : fa.notes) : null;
-                        return (
-                          <div 
-                            key={fa.id} 
-                            className="p-3 bg-white/5 rounded-lg flex gap-3 items-start cursor-pointer hover:bg-white/10 transition-colors mb-2"
-                            onClick={() => { setSelectedUpload({ type: 'food', data: fa }); setUploadDetailOpen(true); }}
-                          >
-                            {fa.image_url && (
-                              <img src={fa.image_url} alt="Food" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <div className="font-semibold text-emerald-400">{notes?.upload_name || 'Food Upload'}</div>
-                              <div className="text-sm text-white capitalize">{notes?.upload_category || fa.category || '-'}</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {/* Food Analysis */}
+                  {selectedDayData.foodAnalysis.map((fa) => {
+                    const notes = fa.notes ? (typeof fa.notes === 'string' ? JSON.parse(fa.notes) : fa.notes) : null;
+                    return (
+                      <div key={fa.id} className="p-3 bg-white/5 rounded-lg">
+                        <div className="font-semibold text-amber-400">Pro Nutrition</div>
+                        {fa.image_url && <img src={fa.image_url} alt="" className="w-12 h-12 rounded object-cover mt-1" />}
+                        {fa.total_calories && <div className="text-xs text-white/60 mt-1">{fa.total_calories} kcal</div>}
+                        {notes?.upload_name && <div className="text-xs text-white/60">{notes.upload_name}</div>}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-              
-              {/* Bodyworkoutplan Button */}
-              <Button 
-                onClick={() => setBodyworkoutDialogOpen(true)} 
-                className="w-full mt-4 bg-primary/20 hover:bg-primary/30 text-white border border-primary/50"
-              >
-                <Dumbbell className="w-4 h-4 mr-2" />
-                Bodyworkoutplan
-              </Button>
             </Card>
+
+            {/* Bodyworkoutplan Button */}
+            <Button 
+              onClick={() => setBodyworkoutDialogOpen(true)}
+              className="w-full"
+              variant="outline"
+            >
+              <Dumbbell className="w-4 h-4 mr-2" />
+              Bodyworkoutplan
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Challenges Dialog */}
+      {/* Challenge Dialog */}
       <Dialog open={isChallengeDialogOpen} onOpenChange={setIsChallengeDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -482,35 +470,16 @@ const CalendarPage = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>{isGerman ? "Aktuelles Körpergewicht (kg)" : "Current Body Weight (kg)"}</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={bodyWeight}
-                onChange={(e) => setBodyWeight(e.target.value)}
-                placeholder="75"
-              />
+              <Label>{isGerman ? "Aktuelles Gewicht (kg)" : "Current Weight (kg)"}</Label>
+              <Input type="number" value={bodyWeight} onChange={(e) => setBodyWeight(e.target.value)} placeholder="70" />
             </div>
             <div>
-              <Label>{isGerman ? "Zielgewicht (kg)" : "Goal Weight (kg)"}</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={goalWeight}
-                onChange={(e) => setGoalWeight(e.target.value)}
-                placeholder="65"
-              />
+              <Label>Weight Goal (kg)</Label>
+              <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="65" />
             </div>
             <div>
               <Label>{isGerman ? "Zeitraum (Monate)" : "Duration (Months)"}</Label>
-              <Input
-                type="number"
-                min="1"
-                max="24"
-                value={months}
-                onChange={(e) => setMonths(e.target.value)}
-                placeholder="3"
-              />
+              <Input type="number" min="1" max="24" value={months} onChange={(e) => setMonths(e.target.value)} placeholder="3" />
             </div>
             <Button onClick={handleSaveChallenge} className="w-full">
               {isGerman ? "Challenge starten" : "Start Challenge"}
@@ -532,105 +501,45 @@ const CalendarPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Detail Dialog - Only Name & Category */}
-      <Dialog open={uploadDetailOpen} onOpenChange={setUploadDetailOpen}>
-        <DialogContent className="sm:max-w-md bg-zinc-900 border-zinc-700">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {selectedUpload?.type === 'body' 
-                ? (isGerman ? "Pro Athlete Body Upload" : "Pro Athlete Body Upload")
-                : (isGerman ? "Pro Nutrition Food Upload" : "Pro Nutrition Food Upload")
-              }
-            </DialogTitle>
-          </DialogHeader>
-          {selectedUpload && (
-            <div className="space-y-4">
-              {/* Medium-sized image */}
-              {selectedUpload.data.image_url && (
-                <img 
-                  src={selectedUpload.data.image_url} 
-                  alt={selectedUpload.type === 'body' ? "Body" : "Food"} 
-                  className="w-48 h-48 object-cover rounded-lg mx-auto"
-                />
-              )}
-              
-              {/* Only Name & Category */}
-              <div className="space-y-2 text-center">
-                {selectedUpload.type === 'body' ? (
-                  <>
-                    {(() => {
-                      const healthNotes = selectedUpload.data.health_notes 
-                        ? (typeof selectedUpload.data.health_notes === 'string' 
-                          ? JSON.parse(selectedUpload.data.health_notes) 
-                          : selectedUpload.data.health_notes) 
-                        : null;
-                      return (
-                        <>
-                          <div className="text-white font-semibold text-lg">{healthNotes?.upload_name || 'Body Analysis'}</div>
-                          <div className="text-zinc-400">{healthNotes?.upload_category || '-'}</div>
-                        </>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <>
-                    {(() => {
-                      const notesData = selectedUpload.data.notes 
-                        ? (typeof selectedUpload.data.notes === 'string' 
-                          ? JSON.parse(selectedUpload.data.notes) 
-                          : selectedUpload.data.notes) 
-                        : null;
-                      return (
-                        <>
-                          <div className="text-white font-semibold text-lg">{notesData?.upload_name || 'Food Analysis'}</div>
-                          <div className="text-zinc-400">{notesData?.upload_category || selectedUpload.data.category || '-'}</div>
-                        </>
-                      );
-                    })()}
-                  </>
-                )}
-              </div>
-              
-              <div className="text-xs text-white/40 text-center">
-                {format(new Date(selectedUpload.data.created_at), "dd.MM.yyyy HH:mm")}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Bodyworkoutplan Dialog */}
+      {/* Bodyworkoutplan Carousel Dialog */}
       <Dialog open={bodyworkoutDialogOpen} onOpenChange={setBodyworkoutDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] bg-zinc-900 border-zinc-700">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white">Bodyworkoutplan</DialogTitle>
+            <DialogTitle>Bodyworkoutplan</DialogTitle>
           </DialogHeader>
           <div className="relative">
             <img 
               src={bodyworkoutImages[currentImageIndex]} 
-              alt={`Bodyworkoutplan ${currentImageIndex + 1}`} 
+              alt={`Workout Plan ${currentImageIndex + 1}`} 
               className="w-full rounded-lg"
             />
-            <div className="flex justify-between items-center mt-4">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
-                disabled={currentImageIndex === 0}
-                className="bg-zinc-800 border-zinc-600"
+            <div className="absolute inset-y-0 left-0 flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentImageIndex(prev => prev > 0 ? prev - 1 : bodyworkoutImages.length - 1)}
+                className="bg-black/50 hover:bg-black/70"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-6 h-6 text-white" />
               </Button>
-              <span className="text-white text-sm">{currentImageIndex + 1} / {bodyworkoutImages.length}</span>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => setCurrentImageIndex(prev => Math.min(bodyworkoutImages.length - 1, prev + 1))}
-                disabled={currentImageIndex === bodyworkoutImages.length - 1}
-                className="bg-zinc-800 border-zinc-600"
+            </div>
+            <div className="absolute inset-y-0 right-0 flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentImageIndex(prev => prev < bodyworkoutImages.length - 1 ? prev + 1 : 0)}
+                className="bg-black/50 hover:bg-black/70"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-6 h-6 text-white" />
               </Button>
+            </div>
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+              {bodyworkoutImages.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-primary' : 'bg-white/50'}`}
+                />
+              ))}
             </div>
           </div>
         </DialogContent>
