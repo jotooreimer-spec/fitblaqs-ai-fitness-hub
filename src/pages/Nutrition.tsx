@@ -199,21 +199,23 @@ const Nutrition = () => {
           <p className="text-white/70">{isGerman ? "Wähle deinen Ernährungsplan" : "Choose your nutrition plan"}</p>
         </div>
 
-        {/* Daily Stats - Starts at 0, auto-calculated from entries */}
+        {/* Daily Stats - Starts at 0,00 auto-calculated from entries with units */}
         <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <div className="text-sm text-white/60 mb-1">{isGerman ? "Kalorien" : "Calories"}</div>
-              <div className="text-3xl font-bold text-orange-400">{dailyTotals.calories}</div>
+              <div className="text-3xl font-bold text-orange-400">{dailyTotals.calories.toFixed(2).replace('.', ',')}</div>
               <div className="text-xs text-white/50">kcal</div>
             </div>
             <div>
               <div className="text-sm text-white/60 mb-1">Protein</div>
-              <div className="text-3xl font-bold text-green-400">{Math.round(dailyTotals.protein)}g</div>
+              <div className="text-3xl font-bold text-green-400">{dailyTotals.protein.toFixed(2).replace('.', ',')}</div>
+              <div className="text-xs text-white/50">g</div>
             </div>
             <div>
               <div className="text-sm text-white/60 mb-1">Hydration</div>
-              <div className="text-3xl font-bold text-blue-400">{(dailyTotals.hydration / 1000).toFixed(1)}L</div>
+              <div className="text-3xl font-bold text-blue-400">{dailyTotals.hydration.toFixed(2).replace('.', ',')}</div>
+              <div className="text-xs text-white/50">ml / L</div>
             </div>
           </div>
           <p className="text-xs text-white/50 text-center mt-4">
@@ -284,14 +286,10 @@ const Nutrition = () => {
                         {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
                       </div>
                       
-                      {/* Show all nutrition values with their original units */}
+                      {/* Show all nutrition values with their original units - NO hydration for non-hydration categories */}
                       {parsed && (
                         <div className="text-xs text-white/70 mt-2 space-y-1">
-                          {/* Hydration */}
-                          {parsed.water?.value > 0 && (
-                            <div className="text-blue-400">💧 Hydration: {parsed.water.value}{parsed.water.unit}</div>
-                          )}
-                          {/* Category-specific fields */}
+                          {/* Category-specific fields - NO hydration for vegan, vegetarisch, protein, supplements, milchprodukte */}
                           {parsed.category === "supplements" && (
                             <>
                               {parsed.amount?.value > 0 && <div>📦 Menge: {parsed.amount.value}{parsed.amount.unit}</div>}
@@ -331,6 +329,7 @@ const Nutrition = () => {
                               {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
                             </>
                           )}
+                          {/* Only show hydration for hydration category */}
                           {parsed.category === "hydration" && parsed.water?.value > 0 && (
                             <div className="text-blue-400">💧 {parsed.water.value}{parsed.water.unit} ({parsed.water.ml}ml)</div>
                           )}

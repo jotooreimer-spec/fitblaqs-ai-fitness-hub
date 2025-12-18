@@ -68,7 +68,7 @@ const ProPremium = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Statistik & Analyse" : "Stastic & Analyse"}</span>
+                <span>{isGerman ? "Body-Statistik & Analyse" : "Body Statistics & Analysis"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
@@ -80,11 +80,15 @@ const ProPremium = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "KI-generierte Übungsauswahl" : "AI-generated exercise selection"}</span>
+                <span>{isGerman ? "KI-generierter Bodyworkout-Plan (Trainingsplan)" : "AI-generated Bodyworkout Plan (Training Plan)"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "Performance & Dailyplanner (alle Fitness-Stats)" : "Performance & Dailyplanner (all fitness stats)"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Challenges (Intervall Fasten)" : "Challenges (Interval Fasting)"}</span>
               </li>
             </ul>
 
@@ -115,27 +119,31 @@ const ProPremium = () => {
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Ernährungs-Statistik & Analyse" : "Nutrition Stastic & Analysis"}</span>
+                <span>{isGerman ? "Ernährungs-Statistik & Analyse" : "Nutrition Statistics & Analysis"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Food Tracker" : "Food Tracker"}</span>
+                <span>{isGerman ? "Foodtracker - Manuel" : "Foodtracker - Manual"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Individuelle Kalorien- & Makroempfehlungen, KI-generiert" : "Individual Calories & macro recommendations, AI-generated"}</span>
+                <span>{isGerman ? "Individuelle Kalorien- & Makro-Tagesansicht" : "Individual Calories & Macro Daily View"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Supplements & Kalorien Historie" : "Supplements & Calorieris History"}</span>
+                <span>{isGerman ? "Nutrition & Calories Tagesansicht" : "Nutrition & Calories Daily View"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
-                <span>{isGerman ? "Foto Upload" : "Photo upload"}</span>
+                <span>{isGerman ? "Upload deiner Food Fotos" : "Upload your Food Photos"}</span>
               </li>
               <li className="flex items-center gap-2 text-white">
                 <Check className="w-5 h-5 text-green-400" />
                 <span>{isGerman ? "Performance & Dailyplanner (alle Fitness-Stats)" : "Performance & Dailyplanner (all fitness stats)"}</span>
+              </li>
+              <li className="flex items-center gap-2 text-white">
+                <Check className="w-5 h-5 text-green-400" />
+                <span>{isGerman ? "Challenges (Intervall Fasten)" : "Challenges (Interval Fasting)"}</span>
               </li>
             </ul>
 

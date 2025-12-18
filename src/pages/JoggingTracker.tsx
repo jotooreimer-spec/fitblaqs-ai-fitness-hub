@@ -201,13 +201,19 @@ const JoggingTracker = () => {
     return Math.round(MET * userWeight * hours);
   }, [userWeight]);
 
-  // Calculate speed in km/h
-  const calculateSpeed = useCallback((totalSeconds: number) => {
-    if (totalSeconds === 0) return 0;
+  // Calculate speed in km/h - starts at 8.0, live updates
+  // Logic: Start at 8.0 km/h, updates live based on distance/time
+  const calculateSpeed = useCallback((totalSeconds: number, distanceKm: number) => {
+    // Default start value
+    if (totalSeconds === 0) return 8.0;
+    
+    // When activity is running, calculate live: speed = distance / time
     const hours = totalSeconds / 3600;
-    const distance = calculateFallbackDistance(totalSeconds);
-    return distance / hours;
-  }, [calculateFallbackDistance]);
+    if (hours === 0) return 8.0;
+    
+    const speed = distanceKm / hours;
+    return speed > 0 ? speed : 8.0;
+  }, []);
 
   const saveToCalendar = (log: JoggingLog) => {
     toast({ title: isGerman ? "Gespeichert" : "Saved", description: isGerman ? "Im Kalender gespeichert" : "Saved to calendar" });
@@ -250,10 +256,10 @@ const JoggingTracker = () => {
     }
   };
 
-  // Real-time calculated values
+  // Real-time calculated values - speed starts at 8.0 km/h
   const liveDistance = calculateFallbackDistance(seconds);
   const liveCalories = calculateCalories(liveDistance, seconds);
-  const liveSpeed = calculateSpeed(seconds);
+  const liveSpeed = calculateSpeed(seconds, liveDistance);
 
   // Calculate animated circle position
   const circleRadius = 80;
