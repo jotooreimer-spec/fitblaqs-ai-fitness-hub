@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus, Minus } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -48,19 +48,29 @@ const middleBodyExercises = [
   "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
 ];
 
+interface ExerciseSet {
+  sets: string;
+  reps: string;
+  weight: string;
+  unit: string;
+}
+
 export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSuccess, defaultBodyPart }: TrainingLogDialogProps) => {
   const { toast } = useToast();
   const [bodyPart, setBodyPart] = useState(defaultBodyPart || "");
   const [exercise, setExercise] = useState("");
   const [customExercise, setCustomExercise] = useState("");
   const [customBodyPart, setCustomBodyPart] = useState("");
-  const [sets, setSets] = useState("3");
-  const [reps, setReps] = useState("10");
-  const [weight, setWeight] = useState("0");
-  const [unit, setUnit] = useState("kg");
   const [date, setDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
+  
+  // 3 Exercise Sets
+  const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([
+    { sets: "3", reps: "10", weight: "0", unit: "kg" },
+    { sets: "", reps: "", weight: "", unit: "kg" },
+    { sets: "", reps: "", weight: "", unit: "kg" }
+  ]);
 
   // Update body part when defaultBodyPart changes
   useEffect(() => {
@@ -102,11 +112,28 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     }
   };
 
+  const updateSet = (index: number, field: keyof ExerciseSet, value: string) => {
+    const newSets = [...exerciseSets];
+    newSets[index] = { ...newSets[index], [field]: value };
+    setExerciseSets(newSets);
+  };
+
   const handleSave = async () => {
     const exerciseName = bodyPart === "fullbody" ? customExercise : exercise;
     const finalBodyPart = bodyPart === "fullbody" && customBodyPart ? customBodyPart : bodyPart;
     
-    if (!bodyPart || (!exerciseName && bodyPart !== "fullbody") || (bodyPart === "fullbody" && !customExercise) || !sets || !reps) {
+    // Get the first valid set
+    const validSets = exerciseSets.filter(s => s.sets && s.reps);
+    if (validSets.length === 0) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: isGerman ? "Bitte mindestens einen Satz ausfüllen" : "Please fill at least one set",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!bodyPart || (!exerciseName && bodyPart !== "fullbody") || (bodyPart === "fullbody" && !customExercise)) {
       toast({
         title: isGerman ? "Fehler" : "Error",
         description: isGerman ? "Bitte alle Felder ausfüllen" : "Please fill all fields",
@@ -137,18 +164,21 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     const [startHour, startMin] = startTime.split(':').map(Number);
     completedAt.setHours(startHour, startMin, 0, 0);
 
+    // Save all valid sets
+    const inserts = validSets.map((set, index) => ({
+      user_id: userId,
+      exercise_id: exerciseId,
+      sets: parseInt(set.sets),
+      reps: parseInt(set.reps),
+      weight: parseFloat(set.weight) || 0,
+      unit: set.unit,
+      completed_at: completedAt.toISOString(),
+      notes: `${exerciseName} (${getBodyPartLabel()}) | Set ${index + 1} | ${startTime}-${endTime}`
+    }));
+
     const { error } = await supabase
       .from('workout_logs')
-      .insert({
-        user_id: userId,
-        exercise_id: exerciseId,
-        sets: parseInt(sets),
-        reps: parseInt(reps),
-        weight: parseFloat(weight),
-        unit: unit,
-        completed_at: completedAt.toISOString(),
-        notes: `${exerciseName} (${getBodyPartLabel()}) | ${startTime}-${endTime}`
-      });
+      .insert(inserts);
 
     if (error) {
       toast({
@@ -161,16 +191,18 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
 
     toast({
       title: isGerman ? "Gespeichert!" : "Saved!",
-      description: isGerman ? "Training wurde eingetragen" : "Training was logged"
+      description: isGerman ? `${validSets.length} Sätze eingetragen` : `${validSets.length} sets logged`
     });
 
     setBodyPart(defaultBodyPart || "");
     setExercise("");
     setCustomExercise("");
     setCustomBodyPart("");
-    setSets("3");
-    setReps("10");
-    setWeight("0");
+    setExerciseSets([
+      { sets: "3", reps: "10", weight: "0", unit: "kg" },
+      { sets: "", reps: "", weight: "", unit: "kg" },
+      { sets: "", reps: "", weight: "", unit: "kg" }
+    ]);
     setDate(new Date());
     setStartTime("09:00");
     setEndTime("10:00");
@@ -248,55 +280,65 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
             </div>
           )}
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="sets">{isGerman ? "Sätze (1-100)" : "Sets (1-100)"}</Label>
-              <Input
-                id="sets"
-                type="number"
-                min="1"
-                max="100"
-                value={sets}
-                onChange={(e) => setSets(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="reps">{isGerman ? "Wiederholungen (1-100)" : "Reps (1-100)"}</Label>
-              <Input
-                id="reps"
-                type="number"
-                min="1"
-                max="100"
-                value={reps}
-                onChange={(e) => setReps(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="weight">{isGerman ? "Gewicht" : "Weight"}</Label>
-              <Input
-                id="weight"
-                type="number"
-                min="0"
-                step="0.5"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit">{isGerman ? "Einheit" : "Unit"}</Label>
-              <Select value={unit} onValueChange={setUnit}>
-                <SelectTrigger id="unit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kg">kg</SelectItem>
-                  <SelectItem value="lbs">lbs</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* 3 Exercise Sets */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">{isGerman ? "3 Sätze eintragen" : "Enter 3 Sets"}</Label>
+            {exerciseSets.map((set, index) => (
+              <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-2">
+                <div className="text-xs font-medium text-muted-foreground mb-2">
+                  {isGerman ? `Satz ${index + 1}` : `Set ${index + 1}`}
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-xs">{isGerman ? "Sätze" : "Sets"}</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={set.sets}
+                      onChange={(e) => updateSet(index, "sets", e.target.value)}
+                      placeholder="1-100"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{isGerman ? "Wdh." : "Reps"}</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={set.reps}
+                      onChange={(e) => updateSet(index, "reps", e.target.value)}
+                      placeholder="1-100"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{isGerman ? "Gewicht" : "Weight"}</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={set.weight}
+                      onChange={(e) => updateSet(index, "weight", e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{isGerman ? "Einheit" : "Unit"}</Label>
+                    <Select value={set.unit} onValueChange={(v) => updateSet(index, "unit", v)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="lbs">lbs</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Start and End Time */}
