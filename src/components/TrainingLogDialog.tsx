@@ -65,9 +65,10 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   
-  // 3 Exercise Sets
+  // 4 Exercise Sets
   const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([
     { sets: "3", reps: "10", weight: "0", unit: "kg" },
+    { sets: "", reps: "", weight: "", unit: "kg" },
     { sets: "", reps: "", weight: "", unit: "kg" },
     { sets: "", reps: "", weight: "", unit: "kg" }
   ]);
@@ -201,6 +202,7 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     setExerciseSets([
       { sets: "3", reps: "10", weight: "0", unit: "kg" },
       { sets: "", reps: "", weight: "", unit: "kg" },
+      { sets: "", reps: "", weight: "", unit: "kg" },
       { sets: "", reps: "", weight: "", unit: "kg" }
     ]);
     setDate(new Date());
@@ -280,9 +282,9 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
             </div>
           )}
           
-          {/* 3 Exercise Sets */}
+          {/* 4 Exercise Sets */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">{isGerman ? "3 Sätze eintragen" : "Enter 3 Sets"}</Label>
+            <Label className="text-sm font-semibold">{isGerman ? "4 Sätze eintragen" : "Enter 4 Sets"}</Label>
             {exerciseSets.map((set, index) => (
               <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-2">
                 <div className="text-xs font-medium text-muted-foreground mb-2">

@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Upload, X, Loader2, HelpCircle, Save, BarChart3, Trash2 } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, HelpCircle, Save, BarChart3, Trash2, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { compressImage, isValidImageFile, base64ToBlob } from "@/lib/imageUtils";
 import { useLiveData } from "@/contexts/LiveDataContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import proAthleteBg from "@/assets/pro-athlete-bg.png";
 import performanceButtonBg from "@/assets/performance-button.png";
 
@@ -27,8 +28,8 @@ interface BodyAnalysisEntry {
 const ProAthlete = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language, isGerman } = useLanguage();
   const { bodyAnalysis, workoutLogs, joggingLogs, weightLogs, stats, setUserId, refetch } = useLiveData();
-  const [isGerman, setIsGerman] = useState(true);
   const [userId, setLocalUserId] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [uploadedFileRaw, setUploadedFileRaw] = useState<File | null>(null);
@@ -59,16 +60,16 @@ const ProAthlete = () => {
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("progress");
 
-  const bodyCategories = ["progress", "front", "back", "side", "flexing"];
+  // Edit entry state
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
 
-  // Use live body analysis data as history
+  const bodyCategories = ["progress", "front", "back", "side", "flexing"];
   const history = bodyAnalysis as BodyAnalysisEntry[];
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { navigate("/login"); return; }
-      const metadata = session.user.user_metadata;
-      setIsGerman(metadata.language === "de");
       setLocalUserId(session.user.id);
       setUserId(session.user.id);
       
@@ -87,32 +88,68 @@ const ProAthlete = () => {
     });
   }, [navigate, setUserId]);
 
-  // Calculate stats from live data in real-time
+  // Calculate stats from live data AND manual values in real-time
   useEffect(() => {
-    // Training hours from manual input or workouts
+    // Get manual values from latest body_analysis entry
+    let manualTrainingTime = 0;
+    let manualWeight = 0;
+    let manualTargetWeight = 0;
+    let manualTrainingFreq = 0;
+
+    // Find latest manual entry with values
+    const manualEntries = history.filter(h => {
+      const notes = parseHealthNotes(h.health_notes);
+      return notes?.training_time || notes?.weight || notes?.training_frequency;
+    });
+
+    if (manualEntries.length > 0) {
+      const latestManual = parseHealthNotes(manualEntries[0].health_notes);
+      manualTrainingTime = parseFloat(latestManual?.training_time) || 0;
+      manualWeight = parseFloat(latestManual?.weight) || 0;
+      manualTargetWeight = parseFloat(latestManual?.target_weight) || 0;
+      manualTrainingFreq = parseFloat(latestManual?.training_frequency) || 0;
+    }
+
+    // Training hours from manual input or workouts/jogging
     const workoutHours = workoutLogs.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0);
     const joggingHours = joggingLogs.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
-    const totalHours = workoutHours + joggingHours;
+    const totalHours = manualTrainingTime > 0 ? manualTrainingTime : (workoutHours + joggingHours);
     
-    // Total trainings count
-    const totalSessions = workoutLogs.length + joggingLogs.length;
+    // Total trainings count from manual frequency or actual logs
+    const loggedSessions = workoutLogs.length + joggingLogs.length;
+    const totalSessions = manualTrainingFreq > 0 ? manualTrainingFreq * 4 : loggedSessions;
     
-    // Current weight and weight loss calculation
-    const currentWeight = stats.currentWeight || 0;
-    const weightLoss = startWeight > 0 && currentWeight > 0 ? startWeight - currentWeight : 0;
-    const weightPct = startWeight > 0 && currentWeight > 0 ? ((startWeight - currentWeight) / startWeight) * 100 : 0;
+    // Current weight from manual input or weight tracker
+    const currentWeight = manualWeight > 0 ? manualWeight : (stats.currentWeight || 0);
+    
+    // Weight loss calculation - from current vs start weight OR current vs target
+    const weightFromLogs = weightLogs.length > 0 ? weightLogs[0].weight : 0;
+    const effectiveStartWeight = startWeight > 0 ? startWeight : (weightFromLogs || currentWeight);
+    const weightLoss = effectiveStartWeight > 0 && currentWeight > 0 ? Math.max(0, effectiveStartWeight - currentWeight) : 0;
+    const weightLossPct = effectiveStartWeight > 0 ? (weightLoss / effectiveStartWeight) * 100 : 0;
+    
+    // Weight percentage compared to start weight
+    const weightPct = effectiveStartWeight > 0 && currentWeight > 0 
+      ? ((effectiveStartWeight - currentWeight) / effectiveStartWeight) * 100 
+      : 0;
+    
+    // Training hours percentage (assume 100 hours monthly max goal)
+    const trainingHoursPct = Math.min((totalHours / 50) * 100, 100);
+    
+    // Trainings percentage (assume 30 sessions monthly goal)
+    const trainingsPct = Math.min((totalSessions / 30) * 100, 100);
     
     setCalculatedStats({
       trainingHours: Math.round(totalHours * 10) / 10,
-      trainingHoursPct: Math.min((totalHours / 100) * 100, 100),
-      weightLoss: Math.max(0, weightLoss),
-      weightLossPct: Math.abs(weightPct),
-      currentWeight: currentWeight,
-      weightPct: weightPct,
+      trainingHoursPct: Math.round(trainingHoursPct * 10) / 10,
+      weightLoss: Math.round(weightLoss * 10) / 10,
+      weightLossPct: Math.round(weightLossPct * 10) / 10,
+      currentWeight: Math.round(currentWeight * 10) / 10,
+      weightPct: Math.round(weightPct * 10) / 10,
       totalTrainings: totalSessions,
-      trainingsPct: Math.min((totalSessions / 100) * 100, 100),
+      trainingsPct: Math.round(trainingsPct * 10) / 10,
     });
-  }, [stats, workoutLogs, joggingLogs, weightLogs, startWeight]);
+  }, [stats, workoutLogs, joggingLogs, weightLogs, startWeight, history]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

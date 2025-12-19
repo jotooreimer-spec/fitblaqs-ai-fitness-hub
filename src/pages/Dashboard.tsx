@@ -5,11 +5,13 @@ import DashboardStats from "@/components/DashboardStats";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { TrainingLogDialog } from "@/components/TrainingLogDialog";
 import { TrainingHistory } from "@/components/TrainingHistory";
+import { UpdateNotification, useUpdateNotification } from "@/components/UpdateNotification";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dumbbell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 import upperbodyImg from "@/assets/upperbody-bg.png";
 import middlebodyImg from "@/assets/middlebody.png";
 import lowerbodyImg from "@/assets/lowerbody.png";
@@ -20,9 +22,10 @@ type BodyPartType = "lower_body" | "upper_body" | "middle_body" | "fullbody" | n
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { isGerman } = useLanguage();
+  const { showNotification, dismiss: dismissNotification } = useUpdateNotification();
   const [userData, setUserData] = useState<any>(null);
   const [userId, setUserId] = useState<string>("");
-  const [isGerman, setIsGerman] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPartType>(null);
@@ -46,8 +49,6 @@ const Dashboard = () => {
         gender: metadata.gender || "male",
         language: metadata.language || "de"
       });
-      
-      setIsGerman(metadata.language === "de");
 
       const theme = metadata.gender === "female" ? "theme-female" : "";
       if (theme) {
@@ -124,6 +125,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen pb-24 relative">
+      {/* Update Notification */}
+      {showNotification && <UpdateNotification onDismiss={dismissNotification} />}
+      
       {/* Background Image */}
       <div 
         className="fixed inset-0 bg-cover bg-center bg-no-repeat"

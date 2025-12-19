@@ -1,0 +1,120 @@
+import { useEffect, useState } from "react";
+import { X, Bell, Sparkles } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+interface UpdateNotificationProps {
+  onDismiss: () => void;
+}
+
+// App version - increment this when releasing new features
+const APP_VERSION = "2.1.0";
+const STORAGE_KEY = "fitblaqs_last_seen_version";
+
+// Current update features
+const updateFeatures = {
+  de: [
+    "Live-Synchronisation auf allen Seiten",
+    "Verbesserte Pro-Athlete Statistiken",
+    "4 Sätze pro Übung eintragen",
+    "Challenges mit Countdown"
+  ],
+  en: [
+    "Live synchronization across all pages",
+    "Improved Pro-Athlete statistics",
+    "Log 4 sets per exercise",
+    "Challenges with countdown"
+  ]
+};
+
+export const UpdateNotification = ({ onDismiss }: UpdateNotificationProps) => {
+  const { isGerman } = useLanguage();
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Check if user has seen this version
+    const lastSeenVersion = localStorage.getItem(STORAGE_KEY);
+    if (lastSeenVersion !== APP_VERSION) {
+      // Show notification after a brief delay
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    localStorage.setItem(STORAGE_KEY, APP_VERSION);
+    setIsVisible(false);
+    onDismiss();
+  };
+
+  if (!isVisible) return null;
+
+  const features = isGerman ? updateFeatures.de : updateFeatures.en;
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 animate-in slide-in-from-top duration-500">
+      <Card className="bg-gradient-to-r from-primary/90 to-primary border-primary/50 p-4 shadow-xl">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                {isGerman ? "Neues Update!" : "New Update!"}
+              </h3>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white/80 hover:text-white hover:bg-white/10 h-6 w-6"
+                onClick={handleDismiss}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-white/90 text-sm mb-2">
+              v{APP_VERSION} - {isGerman ? "Neue Features verfügbar:" : "New features available:"}
+            </p>
+            <ul className="text-white/80 text-xs space-y-1">
+              {features.map((feature, index) => (
+                <li key={index} className="flex items-center gap-1">
+                  <span className="text-white">•</span> {feature}
+                </li>
+              ))}
+            </ul>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white border-0"
+              onClick={handleDismiss}
+            >
+              {isGerman ? "Verstanden" : "Got it"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export const useUpdateNotification = () => {
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    const lastSeenVersion = localStorage.getItem(STORAGE_KEY);
+    if (lastSeenVersion !== APP_VERSION) {
+      setShowNotification(true);
+    }
+  }, []);
+
+  const dismiss = () => {
+    localStorage.setItem(STORAGE_KEY, APP_VERSION);
+    setShowNotification(false);
+  };
+
+  return { showNotification, dismiss };
+};
