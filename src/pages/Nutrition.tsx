@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { Trash2, Save, Droplets } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NutritionLogDialog } from "@/components/NutritionLogDialog";
 import { HydrationDialog } from "@/components/HydrationDialog";
 import { MilchprodukteDialog } from "@/components/MilchprodukteDialog";
+import { NutritionHistory } from "@/components/NutritionHistory";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import vegetableImg from "@/assets/vegetable.jpg";
 import veganImg from "@/assets/vegan.jpg";
@@ -98,13 +98,6 @@ const Nutrition = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleSaveToCalendar = (log: any) => {
-    toast({
-      title: isGerman ? "Gespeichert" : "Saved",
-      description: isGerman ? "Im Kalender gespeichert" : "Saved to calendar"
-    });
-  };
-
   // Convert water value to ml based on unit
   const parseWaterToMl = (waterData: any): number => {
     if (!waterData || !waterData.value) return 0;
@@ -156,23 +149,7 @@ const Nutrition = () => {
     return { calories: totalCalories, protein: totalProtein, hydration: totalHydration };
   };
 
-  // Format nutrition value with unit for display
-  const formatNutritionValue = (item: { value: number; unit: string } | undefined) => {
-    if (!item || !item.value) return null;
-    return `${item.value}${item.unit}`;
-  };
-
   const dailyTotals = calculateDailyTotals();
-
-  const getCategoryName = (mealType: string) => {
-    const categories: Record<string, string> = {
-      breakfast: isGerman ? "Vegetarisch" : "Vegetarian",
-      lunch: "Vegan",
-      dinner: isGerman ? "Fleisch & Protein" : "Meat & Protein",
-      snack: "Supplements"
-    };
-    return categories[mealType] || mealType;
-  };
 
   const nutritionCategories = [
     { image: vegetableImg, title: isGerman ? "Vegetarisch" : "Vegetarian", description: isGerman ? "Pflanzliche Ernährung" : "Plant-based nutrition", key: "vegetarian" as const },
@@ -267,94 +244,14 @@ const Nutrition = () => {
           </Card>
         </div>
 
-        {/* Today's Meal Plan */}
+        {/* Today's Meal Plan - Editable */}
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Heutiger Essensplan" : "Today's Meal Plan"}</h2>
-          <div className="space-y-4">
-            {todayLogs.map((log) => {
-              const parsed = parseNutritionNotes(log.notes);
-              
-              return (
-                <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      {/* Category as header */}
-                      <div className="text-xs font-semibold text-primary mb-1">{getCategoryName(log.meal_type)}</div>
-                      <div className="font-semibold text-white">{log.food_name}</div>
-                      <div className="text-sm text-white/60 mt-1">
-                        {log.calories} kcal • {Math.round(log.protein || 0)}g Protein
-                      </div>
-                      
-                      {/* Show all nutrition values with their original units - NO hydration for non-hydration categories */}
-                      {parsed && (
-                        <div className="text-xs text-white/70 mt-2 space-y-1">
-                          {/* Category-specific fields - NO hydration for vegan, vegetarisch, protein, supplements, milchprodukte */}
-                          {parsed.category === "supplements" && (
-                            <>
-                              {parsed.amount?.value > 0 && <div>📦 Menge: {parsed.amount.value}{parsed.amount.unit}</div>}
-                              {parsed.liquid?.value > 0 && <div>💧 Flüssigkeit: {parsed.liquid.value}{parsed.liquid.unit}</div>}
-                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
-                            </>
-                          )}
-                          {(parsed.category === "vegetarian" || parsed.category === "vegan") && (
-                            <>
-                              {parsed.carbs?.value > 0 && <div>🌾 Carbs: {parsed.carbs.value}{parsed.carbs.unit}</div>}
-                              {parsed.minerals?.value > 0 && <div>⚗️ Mineralstoffe: {parsed.minerals.value}{parsed.minerals.unit}</div>}
-                              {parsed.fiber?.value > 0 && <div>🥬 Ballaststoffe: {parsed.fiber.value}{parsed.fiber.unit}</div>}
-                              {parsed.vitamin?.value > 0 && <div>💊 Vitamin: {parsed.vitamin.value}{parsed.vitamin.unit}</div>}
-                              {parsed.aminoacids?.value > 0 && <div>🧬 Aminosäuren: {parsed.aminoacids.value}{parsed.aminoacids.unit}</div>}
-                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
-                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
-                            </>
-                          )}
-                          {parsed.category === "protein" && (
-                            <>
-                              {parsed.protein?.value > 0 && <div>🥩 Protein: {parsed.protein.value}{parsed.protein.unit}</div>}
-                              {parsed.iron?.value > 0 && <div>🔩 Eisen: {parsed.iron.value}{parsed.iron.unit}</div>}
-                              {parsed.fats?.value > 0 && <div>🧈 Fats: {parsed.fats.value}{parsed.fats.unit}</div>}
-                              {parsed.calcium?.value > 0 && <div>🦴 Calcium: {parsed.calcium.value}{parsed.calcium.unit}</div>}
-                              {parsed.aminoacids?.value > 0 && <div>🧬 Aminosäuren: {parsed.aminoacids.value}{parsed.aminoacids.unit}</div>}
-                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
-                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
-                            </>
-                          )}
-                          {parsed.category === "dairy" && (
-                            <>
-                              {parsed.protein?.value > 0 && <div>🥛 Protein: {parsed.protein.value}{parsed.protein.unit}</div>}
-                              {parsed.vitamin?.value > 0 && <div>💊 Vitamin: {parsed.vitamin.value}{parsed.vitamin.unit}</div>}
-                              {parsed.fat?.value > 0 && <div>🧈 Fett: {parsed.fat.value}{parsed.fat.unit}</div>}
-                              {parsed.carbs?.value > 0 && <div>🌾 Carbs: {parsed.carbs.value}{parsed.carbs.unit}</div>}
-                              {parsed.sugar?.value > 0 && <div>🍬 Sugar: {parsed.sugar.value}{parsed.sugar.unit}</div>}
-                              {parsed.spurenelemente?.value > 0 && <div>🔬 Spurenelemente: {parsed.spurenelemente.value}{parsed.spurenelemente.unit}</div>}
-                            </>
-                          )}
-                          {/* Only show hydration for hydration category */}
-                          {parsed.category === "hydration" && parsed.water?.value > 0 && (
-                            <div className="text-blue-400">💧 {parsed.water.value}{parsed.water.unit} ({parsed.water.ml}ml)</div>
-                          )}
-                        </div>
-                      )}
-                      
-                      <div className="text-xs text-white/40 mt-2">
-                        {new Date(log.completed_at).toLocaleDateString(isGerman ? "de-DE" : "en-US")}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="icon" variant="ghost" onClick={() => handleSaveToCalendar(log)} className="text-primary hover:text-primary">
-                        <Save className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDeleteLog(log.id)} className="text-destructive hover:text-destructive">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-            {todayLogs.length === 0 && (
-              <div className="text-center text-white/50 py-8">{isGerman ? "Keine Einträge für heute" : "No entries for today"}</div>
-            )}
-          </div>
+          <NutritionHistory 
+            logs={todayLogs} 
+            onRefresh={() => setRefreshTrigger(prev => prev + 1)} 
+            onDelete={handleDeleteLog}
+          />
         </div>
       </div>
 
