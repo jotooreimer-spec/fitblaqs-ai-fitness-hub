@@ -9,6 +9,7 @@ import { HydrationDialog } from "@/components/HydrationDialog";
 import { MilchprodukteDialog } from "@/components/MilchprodukteDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import vegetableImg from "@/assets/vegetable.jpg";
 import veganImg from "@/assets/vegan.jpg";
 import proteinImg from "@/assets/protein.jpg";
@@ -20,7 +21,7 @@ import milchprodukteBg from "@/assets/milchprodukte-bg.jpg";
 const Nutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isGerman, setIsGerman] = useState(true);
+  const { isGerman } = useLanguage();
   const [userId, setUserId] = useState<string>("");
   const [userWeight, setUserWeight] = useState(70);
   const [selectedCategory, setSelectedCategory] = useState<"vegetarian" | "vegan" | "protein" | "supplements" | null>(null);
@@ -37,8 +38,6 @@ const Nutrition = () => {
         return;
       }
 
-      const metadata = session.user.user_metadata;
-      setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
 
       const { data: profile } = await supabase

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, Timer, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { format } from "date-fns";
 import joggingBg from "@/assets/jogging-bg.png";
 
@@ -23,7 +24,7 @@ interface JoggingLog {
 const JoggingTracker = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isGerman, setIsGerman] = useState(true);
+  const { isGerman } = useLanguage();
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [logs, setLogs] = useState<JoggingLog[]>([]);
@@ -44,8 +45,6 @@ const JoggingTracker = () => {
         return;
       }
 
-      const metadata = session.user.user_metadata;
-      setIsGerman(metadata.language === "de");
       setUserId(session.user.id);
 
       const { data: profile } = await supabase

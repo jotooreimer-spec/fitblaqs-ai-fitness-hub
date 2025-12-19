@@ -451,7 +451,7 @@ const Settings = () => {
               className="w-full justify-start" 
               onClick={() => {
                 setPrivacyDialogOpen(false);
-                setPrivacyContentDialogOpen(true);
+                navigate("/privacy-policy");
               }}
             >
               <Shield className="w-4 h-4 mr-2" />
@@ -462,7 +462,7 @@ const Settings = () => {
               className="w-full justify-start"
               onClick={() => {
                 setPrivacyDialogOpen(false);
-                setTermsContentDialogOpen(true);
+                navigate("/terms-of-service");
               }}
             >
               <Shield className="w-4 h-4 mr-2" />
