@@ -133,12 +133,17 @@ const ProNutrition = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
+      // Use signed URL for private bucket storage
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
 
-      // Save with valid category and name in notes
+      if (signedError) throw signedError;
+
+      // Store the file path reference, not the signed URL (URLs expire)
       const { error: dbError } = await supabase.from("food_analysis").insert([{
         user_id: session.user.id,
-        image_url: urlData.publicUrl,
+        image_url: `storage:${fileName}`,
         total_calories: null,
         category: uploadCategory, // Valid enum value
         items: null,
