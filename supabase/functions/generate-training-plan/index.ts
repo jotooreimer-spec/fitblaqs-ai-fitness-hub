@@ -74,8 +74,28 @@ serve(async (req) => {
 
     console.log(`User ${user.id} requesting training plan`);
 
-    // Note: Subscription check removed for testing - can be re-enabled for production
-    // Pro Athlete features are freely accessible during testing phase
+    // Check for active Pro Athlete subscription
+    const { data: subscription, error: subError } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("plan", "pro_athlete")
+      .eq("status", "active")
+      .single();
+
+    if (!subscription) {
+      console.log(`User ${user.id} does not have pro_athlete subscription`);
+      return new Response(JSON.stringify({ error: "Pro Athlete subscription required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Simple rate limiting using in-memory store (resets per function instance)
+    const rateLimitKey = `training_${user.id}`;
+    const now = Date.now();
+    const rateLimitWindow = 3600000; // 1 hour in ms
+    const maxRequests = 5; // Max 5 training plan requests per hour
 
     // Parse and validate input
     const requestData = await req.json();

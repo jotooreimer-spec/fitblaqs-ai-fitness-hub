@@ -95,6 +95,23 @@ serve(async (req) => {
     
     console.log("User authenticated:", user.id);
 
+    // Check for active Pro Athlete subscription
+    const { data: subscription, error: subError } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("plan", "pro_athlete")
+      .eq("status", "active")
+      .single();
+
+    if (!subscription) {
+      console.log(`User ${user.id} does not have pro_athlete subscription`);
+      return new Response(JSON.stringify({ error: "Pro Athlete subscription required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { imageBase64, userData } = await req.json();
 
     if (!imageBase64) {

@@ -87,6 +87,23 @@ serve(async (req) => {
     
     console.log("User authenticated:", user.id);
 
+    // Check for active Pro Nutrition subscription
+    const { data: subscription, error: subError } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("plan", "pro_nutrition")
+      .eq("status", "active")
+      .single();
+
+    if (!subscription) {
+      console.log(`User ${user.id} does not have pro_nutrition subscription`);
+      return new Response(JSON.stringify({ error: "Pro Nutrition subscription required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { imageBase64, category, manualData } = await req.json();
 
     if (!imageBase64) {
