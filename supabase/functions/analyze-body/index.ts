@@ -112,6 +112,26 @@ serve(async (req) => {
       });
     }
 
+    // Rate limiting: 10 requests per hour per user
+    const { data: rateLimitAllowed, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'analyze-body',
+      p_max_requests: 10,
+      p_window_seconds: 3600
+    });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (rateLimitAllowed === false) {
+      console.log(`Rate limit exceeded for user ${user.id} on analyze-body`);
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { imageBase64, userData } = await req.json();
 
     if (!imageBase64) {
