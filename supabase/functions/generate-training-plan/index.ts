@@ -91,11 +91,25 @@ serve(async (req) => {
       });
     }
 
-    // Simple rate limiting using in-memory store (resets per function instance)
-    const rateLimitKey = `training_${user.id}`;
-    const now = Date.now();
-    const rateLimitWindow = 3600000; // 1 hour in ms
-    const maxRequests = 5; // Max 5 training plan requests per hour
+    // Rate limiting: 5 requests per hour per user (database-backed)
+    const { data: rateLimitAllowed, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'generate-training-plan',
+      p_max_requests: 5,
+      p_window_seconds: 3600
+    });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (rateLimitAllowed === false) {
+      console.log(`Rate limit exceeded for user ${user.id} on generate-training-plan`);
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Parse and validate input
     const requestData = await req.json();

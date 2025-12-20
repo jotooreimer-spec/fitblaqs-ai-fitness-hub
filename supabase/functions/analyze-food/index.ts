@@ -75,6 +75,26 @@ serve(async (req) => {
       });
     }
 
+    // Rate limiting: 20 requests per hour per user
+    const { data: rateLimitAllowed, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'analyze-food',
+      p_max_requests: 20,
+      p_window_seconds: 3600
+    });
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (rateLimitAllowed === false) {
+      console.log(`Rate limit exceeded for user ${user.id} on analyze-food`);
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Parse and validate input
     const requestData = await req.json();
     const validation = validateInput(requestData);
