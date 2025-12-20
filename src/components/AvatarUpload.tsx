@@ -47,16 +47,23 @@ export const AvatarUpload = ({ userId, currentAvatarUrl, onUploadSuccess, isGerm
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      // Use signed URL since bucket is private for security
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('avatars')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
 
+      if (signedError) throw signedError;
+
+      const signedUrl = signedData?.signedUrl || '';
+
+      // Store the file path in the database, not the URL
+      // This allows regenerating signed URLs when needed
       await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: `storage:${fileName}` })
         .eq('user_id', userId);
 
-      onUploadSuccess(publicUrl);
+      onUploadSuccess(signedUrl);
       
       toast({
         title: isGerman ? "Erfolg" : "Success",
