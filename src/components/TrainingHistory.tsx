@@ -248,12 +248,18 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
                 ) : (
                   <div className="text-sm text-muted-foreground space-y-1">
                     <div className="flex gap-4 flex-wrap">
-                      <span>{isGerman ? "Sätze:" : "Sets:"} {workout.sets}</span>
-                      <span>{isGerman ? "Wdh.:" : "Reps:"} {workout.reps}</span>
+                      <span className="font-medium">{isGerman ? "Sätze:" : "Sets:"} {workout.sets}</span>
+                      <span className="font-medium">{isGerman ? "Wdh.:" : "Reps:"} {workout.reps}</span>
                       {workout.weight !== null && workout.weight > 0 && (
-                        <span>{isGerman ? "Gewicht:" : "Weight:"} {workout.weight} {workout.unit || 'kg'}</span>
+                        <span className="font-medium">{isGerman ? "Gewicht:" : "Weight:"} {workout.weight} {workout.unit || 'kg'}</span>
                       )}
                     </div>
+                    {/* Show all info from notes */}
+                    {workout.notes && (
+                      <div className="text-xs text-primary/70 bg-primary/10 px-2 py-1 rounded mt-1">
+                        {workout.notes}
+                      </div>
+                    )}
                     <div className="text-xs">
                       {format(new Date(workout.completed_at), "dd.MM.yyyy HH:mm")}
                     </div>
