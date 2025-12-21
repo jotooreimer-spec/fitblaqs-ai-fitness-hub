@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, Bell, Sparkles } from "lucide-react";
+import { X, Bell } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 
 interface UpdateNotificationProps {
   onDismiss: () => void;
@@ -56,15 +57,25 @@ export const UpdateNotification = ({ onDismiss }: UpdateNotificationProps) => {
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4 animate-in slide-in-from-top duration-500">
-      <Card className="bg-gradient-to-r from-primary/90 to-primary border-primary/50 p-4 shadow-xl">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
+      <Card className="relative overflow-hidden border-primary/50 p-4 shadow-xl">
+        {/* FitBlaqs Logo Background */}
+        <div className="absolute inset-0 bg-black">
+          <img 
+            src={fitblaqsLogo} 
+            alt="FitBlaqs" 
+            className="absolute inset-0 w-full h-full object-cover opacity-20"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/80" />
+        </div>
+        
+        <div className="relative z-10 flex items-start gap-3">
+          <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/20">
+            <img src={fitblaqsLogo} alt="FitBlaqs" className="w-8 h-8 object-contain" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <Bell className="w-4 h-4" />
+                <Bell className="w-4 h-4 text-primary" />
                 {isGerman ? "Neues Update!" : "New Update!"}
               </h3>
               <Button 
@@ -82,14 +93,14 @@ export const UpdateNotification = ({ onDismiss }: UpdateNotificationProps) => {
             <ul className="text-white/80 text-xs space-y-1">
               {features.map((feature, index) => (
                 <li key={index} className="flex items-center gap-1">
-                  <span className="text-white">•</span> {feature}
+                  <span className="text-primary">•</span> {feature}
                 </li>
               ))}
             </ul>
             <Button 
               variant="secondary" 
               size="sm" 
-              className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white border-0"
+              className="mt-3 w-full bg-primary/20 hover:bg-primary/30 text-white border border-primary/30"
               onClick={handleDismiss}
             >
               {isGerman ? "Verstanden" : "Got it"}

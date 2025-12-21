@@ -131,9 +131,13 @@ const Nutrition = () => {
   // Auto-calculate daily totals with proper unit conversion
   const calculateDailyTotals = () => {
     const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
     const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
+    const yesterdayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === yesterday);
 
     let totalCalories = 0, totalProtein = 0, totalHydration = 0;
+    let yesterdayCalories = 0, yesterdayProtein = 0, yesterdayHydration = 0;
 
     todayLogs.forEach(log => {
       totalCalories += log.calories || 0;
@@ -141,12 +145,34 @@ const Nutrition = () => {
       
       const parsed = parseNutritionNotes(log.notes);
       if (parsed?.water) {
-        // Convert to ml using the unit from the saved data
         totalHydration += parseWaterToMl(parsed.water);
       }
     });
 
-    return { calories: totalCalories, protein: totalProtein, hydration: totalHydration };
+    yesterdayLogs.forEach(log => {
+      yesterdayCalories += log.calories || 0;
+      yesterdayProtein += log.protein || 0;
+      
+      const parsed = parseNutritionNotes(log.notes);
+      if (parsed?.water) {
+        yesterdayHydration += parseWaterToMl(parsed.water);
+      }
+    });
+
+    // Calculate percentage changes
+    const calcChange = (today: number, yesterday: number) => {
+      if (yesterday === 0) return today > 0 ? 100 : 0;
+      return ((today - yesterday) / yesterday) * 100;
+    };
+
+    return { 
+      calories: totalCalories, 
+      protein: totalProtein, 
+      hydration: totalHydration,
+      caloriesChange: calcChange(totalCalories, yesterdayCalories),
+      proteinChange: calcChange(totalProtein, yesterdayProtein),
+      hydrationChange: calcChange(totalHydration, yesterdayHydration),
+    };
   };
 
   const dailyTotals = calculateDailyTotals();
@@ -182,22 +208,37 @@ const Nutrition = () => {
               <div className="text-sm text-white/60 mb-1">{isGerman ? "Kalorien" : "Calories"}</div>
               <div className="text-3xl font-bold text-orange-400">{dailyTotals.calories.toFixed(2).replace('.', ',')}</div>
               <div className="text-xs text-white/50">kcal</div>
+              {dailyTotals.caloriesChange !== 0 && (
+                <div className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block ${dailyTotals.caloriesChange > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {dailyTotals.caloriesChange > 0 ? '+' : ''}{dailyTotals.caloriesChange.toFixed(0)}%
+                </div>
+              )}
             </div>
             <div>
               <div className="text-sm text-white/60 mb-1">Protein</div>
               <div className="text-3xl font-bold text-green-400">{dailyTotals.protein.toFixed(2).replace('.', ',')}</div>
               <div className="text-xs text-white/50">g</div>
+              {dailyTotals.proteinChange !== 0 && (
+                <div className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block ${dailyTotals.proteinChange > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {dailyTotals.proteinChange > 0 ? '+' : ''}{dailyTotals.proteinChange.toFixed(0)}%
+                </div>
+              )}
             </div>
             <div>
               <div className="text-sm text-white/60 mb-1">Hydration</div>
               <div className="text-3xl font-bold text-blue-400">{dailyTotals.hydration.toFixed(2).replace('.', ',')}</div>
               <div className="text-xs text-white/50">ml / L</div>
+              {dailyTotals.hydrationChange !== 0 && (
+                <div className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block ${dailyTotals.hydrationChange > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {dailyTotals.hydrationChange > 0 ? '+' : ''}{dailyTotals.hydrationChange.toFixed(0)}%
+                </div>
+              )}
             </div>
           </div>
           <p className="text-xs text-white/50 text-center mt-4">
             {todayLogs.length === 0 
               ? (isGerman ? "Keine Einträge - Füge Mahlzeiten hinzu" : "No entries - Add meals to start") 
-              : (isGerman ? "Auto-berechnet aus Essensplan" : "Auto-calculated from meal plan")}
+              : (isGerman ? "Auto-berechnet aus Essensplan • Prozent = Vergleich zu gestern" : "Auto-calculated from meal plan • Percent = compared to yesterday")}
           </p>
         </Card>
 
