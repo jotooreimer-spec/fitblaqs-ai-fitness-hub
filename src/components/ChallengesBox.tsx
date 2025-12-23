@@ -21,6 +21,15 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
   const [months, setMonths] = useState("");
   const [savedGoal, setSavedGoal] = useState<{ goal: number; months: number; startWeight: number; startDate: string } | null>(null);
   const [daysDialogOpen, setDaysDialogOpen] = useState(false);
+  
+  // Algorithmus-berechnete Statistiken
+  const [algorithmStats, setAlgorithmStats] = useState({
+    weeklyLoss: 0,
+    monthlyLoss: 0,
+    projectedDaysToGoal: 0,
+    onTrack: false,
+    recommendedDailyDeficit: 0,
+  });
 
   useEffect(() => {
     // Load saved challenge from localStorage
@@ -29,6 +38,47 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
       setSavedGoal(JSON.parse(saved));
     }
   }, [userId]);
+
+  // Algorithmus zur Berechnung von Fortschritts-Prognosen
+  useEffect(() => {
+    if (!savedGoal || !currentWeight) return;
+
+    const startDate = new Date(savedGoal.startDate);
+    const now = new Date();
+    const daysPassed = Math.max(1, Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    const totalToLose = savedGoal.startWeight - savedGoal.goal;
+    const alreadyLost = savedGoal.startWeight - currentWeight;
+    const remaining = Math.max(0, totalToLose - alreadyLost);
+    
+    // Durchschnittlicher täglicher Gewichtsverlust
+    const dailyLoss = alreadyLost / daysPassed;
+    const weeklyLoss = dailyLoss * 7;
+    const monthlyLoss = dailyLoss * 30;
+    
+    // Prognostizierte Tage bis zum Ziel
+    const projectedDaysToGoal = dailyLoss > 0 ? Math.ceil(remaining / dailyLoss) : 9999;
+    
+    // Verbleibende Tage bis Ende
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + savedGoal.months);
+    const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    // Ist der Nutzer auf Kurs?
+    const onTrack = projectedDaysToGoal <= daysRemaining;
+    
+    // Empfohlenes tägliches Kaloriendefizit (ca. 7700 kcal = 1kg Fett)
+    const requiredDailyLoss = remaining / Math.max(1, daysRemaining);
+    const recommendedDailyDeficit = Math.round(requiredDailyLoss * 7700);
+    
+    setAlgorithmStats({
+      weeklyLoss: Math.round(weeklyLoss * 100) / 100,
+      monthlyLoss: Math.round(monthlyLoss * 100) / 100,
+      projectedDaysToGoal,
+      onTrack,
+      recommendedDailyDeficit: Math.min(1000, Math.max(250, recommendedDailyDeficit)), // Zwischen 250-1000 kcal
+    });
+  }, [savedGoal, currentWeight]);
 
   const handleSaveChallenge = () => {
     if (!goalWeight || !months) {
@@ -125,7 +175,30 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
             </div>
           )}
 
-          <Button 
+          {/* Algorithmus-Statistiken */}
+          <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/10">
+            <div className="text-center p-2 bg-white/5 rounded-lg">
+              <div className="text-xs text-white/60">{isGerman ? "Wöchentlich" : "Weekly"}</div>
+              <div className="text-sm font-bold text-emerald-400">-{algorithmStats.weeklyLoss} kg</div>
+            </div>
+            <div className="text-center p-2 bg-white/5 rounded-lg">
+              <div className="text-xs text-white/60">{isGerman ? "Monatlich" : "Monthly"}</div>
+              <div className="text-sm font-bold text-emerald-400">-{algorithmStats.monthlyLoss} kg</div>
+            </div>
+            <div className="text-center p-2 bg-white/5 rounded-lg col-span-2">
+              <div className="text-xs text-white/60">{isGerman ? "Empf. Defizit" : "Rec. Deficit"}</div>
+              <div className={`text-sm font-bold ${algorithmStats.onTrack ? 'text-green-400' : 'text-orange-400'}`}>
+                {algorithmStats.recommendedDailyDeficit} kcal/{isGerman ? "Tag" : "day"}
+              </div>
+              <div className={`text-xs ${algorithmStats.onTrack ? 'text-green-400' : 'text-orange-400'}`}>
+                {algorithmStats.onTrack 
+                  ? (isGerman ? "✓ Auf Kurs" : "✓ On Track") 
+                  : (isGerman ? "⚠ Tempo erhöhen" : "⚠ Speed up")}
+              </div>
+            </div>
+          </div>
+
+          <Button
             variant="outline" 
             size="sm" 
             className="w-full"

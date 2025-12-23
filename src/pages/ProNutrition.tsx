@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, HelpCircle, Upload, X, Save, Trash2, BarChart3 } from "lucide-react";
+import { ArrowLeft, Loader2, HelpCircle, Upload, X, Save, Trash2, BarChart3, Info, Droplets, Flame, Apple } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -68,6 +68,9 @@ const ProNutrition = () => {
   // History detail dialog
   const [historyDetailOpen, setHistoryDetailOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<FoodAnalysisEntry | null>(null);
+  
+  // Info dialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 
   const validCategories = ["protein", "vegetarian", "vegan", "supplements", "meat"];
 
@@ -285,7 +288,7 @@ const ProNutrition = () => {
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/pro-subscription")} className="text-white"><ArrowLeft className="w-6 h-6" /></Button>
           <h1 className="text-lg font-semibold text-white">Pro Nutrition</h1>
-          <Button variant="ghost" size="icon" className="text-white"><HelpCircle className="w-6 h-6" /></Button>
+          <Button variant="ghost" size="icon" className="text-white" onClick={() => setInfoDialogOpen(true)}><Info className="w-6 h-6" /></Button>
         </div>
 
         {/* Performance Box */}
@@ -577,6 +580,50 @@ const ProNutrition = () => {
               })()}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Info Dialog - Algorithmus Erklärung */}
+      <Dialog open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-lg border-white/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Info className="w-5 h-5 text-primary" />
+              {isGerman ? "Pro Nutrition Algorithmus" : "Pro Nutrition Algorithm"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-white/90 leading-relaxed">
+              {isGerman 
+                ? "Der Pro Nutrition Algorithmus analysiert automatisch deine Ernährungsdaten:"
+                : "The Pro Nutrition algorithm automatically analyzes your nutrition data:"}
+            </p>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-orange-400">
+                <Flame className="w-5 h-5" />
+                <span>{isGerman ? "Kalorien-Tracking mit Prozent-Ziel" : "Calorie tracking with percentage goal"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-red-400">
+                <span className="w-5 h-5 flex items-center justify-center">💪</span>
+                <span>{isGerman ? "Protein, Carbs & Fett Berechnung" : "Protein, Carbs & Fat calculation"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-blue-400">
+                <Droplets className="w-5 h-5" />
+                <span>{isGerman ? "Hydration-Tracking mit Einheiten" : "Hydration tracking with units"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-green-400">
+                <Apple className="w-5 h-5" />
+                <span>{isGerman ? "Kategorien: Protein, Vegan, Vegetarisch" : "Categories: Protein, Vegan, Vegetarian"}</span>
+              </li>
+            </ul>
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-xs text-white/60">
+                {isGerman 
+                  ? "Alle Werte werden aus deinen manuellen Eingaben berechnet. Die Prozent-Anzeige basiert auf deinem täglichen Ziel."
+                  : "All values are calculated from your manual entries. The percentage display is based on your daily goal."}
+              </p>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
