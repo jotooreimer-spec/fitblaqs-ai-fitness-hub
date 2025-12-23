@@ -23,9 +23,13 @@ export const HydrationDialog = ({ open, onOpenChange, userId, isGerman, onSucces
   const handleSave = async () => {
     if (!water) return;
 
+    // Exakte Taschenrechner-Logik für Hydration
+    // ml → keine Umrechnung
+    // dz (dl) → *100 (1dl = 100ml)
+    // liter → *1000 (1l = 1000ml)
     let waterInML = parseFloat(water);
-    if (waterUnit === "dz") waterInML *= 100;
-    if (waterUnit === "liter") waterInML *= 1000;
+    if (waterUnit === "dz" || waterUnit === "dl") waterInML *= 100;
+    if (waterUnit === "liter" || waterUnit === "l") waterInML *= 1000;
 
     const notes = JSON.stringify({
       category: "hydration",

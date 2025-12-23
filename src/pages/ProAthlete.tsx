@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Upload, X, Loader2, HelpCircle, Save, BarChart3, Trash2, Edit } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, HelpCircle, Save, BarChart3, Trash2, Edit, Info, TrendingUp, Target, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
@@ -63,6 +63,9 @@ const ProAthlete = () => {
   // Edit entry state
   const [editingEntry, setEditingEntry] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
+  
+  // Info dialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 
   const bodyCategories = ["progress", "front", "back", "side", "flexing"];
   const history = bodyAnalysis as BodyAnalysisEntry[];
@@ -338,7 +341,7 @@ const ProAthlete = () => {
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/pro-premium")} className="text-white"><ArrowLeft className="w-6 h-6" /></Button>
           <h1 className="text-lg font-semibold text-white">Pro Athlete</h1>
-          <Button variant="ghost" size="icon" className="text-white"><HelpCircle className="w-6 h-6" /></Button>
+          <Button variant="ghost" size="icon" className="text-white" onClick={() => setInfoDialogOpen(true)}><Info className="w-6 h-6" /></Button>
         </div>
 
         {/* Performance Box */}
@@ -529,6 +532,50 @@ const ProAthlete = () => {
               {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {isGerman ? "Speichern" : "Save"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Info Dialog - Algorithmus Erklärung */}
+      <Dialog open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-lg border-white/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Info className="w-5 h-5 text-primary" />
+              {isGerman ? "Pro Athlete Algorithmus" : "Pro Athlete Algorithm"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-white/90 leading-relaxed">
+              {isGerman 
+                ? "Der Pro Athlete Algorithmus analysiert automatisch deine Trainings- und Körperdaten:"
+                : "The Pro Athlete algorithm automatically analyzes your training and body data:"}
+            </p>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-orange-400">
+                <Activity className="w-5 h-5" />
+                <span>{isGerman ? "Trainingsstunden & Intensität werden berechnet" : "Training hours & intensity are calculated"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-green-400">
+                <TrendingUp className="w-5 h-5" />
+                <span>{isGerman ? "Gewichtsverlust-Fortschritt in Prozent" : "Weight loss progress in percentage"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-blue-400">
+                <Target className="w-5 h-5" />
+                <span>{isGerman ? "Zielgewicht-Tracking & Prognosen" : "Target weight tracking & projections"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-purple-400">
+                <BarChart3 className="w-5 h-5" />
+                <span>{isGerman ? "Performance-Statistiken im Kalender" : "Performance statistics in calendar"}</span>
+              </li>
+            </ul>
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-xs text-white/60">
+                {isGerman 
+                  ? "Alle Werte werden live aus deinen Workout-Logs, Gewichts-Tracking und manuellen Eingaben berechnet."
+                  : "All values are calculated live from your workout logs, weight tracking and manual entries."}
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

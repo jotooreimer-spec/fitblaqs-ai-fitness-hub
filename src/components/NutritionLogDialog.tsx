@@ -60,19 +60,32 @@ export const NutritionLogDialog = ({
     supplements: { de: "Supplements", en: "Supplements" }
   };
 
+  // Exakte Taschenrechner-Logik für Einheiten
+  // mg → /1000 (500mg = 0.5g)
+  // g → keine Umrechnung
+  // kg → *1000 (1kg = 1000g)
+  // lb → *453.592
   const convertToGrams = (value: number, unit: string) => {
     switch (unit) {
-      case "mg": return value / 1000;
-      case "kg": return value * 1000;
+      case "mg": return value / 1000; // 500mg = 0.500g
+      case "kg": return value * 1000; // 1kg = 1000g (erste Null nach Komma: 1,0)
       case "lb": return value * 453.592;
-      default: return value;
+      case "g":
+      default: return value; // keine Umrechnung bei Gramm
     }
   };
 
+  // Exakte Taschenrechner-Logik für Flüssigkeiten
+  // ml → keine Umrechnung
+  // dz (dl) → *100
+  // liter → *1000 (1l = 1000ml)
   const convertWaterToML = (value: number, unit: string) => {
     switch (unit) {
-      case "dz": return value * 100;
-      case "liter": return value * 1000;
+      case "dz": 
+      case "dl": return value * 100; // 1dl = 100ml
+      case "liter": 
+      case "l": return value * 1000; // 1l = 1000ml
+      case "ml":
       default: return value;
     }
   };

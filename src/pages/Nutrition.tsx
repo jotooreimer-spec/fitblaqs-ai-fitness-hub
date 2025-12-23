@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
-import { Droplets } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Droplets, Info, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NutritionLogDialog } from "@/components/NutritionLogDialog";
 import { HydrationDialog } from "@/components/HydrationDialog";
@@ -17,7 +19,6 @@ import supplementsImg from "@/assets/supplements.jpg";
 import nutritionBg from "@/assets/nutrition-bg.png";
 import hydrationBg from "@/assets/hydration-bg.jpg";
 import milchprodukteBg from "@/assets/milchprodukte-bg.jpg";
-
 const Nutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,6 +31,7 @@ const Nutrition = () => {
   const [isMilchprodukteDialogOpen, setIsMilchprodukteDialogOpen] = useState(false);
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -195,9 +197,19 @@ const Nutrition = () => {
       <div className="fixed inset-0 bg-black/60" />
 
       <div className="relative z-10 max-w-screen-xl mx-auto p-6">
-        {/* Header */}
+        {/* Header with Info Button */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-white">{isGerman ? "Ernährung & Kalorien" : "Nutrition & Calories"}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold mb-2 text-white">{isGerman ? "Ernährung & Kalorien" : "Nutrition & Calories"}</h1>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setInfoDialogOpen(true)}
+              className="text-white hover:bg-white/10"
+            >
+              <Info className="w-6 h-6" />
+            </Button>
+          </div>
           <p className="text-white/70">{isGerman ? "Wähle deinen Ernährungsplan" : "Choose your nutrition plan"}</p>
         </div>
 
@@ -295,6 +307,51 @@ const Nutrition = () => {
           />
         </div>
       </div>
+
+      {/* Info-Popup Dialog */}
+      <Dialog open={infoDialogOpen} onOpenChange={setInfoDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-black/90 backdrop-blur-lg border-white/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between text-white">
+              <span className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" />
+                {isGerman ? "Über den Algorithmus" : "About the Algorithm"}
+              </span>
+              <Button variant="ghost" size="icon" onClick={() => setInfoDialogOpen(false)} className="text-white hover:bg-white/10">
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-white/90 leading-relaxed">
+              {isGerman 
+                ? "In dieser App ist ein Algorithmus integriert, der dir täglich automatisch anzeigt:"
+                : "This app has an integrated algorithm that automatically shows you daily:"}
+            </p>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-blue-400">
+                <Droplets className="w-5 h-5" />
+                <span>{isGerman ? "Wie viel Wasser du heute getrunken hast" : "How much water you drank today"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-orange-400">
+                <span className="w-5 h-5 flex items-center justify-center">🔥</span>
+                <span>{isGerman ? "Wie viele Kalorien du heute aufgenommen hast" : "How many calories you consumed today"}</span>
+              </li>
+              <li className="flex items-center gap-3 text-green-400">
+                <span className="w-5 h-5 flex items-center justify-center">💪</span>
+                <span>{isGerman ? "Wie viel Protein du heute aufgenommen hast" : "How much protein you consumed today"}</span>
+              </li>
+            </ul>
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-xs text-white/60">
+                {isGerman 
+                  ? "Alle Werte werden automatisch aus deinen Einträgen berechnet. Die Prozentanzeige vergleicht deinen heutigen Wert mit gestern."
+                  : "All values are automatically calculated from your entries. The percentage display compares today's value with yesterday."}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <NutritionLogDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} category={selectedCategory} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
       <HydrationDialog open={isHydrationDialogOpen} onOpenChange={setIsHydrationDialogOpen} userId={userId} isGerman={isGerman} onSuccess={() => setRefreshTrigger(prev => prev + 1)} />
