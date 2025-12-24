@@ -27,15 +27,15 @@ const TermsOfService = () => {
         <Card className="bg-black/40 backdrop-blur-md border-white/10 p-8 prose prose-invert max-w-none">
           {isGerman ? (
             <>
-              <h2 className="text-white text-2xl font-bold mb-4">Nutzungsbedingungen – FitBlaq</h2>
-              <p className="text-white/80 mb-4"><strong>Zuletzt aktualisiert:</strong> Dezember 2024</p>
-              <p className="text-white/80 mb-4">Bitte lesen Sie diese Nutzungsbedingungen sorgfältig durch, bevor Sie die FitBlaq-Anwendung nutzen.</p>
+              <h2 className="text-white text-2xl font-bold mb-4">FitBlaqs – Power & Healthy: Nutzungsbedingungen</h2>
+              <p className="text-white/80 mb-4"><strong>Zuletzt aktualisiert:</strong> Dezember 2025</p>
+              <p className="text-white/80 mb-4">Bitte lesen Sie diese Nutzungsbedingungen sorgfältig durch, bevor Sie die FitBlaqs – Power & Healthy Anwendung nutzen.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Annahme der Bedingungen</h3>
-              <p className="text-white/80">Durch den Zugriff auf oder die Nutzung von FitBlaq stimmen Sie diesen Nutzungsbedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie die App bitte nicht.</p>
+              <p className="text-white/80">Durch den Zugriff auf oder die Nutzung von FitBlaqs – Power & Healthy stimmen Sie diesen Nutzungsbedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie die App bitte nicht.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Beschreibung des Dienstes</h3>
-              <p className="text-white/80 mb-2">FitBlaq ist eine Fitness- und Gesundheits-Tracking-Anwendung, die Folgendes bietet:</p>
+              <p className="text-white/80 mb-2">FitBlaqs – Power & Healthy ist eine Fitness- und Gesundheitsanwendung, die Folgendes bietet:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
                 <li>Trainingslogging und -tracking</li>
                 <li>Ernährungs- und Kalorien-Tracking</li>
@@ -45,78 +45,118 @@ const TermsOfService = () => {
                 <li>Personalisierte Fitnesspläne und Empfehlungen</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Nutzerkonten & Altersfreigabe</h3>
-              <p className="text-white/80 mb-2"><strong>Altersfreigabe: 12+</strong></p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. Nutzerkonten & Altersanforderung</h3>
+              <p className="text-white/80 mb-2"><strong>Altersanforderung: 12+</strong></p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Diese App ist für Nutzer ab 12 Jahren geeignet</li>
                 <li>Sie sind für die Sicherheit Ihres Kontos verantwortlich</li>
-                <li>Sie müssen genaue und wahrheitsgemäße Informationen angeben</li>
+                <li>Genaue und wahrheitsgemäße Informationen müssen angegeben werden</li>
                 <li>Ein Konto pro Person ist erlaubt</li>
               </ul>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Gesundheitshinweis</h3>
-              <p className="text-white/80 mb-2"><strong>Wichtig:</strong> FitBlaq bietet allgemeine Fitness- und Ernährungsinformationen. Es ist KEIN Ersatz für professionelle medizinische Beratung.</p>
+              <p className="text-white/80 mb-2">FitBlaqs – Power & Healthy bietet allgemeine Fitness- und Ernährungsberatung. Es ist kein Ersatz für professionelle medizinische Beratung.</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Konsultieren Sie einen Arzt, bevor Sie ein neues Trainingsprogramm beginnen</li>
+                <li>Konsultieren Sie einen Arzt, bevor Sie neue Trainingsprogramme beginnen</li>
                 <li>KI-Analysen dienen nur zu Informationszwecken</li>
-                <li>Trainings- und Ernährungsempfehlungen sind allgemeine Richtlinien</li>
-                <li>Brechen Sie die Aktivität ab und suchen Sie medizinische Hilfe, wenn Sie Beschwerden haben</li>
+                <li>Trainings- und Ernährungsvorschläge sind allgemeine Richtlinien</li>
+                <li>Beenden Sie die Aktivität und suchen Sie medizinische Hilfe, wenn Sie Beschwerden haben</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro-Zugang</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro-Funktionen & Zahlungen</h3>
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.1 Kostenlose Funktionen</h4>
               <p className="text-white/80">Basis-Tracking-Funktionen sind kostenlos verfügbar.</p>
               
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro-Aktivierung</h4>
-              <p className="text-white/80">Pro-Zugang wird über unsere Website aktiviert. Für weitere Informationen kontaktieren Sie uns unter Supportservice@Fitblaq.com</p>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro-Zugang</h4>
+              <p className="text-white/80">Pro-Zugang kann über unsere Website aktiviert werden. Kontakt: Supportservice@FitBlaqs.com</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Nutzerverhalten</h3>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.3 Zahlungsmethoden</h4>
+              <p className="text-white/80 mb-2">Pro-Abonnements können bezahlt werden per:</p>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Kreditkarte</li>
+                <li>Lastschrift</li>
+                <li>PayPal</li>
+                <li>Vorkasse / Rechnung</li>
+                <li>Ratenzahlung (falls angeboten)</li>
+              </ul>
+
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.4 Zahlungsverzug</h4>
+              <p className="text-white/80">Verspätete Zahlungen können Verzugszinsen von 5% über dem Basiszinssatz der Deutschen Bundesbank nach sich ziehen. Kunden bleiben für alle Inkassokosten verantwortlich.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Lieferung & Eigentumsvorbehalt (für physische Produkte, falls zutreffend)</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Die Lieferung erfolgt an die vom Nutzer angegebene Adresse</li>
+                <li>Das Eigentum verbleibt bei FitBlaqs bis zur vollständigen Zahlung</li>
+                <li>Rücksendungen sollten in Originalverpackung erfolgen; unnötige Versandkosten können dem Kunden in Rechnung gestellt werden</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Gewährleistung / Mängelhaftung</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Für physische Produkte gilt die gesetzliche Gewährleistung von 2 Jahren ab Lieferung</li>
+                <li>Ansprüche umfassen Reparatur oder Ersatz nach Ermessen von FitBlaqs</li>
+                <li>Keine Gewährleistung für Schäden durch unsachgemäße Verwendung oder äußere Faktoren</li>
+                <li>FitBlaqs haftet nicht für Datenverlust bei Rücksendungen von Geräten oder Software</li>
+                <li>Gewährleistungsansprüche für Softwaremängel beschränken sich auf Behebung des Mangels oder Ersatz der Lizenz nach Ermessen von FitBlaqs</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Nutzerverhalten</h3>
               <p className="text-white/80 mb-2">Sie erklären sich einverstanden, Folgendes NICHT zu tun:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
                 <li>Illegale oder unangemessene Inhalte hochladen</li>
-                <li>Versuchen, die App zu hacken oder zu manipulieren</li>
-                <li>Falsche persönliche Informationen angeben</li>
-                <li>Die Konten anderer Nutzer teilen oder darauf zugreifen</li>
+                <li>Die App hacken oder manipulieren</li>
+                <li>Konten anderer Nutzer verwenden</li>
                 <li>Die App für nicht autorisierte kommerzielle Zwecke nutzen</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Geistiges Eigentum</h3>
-              <p className="text-white/80">Alle Inhalte, Funktionen und Design von FitBlaq sind geistiges Eigentum von FitBlaq Company. Nutzer behalten das Eigentum an ihren hochgeladenen Inhalten.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Geistiges Eigentum</h3>
+              <p className="text-white/80">Alle Inhalte, Funktionen und das Design von FitBlaqs – Power & Healthy sind Eigentum der FitBlaqs Company.</p>
+              <p className="text-white/80 mt-2">Nutzer behalten die Rechte an ihren hochgeladenen Inhalten. Durch das Einreichen von Inhalten gewähren Sie FitBlaqs das Recht, diese für rechtmäßige Zwecke zu nutzen.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Datenschutz</h3>
-              <p className="text-white/80">Ihre Nutzung von FitBlaq unterliegt auch unserer Datenschutzerklärung, die erklärt, wie wir Ihre personenbezogenen Daten und Gesundheitsinformationen erheben, nutzen und schützen.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Haftungsbeschränkung</h3>
-              <p className="text-white/80">FitBlaq wird „wie besehen" ohne Garantien bereitgestellt. Wir haften nicht für Verletzungen, Gesundheitsprobleme oder Schäden, die aus der Nutzung der App oder der Befolgung von Trainings-/Ernährungsempfehlungen resultieren.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Kontokündigung</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Datenschutz & Datensicherheit</h3>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Sie können Ihr Konto jederzeit in den Einstellungen löschen</li>
-                <li>Wir können Konten bei Verstößen gegen diese Bedingungen sperren</li>
-                <li>Bei Kündigung werden Ihre Daten gemäß unserer Datenschutzerklärung gelöscht</li>
+                <li>Die Nutzung von FitBlaqs – Power & Healthy unterliegt unserer Datenschutzerklärung</li>
+                <li>Datenspeicherung erfolgt in Deutschland</li>
+                <li>Nutzer unter 16 Jahren benötigen elterliche Zustimmung</li>
+                <li>Persönliche und Gesundheitsdaten werden gemäß DSGVO verarbeitet</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">11. Änderungen der Bedingungen</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">11. Haftungsbeschränkung</h3>
+              <p className="text-white/80">FitBlaqs – Power & Healthy wird „wie besehen" bereitgestellt.</p>
+              <p className="text-white/80 mt-2">FitBlaqs haftet nicht für Gesundheitsprobleme, Verletzungen oder Datenverlust, die aus der App-Nutzung oder dem Befolgen von Trainings-/Ernährungsberatung resultieren.</p>
+              <p className="text-white/80 mt-2">Die Haftung für grobe Fahrlässigkeit, vorsätzliches Fehlverhalten oder Verletzung von Leben, Körper oder Gesundheit bleibt unberührt.</p>
+              <p className="text-white/80 mt-2">FitBlaqs ist nicht verantwortlich für indirekte oder Folgeschäden.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">12. Kontokündigung</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Nutzer können Konten jederzeit in den Einstellungen löschen</li>
+                <li>FitBlaqs kann Konten bei Verstoß gegen diese Bedingungen sperren oder löschen</li>
+                <li>Bei Kündigung werden Daten gemäß Datenschutzerklärung gelöscht</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">13. Änderungen der Bedingungen</h3>
               <p className="text-white/80">Wir können diese Bedingungen jederzeit aktualisieren. Die weitere Nutzung nach Änderungen bedeutet die Annahme der neuen Bedingungen.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">12. Anwendbares Recht</h3>
-              <p className="text-white/80">Diese Bedingungen unterliegen dem Recht des Landes, in dem FitBlaq Company registriert ist.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">14. Anwendbares Recht & Gerichtsstand</h3>
+              <p className="text-white/80">Es gilt deutsches Recht (unter Ausschluss des UN-Kaufrechts).</p>
+              <p className="text-white/80 mt-2">Für Verbraucher in Deutschland ist der Sitz von FitBlaqs zuständig.</p>
+              <p className="text-white/80 mt-2">Vor Rechtsstreitigkeiten ist eine informelle Verhandlung erforderlich; Schlichtung kann in Köln erfolgen.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">13. Kontakt</h3>
-              <p className="text-white/80">Bei Fragen zu diesen Nutzungsbedingungen kontaktieren Sie uns bitte:</p>
-              <p className="text-white/80 mt-2"><strong>FitBlaq Company</strong><br/>E-Mail: Supportservice@Fitblaq.com</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">15. Kontakt</h3>
+              <p className="text-white/80">
+                FitBlaqs Company<br/>
+                E-Mail: Supportservice@FitBlaqs.com
+              </p>
             </>
           ) : (
             <>
-              <h2 className="text-white text-2xl font-bold mb-4">Terms of Service – FitBlaq</h2>
-              <p className="text-white/80 mb-4"><strong>Last Updated:</strong> December 2024</p>
-              <p className="text-white/80 mb-4">Please read these Terms of Service carefully before using the FitBlaq application.</p>
+              <h2 className="text-white text-2xl font-bold mb-4">FitBlaqs – Power & Healthy: Terms of Service</h2>
+              <p className="text-white/80 mb-4"><strong>Last Updated:</strong> December 2025</p>
+              <p className="text-white/80 mb-4">Please read these Terms of Service carefully before using the FitBlaqs – Power & Healthy application.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">1. Acceptance of Terms</h3>
-              <p className="text-white/80">By accessing or using FitBlaq, you agree to be bound by these Terms of Service. If you disagree, please do not use the app.</p>
+              <p className="text-white/80">By accessing or using FitBlaqs – Power & Healthy, you agree to be bound by these Terms of Service. If you do not agree, please do not use the app.</p>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">2. Service Description</h3>
-              <p className="text-white/80 mb-2">FitBlaq is a fitness and health tracking application that provides:</p>
+              <p className="text-white/80 mb-2">FitBlaqs – Power & Healthy is a fitness and health application providing:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
                 <li>Workout logging and tracking</li>
                 <li>Nutrition and calorie tracking</li>
@@ -126,66 +166,106 @@ const TermsOfService = () => {
                 <li>Personalized fitness plans and recommendations</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. User Accounts & Age Rating</h3>
-              <p className="text-white/80 mb-2"><strong>Age Rating: 12+</strong></p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">3. User Accounts & Age Requirement</h3>
+              <p className="text-white/80 mb-2"><strong>Age Requirement: 12+</strong></p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>This app is suitable for users aged 12 and above</li>
                 <li>You are responsible for maintaining account security</li>
-                <li>You must provide accurate and truthful information</li>
+                <li>Accurate and truthful information must be provided</li>
                 <li>One account per person is allowed</li>
               </ul>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">4. Health Disclaimer</h3>
-              <p className="text-white/80 mb-2"><strong>Important:</strong> FitBlaq provides general fitness and nutrition information. It is NOT a substitute for professional medical advice.</p>
+              <p className="text-white/80 mb-2">FitBlaqs – Power & Healthy provides general fitness and nutrition guidance. It is not a substitute for professional medical advice.</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Consult a physician before starting any new exercise program</li>
-                <li>AI analysis is for informational purposes only</li>
+                <li>Consult a physician before starting new exercise programs</li>
+                <li>AI analyses are for informational purposes only</li>
                 <li>Training and nutrition suggestions are general guidelines</li>
                 <li>Stop activity and seek medical help if you experience discomfort</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro Access</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro Features & Payments</h3>
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.1 Free Features</h4>
               <p className="text-white/80">Basic tracking features are available for free.</p>
               
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro Activation</h4>
-              <p className="text-white/80">Pro access is activated via our website. For more information, contact us at Supportservice@Fitblaq.com</p>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro Access</h4>
+              <p className="text-white/80">Pro access can be activated via our website. Contact: Supportservice@FitBlaqs.com</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. User Conduct</h3>
-              <p className="text-white/80 mb-2">You agree NOT to:</p>
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.3 Payment Methods</h4>
+              <p className="text-white/80 mb-2">Pro subscriptions may be paid via:</p>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Credit card</li>
+                <li>Direct debit</li>
+                <li>PayPal</li>
+                <li>Prepayment / Invoice</li>
+                <li>Installments (if offered)</li>
+              </ul>
+
+              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.4 Late Payment & Default</h4>
+              <p className="text-white/80">Late payments may incur a default interest of 5% above the base rate of the German Bundesbank. Customers remain responsible for all collection costs.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Delivery & Retention of Title (for physical products, if applicable)</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Delivery is made to the address provided by the user</li>
+                <li>Ownership remains with FitBlaqs until full payment is received</li>
+                <li>Returns should be in original packaging; unnecessary shipping costs may be charged to the customer</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Warranty / Liability for Defects</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>For physical products, statutory warranty of 2 years applies from delivery</li>
+                <li>Claims include repair or replacement at FitBlaqs' discretion</li>
+                <li>No warranty for damage caused by improper use or external factors</li>
+                <li>FitBlaqs is not responsible for data loss during returns of devices or software</li>
+                <li>Warranty claims for software defects are limited to correcting the defect or replacing the license, at FitBlaqs' discretion</li>
+              </ul>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. User Conduct</h3>
+              <p className="text-white/80 mb-2">You agree not to:</p>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
                 <li>Upload illegal or inappropriate content</li>
-                <li>Attempt to hack or manipulate the app</li>
-                <li>Provide false personal information</li>
-                <li>Share or access other users' accounts</li>
+                <li>Hack or manipulate the app</li>
+                <li>Use other users' accounts</li>
                 <li>Use the app for unauthorized commercial purposes</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Intellectual Property</h3>
-              <p className="text-white/80">All content, features, and design of FitBlaq are the intellectual property of FitBlaq Company. Users retain ownership of their uploaded content.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Intellectual Property</h3>
+              <p className="text-white/80">All content, features, and design of FitBlaqs – Power & Healthy are property of FitBlaqs Company.</p>
+              <p className="text-white/80 mt-2">Users retain rights to their uploaded content. By submitting content, you grant FitBlaqs the right to use it for lawful purposes.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">8. Privacy</h3>
-              <p className="text-white/80">Your use of FitBlaq is also governed by our Privacy Policy, which explains how we collect, use, and protect your personal data and health information.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">9. Limitation of Liability</h3>
-              <p className="text-white/80">FitBlaq is provided "as is" without warranties. We are not liable for any injuries, health issues, or damages resulting from using the app or following workout/nutrition suggestions.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Account Termination</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">10. Privacy & Data Protection</h3>
               <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>You may delete your account at any time in Settings</li>
-                <li>We may suspend accounts for violation of these terms</li>
-                <li>Upon termination, your data will be deleted per our Privacy Policy</li>
+                <li>Use of FitBlaqs – Power & Healthy is governed by our Privacy Policy</li>
+                <li>Data storage is in Germany</li>
+                <li>Users under 16 require parental consent</li>
+                <li>Personal and health data are processed in accordance with GDPR</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">11. Changes to Terms</h3>
-              <p className="text-white/80">We may update these terms at any time. Continued use after changes constitutes acceptance of new terms.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">11. Limitation of Liability</h3>
+              <p className="text-white/80">FitBlaqs – Power & Healthy is provided "as is."</p>
+              <p className="text-white/80 mt-2">FitBlaqs is not liable for health issues, injuries, or data loss resulting from app use or following training/nutrition guidance.</p>
+              <p className="text-white/80 mt-2">Liability for gross negligence, intentional misconduct, or injury to life, body, or health remains unaffected.</p>
+              <p className="text-white/80 mt-2">FitBlaqs is not responsible for indirect or consequential damages.</p>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">12. Governing Law</h3>
-              <p className="text-white/80">These terms are governed by the laws of the country where FitBlaq Company is registered.</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">12. Account Termination</h3>
+              <ul className="text-white/80 list-disc pl-6 space-y-1">
+                <li>Users may delete accounts at any time in Settings</li>
+                <li>FitBlaqs may suspend or delete accounts for violation of these terms</li>
+                <li>Upon termination, data will be deleted according to the Privacy Policy</li>
+              </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">13. Contact</h3>
-              <p className="text-white/80">For questions about these Terms of Service, please contact us:</p>
-              <p className="text-white/80 mt-2"><strong>FitBlaq Company</strong><br/>Email: Supportservice@Fitblaq.com</p>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">13. Changes to Terms</h3>
+              <p className="text-white/80">We may update these Terms at any time. Continued use after changes constitutes acceptance of the new Terms.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">14. Governing Law & Jurisdiction</h3>
+              <p className="text-white/80">German law applies (excluding the UN Sales Convention).</p>
+              <p className="text-white/80 mt-2">For consumers in Germany, FitBlaqs headquarters has jurisdiction.</p>
+              <p className="text-white/80 mt-2">Informal negotiation is required before legal disputes; arbitration may follow in Cologne.</p>
+
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">15. Contact</h3>
+              <p className="text-white/80">
+                FitBlaqs Company<br/>
+                Email: Supportservice@FitBlaqs.com
+              </p>
             </>
           )}
         </Card>
