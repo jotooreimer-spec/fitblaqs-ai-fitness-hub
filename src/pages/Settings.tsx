@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -467,6 +467,17 @@ const Settings = () => {
             >
               <Shield className="w-4 h-4 mr-2" />
               {language === "de" ? "Nutzungsbedingungen" : "Terms of Service"}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => {
+                setPrivacyDialogOpen(false);
+                navigate("/impressum");
+              }}
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Impressum
             </Button>
           </div>
         </DialogContent>
