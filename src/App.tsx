@@ -23,7 +23,9 @@ import ProAthlete from "./pages/ProAthlete";
 import ProNutrition from "./pages/ProNutrition";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import Impressum from "./pages/Impressum";
 import NotFound from "./pages/NotFound";
+import CookieBanner from "./components/CookieBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,8 +68,11 @@ const App = () => (
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/impressum" element={<Impressum />} />
+                <Route path="/legal" element={<Impressum />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <CookieBanner />
             </BrowserRouter>
           </TooltipProvider>
         </LiveDataProvider>
