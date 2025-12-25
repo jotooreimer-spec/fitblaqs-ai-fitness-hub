@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Bike, PersonStanding, Timer, MapPin, Navigation, Circle } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Bike, PersonStanding, Timer, MapPin, Navigation, Circle as CircleIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,7 +15,7 @@ import joggingBg from "@/assets/jogging-bg.png";
 import bicycleBg from "@/assets/bicycle-bg.jpg";
 import joggingImg from "@/assets/jogging-bg.jpg";
 import laufenBg from "@/assets/laufen-bg.jpg";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -441,7 +441,16 @@ const JoggingTracker = () => {
 
                 {/* 5km radius circle */}
                 {showRadius && (
-                  <circle cx="50%" cy="50%" r="5000" fill="rgba(59, 130, 246, 0.1)" stroke="#3B82F6" strokeWidth="2" />
+                  <Circle 
+                    center={userLocation} 
+                    radius={5000} 
+                    pathOptions={{ 
+                      fillColor: '#3B82F6', 
+                      fillOpacity: 0.1, 
+                      color: '#3B82F6', 
+                      weight: 2 
+                    }} 
+                  />
                 )}
               </MapContainer>
             ) : null}
@@ -449,7 +458,7 @@ const JoggingTracker = () => {
 
           {userLocation && (
             <div className="mt-3 flex items-center justify-center gap-2 text-xs text-white/50">
-              <Circle className="w-3 h-3 fill-blue-500 text-blue-500" />
+              <CircleIcon className="w-3 h-3 fill-blue-500 text-blue-500" />
               <span>{userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}</span>
             </div>
           )}
