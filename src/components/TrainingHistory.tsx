@@ -3,10 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Trash2, Check, Edit2, X } from "lucide-react";
+import { Save, Trash2, Check, X, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { ExerciseImageDialog } from "./ExerciseImageDialog";
+import { allExercises } from "@/data/exerciseImages";
 
 interface WorkoutLog {
   id: string;
@@ -29,12 +31,25 @@ interface TrainingHistoryProps {
   refreshTrigger: number;
 }
 
+// Helper to find exercise image
+const findExerciseImage = (name: string): string | null => {
+  const exercise = allExercises.find(
+    ex => ex.name.toLowerCase() === name.toLowerCase() || 
+          ex.name_de.toLowerCase() === name.toLowerCase() ||
+          name.toLowerCase().includes(ex.name.toLowerCase()) ||
+          name.toLowerCase().includes(ex.name_de.toLowerCase())
+  );
+  return exercise?.image || null;
+};
+
 export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHistoryProps) => {
   const { toast } = useToast();
   const [workouts, setWorkouts] = useState<WorkoutLog[]>([]);
   const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ sets: "", reps: "", weight: "", unit: "kg" });
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [selectedExerciseName, setSelectedExerciseName] = useState("");
 
   useEffect(() => {
     loadWorkouts();
@@ -169,11 +184,19 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
     );
   }
 
+  const handleOpenImage = (exerciseName: string) => {
+    setSelectedExerciseName(exerciseName);
+    setImageDialogOpen(true);
+  };
+
   return (
+    <>
     <div className="space-y-4">
       {workouts.map((workout) => {
         const isSaved = savedItems.has(workout.id);
         const isEditing = editingId === workout.id;
+        const exerciseName = workout.notes?.split(" (")[0] || (isGerman ? workout.exercises?.name_de : workout.exercises?.name_en) || "Training";
+        const exerciseImage = findExerciseImage(exerciseName);
         
         return (
           <Card 
@@ -181,10 +204,40 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
             className={`gradient-card card-shadow border-white/10 p-4 ${!isSaved && !isEditing ? 'cursor-pointer hover:border-primary/30' : ''}`}
             onClick={() => !isEditing && !isSaved && startEditing(workout)}
           >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="font-bold text-lg mb-1">
+            <div className="flex justify-between items-start gap-3">
+              {/* Exercise Image Thumbnail */}
+              {exerciseImage && (
+                <div 
+                  className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-black/30 border border-white/10 cursor-pointer hover:scale-110 transition-transform"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenImage(exerciseName);
+                  }}
+                >
+                  <img 
+                    src={exerciseImage} 
+                    alt={exerciseName}
+                    className="w-full h-full object-contain p-1"
+                  />
+                </div>
+              )}
+              
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
                   {workout.notes || (isGerman ? (workout.exercises?.name_de || "Training") : (workout.exercises?.name_en || "Training"))}
+                  {exerciseImage && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-primary/70 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenImage(exerciseName);
+                      }}
+                    >
+                      <Image className="w-4 h-4" />
+                    </Button>
+                  )}
                 </h3>
                 
                 {isEditing ? (
@@ -313,5 +366,13 @@ export const TrainingHistory = ({ userId, isGerman, refreshTrigger }: TrainingHi
         );
       })}
     </div>
+    
+    <ExerciseImageDialog
+      open={imageDialogOpen}
+      onOpenChange={setImageDialogOpen}
+      exerciseName={selectedExerciseName}
+      isGerman={isGerman}
+    />
+    </>
   );
 };
