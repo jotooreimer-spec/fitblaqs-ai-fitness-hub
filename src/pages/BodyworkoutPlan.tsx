@@ -4,10 +4,15 @@ import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, ChevronLeft, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dumbbell, ChevronLeft, Target, Calendar as CalendarIcon } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { ExerciseImageDialog } from "@/components/ExerciseImageDialog";
 import { allExercises } from "@/data/exerciseImages";
+import { useLiveData } from "@/contexts/LiveDataContext";
+import { useToast } from "@/hooks/use-toast";
 import bodyworkoutBg from "@/assets/bodyworkout-bg.png";
 import upperbodyImg from "@/assets/upperbody-bg.png";
 import middlebodyImg from "@/assets/middlebody.png";
@@ -24,10 +29,21 @@ interface Exercise {
 
 const BodyworkoutPlan = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { profile, setUserId } = useLiveData();
   const [isGerman, setIsGerman] = useState(true);
+  const [userId, setLocalUserId] = useState<string>("");
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
   const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
   const [selectedExerciseName, setSelectedExerciseName] = useState("");
+  
+  // Challenges state
+  const [isChallengeDialogOpen, setIsChallengeDialogOpen] = useState(false);
+  const [goalWeight, setGoalWeight] = useState("");
+  const [months, setMonths] = useState("");
+  const [bodyWeight, setBodyWeight] = useState("");
+  const [savedGoal, setSavedGoal] = useState<{ goal: number; months: number; startWeight: number; startDate: string } | null>(null);
+  const [userWeight, setUserWeight] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -37,8 +53,72 @@ const BodyworkoutPlan = () => {
       }
       const metadata = session.user.user_metadata;
       setIsGerman(metadata.language === "de");
+      setLocalUserId(session.user.id);
+      setUserId(session.user.id);
+      
+      // Load saved challenge
+      const saved = localStorage.getItem(`challenge_${session.user.id}`);
+      if (saved) {
+        setSavedGoal(JSON.parse(saved));
+      }
     });
-  }, [navigate]);
+  }, [navigate, setUserId]);
+
+  // Update user weight from profile
+  useEffect(() => {
+    if (profile?.weight) {
+      setUserWeight(profile.weight);
+      setBodyWeight(profile.weight.toString());
+    }
+  }, [profile]);
+
+  const handleSaveChallenge = () => {
+    if (!goalWeight || !months || !bodyWeight) {
+      toast({
+        title: isGerman ? "Fehler" : "Error",
+        description: isGerman ? "Bitte alle Felder ausfüllen" : "Please fill all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const challenge = {
+      goal: parseFloat(goalWeight),
+      months: parseInt(months),
+      startWeight: parseFloat(bodyWeight),
+      startDate: new Date().toISOString()
+    };
+
+    localStorage.setItem(`challenge_${userId}`, JSON.stringify(challenge));
+    setSavedGoal(challenge);
+    setIsChallengeDialogOpen(false);
+
+    toast({
+      title: isGerman ? "Challenge gespeichert!" : "Challenge saved!",
+      description: isGerman ? "Viel Erfolg!" : "Good luck!"
+    });
+  };
+
+  const calculateDaysRemaining = () => {
+    if (!savedGoal) return 0;
+    const startDate = new Date(savedGoal.startDate);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + savedGoal.months);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  };
+
+  const calculateProgress = () => {
+    if (!savedGoal || !userWeight) return 0;
+    const totalToLose = savedGoal.startWeight - savedGoal.goal;
+    const lost = savedGoal.startWeight - userWeight;
+    if (totalToLose <= 0) return 100;
+    return Math.min(100, Math.max(0, (lost / totalToLose) * 100));
+  };
+
+  const daysRemaining = calculateDaysRemaining();
+  const progress = calculateProgress();
 
   const trainingModules = [
     { 
@@ -125,6 +205,51 @@ const BodyworkoutPlan = () => {
           </div>
         </div>
 
+        {/* Challenges Box */}
+        <Card 
+          className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-6 cursor-pointer hover:scale-[1.01] transition-all"
+          onClick={() => setIsChallengeDialogOpen(true)}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Target className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-bold text-white">Challenges</h3>
+          </div>
+
+          {savedGoal ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-xs text-white/60 mb-1">Weight</div>
+                  <div className="text-xl font-bold text-white">{userWeight} kg</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/60 mb-1">Goal</div>
+                  <div className="text-xl font-bold text-green-400">{savedGoal.goal} kg</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Tage übrig" : "Days Left"}</div>
+                  <div className="text-xl font-bold text-primary flex items-center justify-center gap-1">
+                    <CalendarIcon className="w-4 h-4" />
+                    {daysRemaining}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/60">{isGerman ? "Fortschritt" : "Progress"}</span>
+                  <span className="font-bold text-white">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-white/60 py-4">
+              {isGerman ? "Klicken um Challenge zu starten" : "Click to start a challenge"}
+            </div>
+          )}
+        </Card>
+
         {/* Training Modules Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {trainingModules.map((module) => (
@@ -189,6 +314,45 @@ const BodyworkoutPlan = () => {
                 </div>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Challenge Dialog */}
+      <Dialog open={isChallengeDialogOpen} onOpenChange={setIsChallengeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isGerman ? "Challenge einstellen" : "Set Challenge"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{isGerman ? "Aktuelles Gewicht (kg)" : "Current Weight (kg)"}</Label>
+              <Input type="number" value={bodyWeight} onChange={(e) => setBodyWeight(e.target.value)} placeholder="70" />
+            </div>
+            <div>
+              <Label>Weight Goal (kg)</Label>
+              <Input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)} placeholder="65" />
+            </div>
+            <div>
+              <Label>{isGerman ? "Zeitraum (Monate)" : "Duration (Months)"}</Label>
+              <Input type="number" min="1" max="24" value={months} onChange={(e) => setMonths(e.target.value)} placeholder="3" />
+            </div>
+            <Button onClick={handleSaveChallenge} className="w-full">
+              {isGerman ? "Challenge starten" : "Start Challenge"}
+            </Button>
+            {savedGoal && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  localStorage.removeItem(`challenge_${userId}`);
+                  setSavedGoal(null);
+                  setIsChallengeDialogOpen(false);
+                }}
+              >
+                {isGerman ? "Challenge zurücksetzen" : "Reset Challenge"}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
