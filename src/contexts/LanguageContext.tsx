@@ -65,7 +65,7 @@ const translations: Translations = {
   
   // Settings
   editProfile: { de: "Profil bearbeiten", en: "Edit Profile", es: "Editar perfil", fr: "Modifier le profil", pt: "Editar perfil", ru: "Редактировать профиль", tr: "Profili düzenle", it: "Modifica profilo" },
-  subscription: { de: "Abo & Zahlung", en: "Subscription & Payment", es: "Suscripción y pago", fr: "Abonnement et paiement", pt: "Assinatura e pagamento", ru: "Подписка и оплата", tr: "Abonelik ve ödeme", it: "Abbonamento e pagamento" },
+  subscription: { de: "Abo", en: "Subscription", es: "Suscripción", fr: "Abonnement", pt: "Assinatura", ru: "Подписка", tr: "Abonelik", it: "Abbonamento" },
   notifications: { de: "Benachrichtigungen", en: "Notifications", es: "Notificaciones", fr: "Notifications", pt: "Notificações", ru: "Уведомления", tr: "Bildirimler", it: "Notifiche" },
   language: { de: "Sprache", en: "Language", es: "Idioma", fr: "Langue", pt: "Idioma", ru: "Язык", tr: "Dil", it: "Lingua" },
   privacy: { de: "Datenschutz & Sicherheit", en: "Privacy & Security", es: "Privacidad y seguridad", fr: "Confidentialité et sécurité", pt: "Privacidade e segurança", ru: "Конфиденциальность", tr: "Gizlilik ve güvenlik", it: "Privacy e sicurezza" },

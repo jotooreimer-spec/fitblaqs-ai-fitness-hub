@@ -183,32 +183,12 @@ const TermsOfService = () => {
                 <li>Stop activity and seek medical help if you experience discomfort</li>
               </ul>
 
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro Features & Payments</h3>
+              <h3 className="text-white text-xl font-semibold mt-6 mb-3">5. Pro Features</h3>
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.1 Free Features</h4>
               <p className="text-white/80">Basic tracking features are available for free.</p>
               
               <h4 className="text-white text-lg font-medium mt-4 mb-2">5.2 Pro Access</h4>
               <p className="text-white/80">Pro access can be activated via our website. Contact: Supportservice@FitBlaqs.com</p>
-
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.3 Payment Methods</h4>
-              <p className="text-white/80 mb-2">Pro subscriptions may be paid via:</p>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Credit card</li>
-                <li>Direct debit</li>
-                <li>PayPal</li>
-                <li>Prepayment / Invoice</li>
-                <li>Installments (if offered)</li>
-              </ul>
-
-              <h4 className="text-white text-lg font-medium mt-4 mb-2">5.4 Late Payment & Default</h4>
-              <p className="text-white/80">Late payments may incur a default interest of 5% above the base rate of the German Bundesbank. Customers remain responsible for all collection costs.</p>
-
-              <h3 className="text-white text-xl font-semibold mt-6 mb-3">6. Delivery & Retention of Title (for physical products, if applicable)</h3>
-              <ul className="text-white/80 list-disc pl-6 space-y-1">
-                <li>Delivery is made to the address provided by the user</li>
-                <li>Ownership remains with FitBlaqs until full payment is received</li>
-                <li>Returns should be in original packaging; unnecessary shipping costs may be charged to the customer</li>
-              </ul>
 
               <h3 className="text-white text-xl font-semibold mt-6 mb-3">7. Warranty / Liability for Defects</h3>
               <ul className="text-white/80 list-disc pl-6 space-y-1">

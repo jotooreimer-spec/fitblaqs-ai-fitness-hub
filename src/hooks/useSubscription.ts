@@ -27,7 +27,7 @@ export const useSubscription = (plan?: SubscriptionPlan) => {
         return;
       }
 
-      // Only select needed columns (exclude stripe_customer_id, stripe_subscription_id for security)
+      // Select only needed columns
       let query = supabase
         .from("subscriptions")
         .select("id, user_id, plan, status, start_date, end_date")
