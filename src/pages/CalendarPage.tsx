@@ -425,7 +425,7 @@ const CalendarPage = () => {
                     const healthNotes = ba.health_notes ? (typeof ba.health_notes === 'string' ? JSON.parse(ba.health_notes) : ba.health_notes) : null;
                     return (
                       <div key={ba.id} className="p-3 bg-white/5 rounded-lg">
-                        <div className="font-semibold text-cyan-400">Pro Athlete</div>
+                        <div className="font-semibold text-cyan-400">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
                         {ba.image_url && <img src={ba.image_url} alt="" className="w-12 h-12 rounded object-cover mt-1" />}
                         {healthNotes?.weight && <div className="text-xs text-white/60 mt-1">{healthNotes.weight}{healthNotes.weight_unit || 'kg'}</div>}
                         {healthNotes?.training_time && <div className="text-xs text-white/60">{healthNotes.training_time}h Training</div>}
@@ -438,7 +438,7 @@ const CalendarPage = () => {
                     const notes = fa.notes ? (typeof fa.notes === 'string' ? JSON.parse(fa.notes) : fa.notes) : null;
                     return (
                       <div key={fa.id} className="p-3 bg-white/5 rounded-lg">
-                        <div className="font-semibold text-amber-400">Pro Nutrition</div>
+                        <div className="font-semibold text-amber-400">{isGerman ? "Essensanalyse" : "Food Analysis"}</div>
                         {fa.image_url && <img src={fa.image_url} alt="" className="w-12 h-12 rounded object-cover mt-1" />}
                         {fa.total_calories && <div className="text-xs text-white/60 mt-1">{fa.total_calories} kcal</div>}
                         {notes?.upload_name && <div className="text-xs text-white/60">{notes.upload_name}</div>}

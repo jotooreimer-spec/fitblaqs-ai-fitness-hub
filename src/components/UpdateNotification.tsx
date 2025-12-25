@@ -17,13 +17,13 @@ const STORAGE_KEY = "fitblaqs_last_seen_version";
 const updateFeatures = {
   de: [
     "Live-Synchronisation auf allen Seiten",
-    "Verbesserte Pro-Athlete Statistiken",
+    "Verbesserte Performance-Statistiken",
     "4 Sätze pro Übung eintragen",
     "Challenges mit Countdown"
   ],
   en: [
     "Live synchronization across all pages",
-    "Improved Pro-Athlete statistics",
+    "Improved performance statistics",
     "Log 4 sets per exercise",
     "Challenges with countdown"
   ]

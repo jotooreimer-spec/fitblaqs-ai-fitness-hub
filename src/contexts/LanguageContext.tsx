@@ -71,9 +71,8 @@ const translations: Translations = {
   privacy: { de: "Datenschutz & Sicherheit", en: "Privacy & Security", es: "Privacidad y seguridad", fr: "Confidentialité et sécurité", pt: "Privacidade e segurança", ru: "Конфиденциальность", tr: "Gizlilik ve güvenlik", it: "Privacy e sicurezza" },
   logout: { de: "Abmelden", en: "Logout", es: "Cerrar sesión", fr: "Déconnexion", pt: "Sair", ru: "Выйти", tr: "Çıkış yap", it: "Esci" },
   
-  // Pro Features
-  proAthlete: { de: "Pro Athlete", en: "Pro Athlete", es: "Pro Atleta", fr: "Pro Athlète", pt: "Pro Atleta", ru: "Про Атлет", tr: "Pro Atlet", it: "Pro Atleta" },
-  proNutrition: { de: "Pro Nutrition", en: "Pro Nutrition", es: "Pro Nutrición", fr: "Pro Nutrition", pt: "Pro Nutrição", ru: "Про Питание", tr: "Pro Beslenme", it: "Pro Nutrizione" },
+  // Features
+  performance: { de: "Performance", en: "Performance", es: "Rendimiento", fr: "Performance", pt: "Desempenho", ru: "Производительность", tr: "Performans", it: "Performance" },
   learnMore: { de: "Mehr erfahren", en: "Learn more", es: "Saber más", fr: "En savoir plus", pt: "Saiba mais", ru: "Узнать больше", tr: "Daha fazla bilgi", it: "Scopri di più" },
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { NutritionLogDialog } from "@/components/NutritionLogDialog";
 import { HydrationDialog } from "@/components/HydrationDialog";
 import { MilchprodukteDialog } from "@/components/MilchprodukteDialog";
 import { NutritionHistory } from "@/components/NutritionHistory";
+import { LiveUpdatePopup } from "@/components/LiveUpdatePopup";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import vegetableImg from "@/assets/vegetable.jpg";
@@ -19,6 +20,14 @@ import supplementsImg from "@/assets/supplements.jpg";
 import nutritionBg from "@/assets/nutrition-bg.png";
 import hydrationBg from "@/assets/hydration-bg.jpg";
 import milchprodukteBg from "@/assets/milchprodukte-bg.jpg";
+
+interface LivePopup {
+  type: "calories" | "protein" | "hydration";
+  currentValue: number;
+  previousValue: number;
+  percentChange: number;
+}
+
 const Nutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,6 +41,10 @@ const Nutrition = () => {
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  
+  // Live update popup state
+  const [livePopup, setLivePopup] = useState<LivePopup | null>(null);
+  const previousTotalsRef = useRef<{ calories: number; protein: number; hydration: number } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -179,6 +192,42 @@ const Nutrition = () => {
 
   const dailyTotals = calculateDailyTotals();
 
+  // Show live update popup when values change
+  useEffect(() => {
+    if (previousTotalsRef.current) {
+      const prev = previousTotalsRef.current;
+      
+      if (dailyTotals.calories > prev.calories && dailyTotals.caloriesChange !== 0) {
+        setLivePopup({
+          type: "calories",
+          currentValue: dailyTotals.calories,
+          previousValue: prev.calories,
+          percentChange: dailyTotals.caloriesChange
+        });
+      } else if (dailyTotals.protein > prev.protein && dailyTotals.proteinChange !== 0) {
+        setLivePopup({
+          type: "protein",
+          currentValue: dailyTotals.protein,
+          previousValue: prev.protein,
+          percentChange: dailyTotals.proteinChange
+        });
+      } else if (dailyTotals.hydration > prev.hydration && dailyTotals.hydrationChange !== 0) {
+        setLivePopup({
+          type: "hydration",
+          currentValue: dailyTotals.hydration,
+          previousValue: prev.hydration,
+          percentChange: dailyTotals.hydrationChange
+        });
+      }
+    }
+    
+    previousTotalsRef.current = {
+      calories: dailyTotals.calories,
+      protein: dailyTotals.protein,
+      hydration: dailyTotals.hydration
+    };
+  }, [dailyTotals.calories, dailyTotals.protein, dailyTotals.hydration]);
+
   const nutritionCategories = [
     { image: vegetableImg, title: isGerman ? "Vegetarisch" : "Vegetarian", description: isGerman ? "Pflanzliche Ernährung" : "Plant-based nutrition", key: "vegetarian" as const },
     { image: veganImg, title: "Vegan", description: isGerman ? "100% pflanzlich" : "100% plant-based", key: "vegan" as const },
@@ -192,6 +241,18 @@ const Nutrition = () => {
 
   return (
     <div className="min-h-screen pb-24 relative">
+      {/* Live Update Popup */}
+      {livePopup && (
+        <LiveUpdatePopup
+          type={livePopup.type}
+          currentValue={livePopup.currentValue}
+          previousValue={livePopup.previousValue}
+          percentChange={livePopup.percentChange}
+          isGerman={isGerman}
+          onClose={() => setLivePopup(null)}
+        />
+      )}
+      
       {/* Background Image */}
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${nutritionBg})` }} />
       <div className="fixed inset-0 bg-black/60" />
