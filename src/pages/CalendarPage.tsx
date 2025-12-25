@@ -319,48 +319,47 @@ const CalendarPage = () => {
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${performanceBg})` }} />
       <div className="fixed inset-0 bg-black/60" />
 
-      <div className="relative z-10 max-w-screen-xl mx-auto p-4 md:p-6">
-        {/* Header with Back Navigation */}
-        <div className="mb-4 flex items-center gap-3">
+      <div className="relative z-10 max-w-screen-xl mx-auto p-3 md:p-4">
+        {/* Header with Back Navigation - Compact */}
+        <div className="mb-3 flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => navigate("/dashboard")}
-            className="text-white hover:bg-white/10 flex-shrink-0"
+            className="text-white hover:bg-white/10 flex-shrink-0 h-8 w-8"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-white">Performance</h1>
-            <p className="text-white/60 text-xs">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
+            <h1 className="text-lg font-bold text-white">Performance</h1>
+            <p className="text-white/60 text-[10px]">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
           </div>
         </div>
 
-        {/* Main Grid - 3 columns on desktop */}
-        <div className="grid lg:grid-cols-3 gap-4">
-          {/* Column 1: Calendar */}
-          <div className="space-y-4">
-            {/* Calendar - Compact */}
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
+        {/* Main Grid - Responsive layout */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Column 1: Calendar - Ultra Compact */}
+          <div>
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
               <Calendar 
                 mode="single" 
                 selected={date} 
                 onSelect={setDate} 
-                className="rounded-md text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-head_th]:w-8" 
+                className="rounded-md text-xs [&_.rdp-day]:h-7 [&_.rdp-day]:w-7 [&_.rdp-day]:text-xs [&_.rdp-head_th]:w-7 [&_.rdp-head_th]:text-xs [&_.rdp-caption]:text-sm [&_.rdp-nav_button]:h-6 [&_.rdp-nav_button]:w-6" 
               />
             </Card>
           </div>
 
-          {/* Column 2: Dailyplaner */}
+          {/* Column 2: Dailyplaner - Compact */}
           <div>
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 h-full max-h-[500px] flex flex-col">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-bold text-white">Dailyplaner</h3>
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3 h-full max-h-[280px] flex flex-col">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-xs font-bold text-white">Dailyplaner</h3>
                 <div className="text-right">
-                  <span className="text-xs text-white/60">{date ? format(date, "dd.MM.yyyy") : ""}</span>
+                  <span className="text-[10px] text-white/60">{date ? format(date, "dd.MM.yyyy") : ""}</span>
                   {totalDuration > 0 && (
-                    <div className="text-[10px] text-primary">
-                      {isGerman ? "Dauer:" : "Duration:"} {totalDuration} min
+                    <div className="text-[9px] text-primary">
+                      {totalDuration} min
                     </div>
                   )}
                 </div>
@@ -369,10 +368,10 @@ const CalendarPage = () => {
               {dataLoading ? (
                 <CalendarSkeleton />
               ) : !hasData ? (
-                <p className="text-white/60 text-center py-8 text-sm">{isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}</p>
+                <p className="text-white/60 text-center py-4 text-xs">{isGerman ? "Keine Einträge" : "No entries"}</p>
               ) : (
-                <div className="space-y-2 flex-1 overflow-y-auto">
-                  {/* Workouts */}
+                <div className="space-y-1.5 flex-1 overflow-y-auto">
+                  {/* Workouts - Compact */}
                   {selectedDayData.workouts.map((w) => {
                     const exerciseName = w.notes?.split(" (")[0] || (isGerman ? w.exercises?.name_de : w.exercises?.name_en) || "Training";
                     const exerciseImage = findExerciseImage(exerciseName);
@@ -380,7 +379,7 @@ const CalendarPage = () => {
                     return (
                       <div 
                         key={w.id} 
-                        className={`p-2 bg-white/5 rounded-lg flex gap-2 items-start ${exerciseImage ? 'cursor-pointer hover:bg-white/10' : ''}`}
+                        className={`p-1.5 bg-white/5 rounded flex gap-1.5 items-center ${exerciseImage ? 'cursor-pointer hover:bg-white/10' : ''}`}
                         onClick={() => {
                           if (exerciseImage) {
                             setSelectedExerciseName(exerciseName);
@@ -389,17 +388,13 @@ const CalendarPage = () => {
                         }}
                       >
                         {exerciseImage && (
-                          <div className="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-black/30 border border-white/10">
+                          <div className="flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-black/30 border border-white/10">
                             <img src={exerciseImage} alt={exerciseName} className="w-full h-full object-contain p-0.5" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-blue-400 text-xs flex items-center gap-1">
-                            {isGerman ? "Training" : "Workout"}
-                            {exerciseImage && <Image className="w-2.5 h-2.5 text-white/40" />}
-                          </div>
-                          <div className="text-xs text-white truncate">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
-                          <div className="text-[10px] text-white/60">
+                          <div className="text-[10px] text-white truncate">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
+                          <div className="text-[9px] text-white/60">
                             {w.sets}×{w.reps} | {w.weight || 0}{w.unit || 'kg'}
                           </div>
                         </div>
@@ -407,45 +402,42 @@ const CalendarPage = () => {
                     );
                   })}
 
-                  {/* Nutrition */}
+                  {/* Nutrition - Compact */}
                   {selectedDayData.nutrition.map((n) => (
-                    <div key={n.id} className="p-2 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-green-400 text-xs">{isGerman ? "Ernährung" : "Nutrition"}</div>
-                      <div className="text-xs text-white">{n.food_name}</div>
-                      <div className="text-[10px] text-white/60">{n.calories} kcal | P: {n.protein || 0}g</div>
+                    <div key={n.id} className="p-1.5 bg-white/5 rounded">
+                      <div className="text-[10px] text-white truncate">{n.food_name}</div>
+                      <div className="text-[9px] text-white/60">{n.calories} kcal</div>
                     </div>
                   ))}
 
-                  {/* Jogging */}
+                  {/* Jogging - Compact */}
                   {selectedDayData.jogging.map((j) => (
-                    <div key={j.id} className="p-2 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-purple-400 text-xs">Jogging</div>
-                      <div className="text-xs text-white">{j.distance} km | {formatJoggingDuration(j.duration)}</div>
-                      <div className="text-[10px] text-white/60">{j.calories || 0} kcal</div>
+                    <div key={j.id} className="p-1.5 bg-white/5 rounded">
+                      <div className="text-[10px] text-white">{j.distance} km</div>
+                      <div className="text-[9px] text-white/60">{j.calories || 0} kcal</div>
                     </div>
                   ))}
 
-                  {/* Weight */}
+                  {/* Weight - Compact */}
                   {selectedDayData.weight.map((w) => (
-                    <div key={w.id} className="p-2 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-orange-400 text-xs">{isGerman ? "Gewicht" : "Weight"}</div>
-                      <div className="text-xs text-white">{w.weight} kg</div>
+                    <div key={w.id} className="p-1.5 bg-white/5 rounded">
+                      <div className="text-[10px] text-white">{w.weight} kg</div>
                     </div>
                   ))}
 
-                  {/* Body Analysis */}
+                  {/* Body Analysis - Compact */}
                   {selectedDayData.bodyAnalysis.map((ba) => (
-                    <div key={ba.id} className="p-2 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-cyan-400 text-xs">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
-                      {ba.image_url && <img src={ba.image_url} alt="" className="w-10 h-10 rounded object-cover mt-1" />}
+                    <div key={ba.id} className="p-1.5 bg-white/5 rounded flex items-center gap-1">
+                      <span className="text-[10px] text-cyan-400">{isGerman ? "Körper" : "Body"}</span>
+                      {ba.image_url && <img src={ba.image_url} alt="" className="w-6 h-6 rounded object-cover" />}
                     </div>
                   ))}
 
-                  {/* Food Analysis */}
+                  {/* Food Analysis - Compact */}
                   {selectedDayData.foodAnalysis.map((fa) => (
-                    <div key={fa.id} className="p-2 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-amber-400 text-xs">{isGerman ? "Essensanalyse" : "Food Analysis"}</div>
-                      {fa.total_calories && <div className="text-[10px] text-white/60">{fa.total_calories} kcal</div>}
+                    <div key={fa.id} className="p-1.5 bg-white/5 rounded">
+                      <span className="text-[10px] text-amber-400">{isGerman ? "Essen" : "Food"}</span>
+                      {fa.total_calories && <span className="text-[9px] text-white/60 ml-1">{fa.total_calories} kcal</span>}
                     </div>
                   ))}
                 </div>
@@ -453,38 +445,38 @@ const CalendarPage = () => {
             </Card>
           </div>
 
-          {/* Column 3: Performance + Nutrition Pie - SMALLER */}
-          <div className="space-y-3">
-            {/* Performance Bar Chart - Smaller */}
+          {/* Column 3: Performance + Nutrition - Ultra Compact */}
+          <div className="space-y-2 md:col-span-2 lg:col-span-1">
+            {/* Performance Bar Chart */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
-              <h3 className="text-xs font-bold mb-1 text-white">Performance</h3>
-              <div className="h-20">
+              <h3 className="text-[10px] font-bold mb-1 text-white">Performance</h3>
+              <div className="h-16">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyChartData}>
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={8} tickLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={8} width={20} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: '10px' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Std' : 'Hrs']} />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={7} tickLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={7} width={16} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: '9px' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Std' : 'Hrs']} />
                     <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-[8px] text-white/50">{isGerman ? "Std/Monat" : "Hrs/Month"}</div>
+              <div className="text-center text-[7px] text-white/50">{isGerman ? "Std/Monat" : "Hrs/Month"}</div>
             </Card>
 
-            {/* Nutrition Pie Chart - Smaller */}
+            {/* Nutrition Pie Chart */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
-              <h3 className="text-xs font-bold mb-1 text-white">{isGerman ? "Ernährung" : "Nutrition"}</h3>
+              <h3 className="text-[10px] font-bold mb-1 text-white">{isGerman ? "Ernährung" : "Nutrition"}</h3>
               {nutritionPieData.length > 0 ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-16 h-16 flex-shrink-0">
+                  <div className="w-12 h-12 flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={nutritionPieData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={15}
-                          outerRadius={28}
+                          innerRadius={10}
+                          outerRadius={20}
                           paddingAngle={2}
                           dataKey="value"
                         >
@@ -496,17 +488,17 @@ const CalendarPage = () => {
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 space-y-0.5">
-                    <div className="text-sm font-bold text-white">{selectedDayNutrition.calories} kcal</div>
+                    <div className="text-xs font-bold text-white">{selectedDayNutrition.calories} kcal</div>
                     {nutritionPieData.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-1 text-[10px]">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <div key={idx} className="flex items-center gap-1 text-[8px]">
+                        <div className="w-1 h-1 rounded-full" style={{ backgroundColor: item.color }} />
                         <span className="text-white/70">{item.name}: {item.value}g</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-white/50 py-2 text-[10px]">
+                <div className="text-center text-white/50 py-2 text-[9px]">
                   {isGerman ? "Keine Daten" : "No data"}
                 </div>
               )}
