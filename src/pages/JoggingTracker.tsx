@@ -423,8 +423,6 @@ const JoggingTracker = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                
-                {/* User location marker - static, no live tracking */}
                 <Marker position={userLocation} icon={userLocationIcon}>
                   <Popup>
                     <div className="text-center font-medium">
@@ -432,9 +430,7 @@ const JoggingTracker = () => {
                     </div>
                   </Popup>
                 </Marker>
-
-                {/* 5km radius circle */}
-                {showRadius && (
+                {showRadius ? (
                   <Circle 
                     center={userLocation} 
                     radius={5000} 
@@ -445,7 +441,7 @@ const JoggingTracker = () => {
                       weight: 2 
                     }} 
                   />
-                )}
+                ) : null}
               </MapContainer>
             ) : null}
           </div>
