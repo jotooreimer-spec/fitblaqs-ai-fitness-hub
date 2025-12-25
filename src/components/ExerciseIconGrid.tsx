@@ -40,29 +40,32 @@ const ExerciseIconGrid = ({ isGerman, onSelectExercise, bodyPartFilter }: Exerci
   };
 
   const renderExerciseGrid = (exercises: ExerciseItem[]) => (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {exercises.map((exercise) => (
         <Card
           key={exercise.id}
           onClick={() => handleClick(exercise)}
           className={`
             relative overflow-hidden cursor-pointer transition-all duration-200
-            hover:scale-105 hover:ring-2 hover:ring-primary/50
-            ${selectedId === exercise.id ? 'ring-2 ring-primary scale-105' : ''}
+            hover:scale-[1.02] hover:ring-2 hover:ring-primary/50
+            ${selectedId === exercise.id ? 'ring-2 ring-primary scale-[1.02]' : ''}
             bg-black/30 backdrop-blur-sm border-white/10
           `}
         >
-          <div className="aspect-square p-2">
+          <div className="aspect-[4/3] p-2">
             <img
               src={exercise.image}
               alt={isGerman ? exercise.name_de : exercise.name}
-              className="w-full h-full object-contain rounded-md"
+              className="w-full h-full object-cover rounded-md"
               loading="lazy"
             />
           </div>
-          <div className="p-2 pt-0">
-            <p className="text-xs font-medium text-center text-white/90 line-clamp-2 leading-tight">
+          <div className="p-2 pt-1">
+            <p className="text-xs font-semibold text-white/90 line-clamp-1 leading-tight mb-1">
               {isGerman ? exercise.name_de : exercise.name}
+            </p>
+            <p className="text-[10px] text-white/60 line-clamp-2 leading-snug">
+              {isGerman ? exercise.description_de : exercise.description}
             </p>
           </div>
         </Card>

@@ -199,97 +199,102 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* Map Area with Grid and Circular Path */}
-        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden min-h-[180px]">
+        {/* Map Area with Grid and Circular Path - Exact Reference Design */}
+        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden">
           {/* Grid Pattern */}
-          <div className="absolute inset-0 opacity-30">
+          <div className="absolute inset-0 opacity-20">
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#22c55e" strokeWidth="0.5"/>
+                <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#22c55e" strokeWidth="0.5"/>
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
             </svg>
           </div>
-          
-          {/* Circular Path with Moving Dot */}
-          <svg 
-            className="absolute left-4 top-1/2 -translate-y-1/2" 
-            width="120" 
-            height="120"
-            viewBox="0 0 120 120"
-          >
-            {/* Circle Path Background */}
-            <ellipse
-              cx="60"
-              cy="60"
-              rx="50"
-              ry="45"
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="3"
-              strokeLinecap="round"
-              opacity="0.3"
-            />
-            
-            {/* Animated Circle Path */}
-            <ellipse
-              cx="60"
-              cy="60"
-              rx="50"
-              ry="45"
-              fill="none"
-              stroke="#22c55e"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray="300"
-              strokeDashoffset={300 - Math.min((seconds / 600) * 300, 300)}
-              style={{ 
-                transition: 'stroke-dashoffset 0.5s ease-out',
-                transform: 'rotate(-90deg)',
-                transformOrigin: 'center'
-              }}
-            />
-            
-            {/* Moving Dot on Circle */}
-            {(() => {
-              const progress = Math.min(seconds / 600, 1);
-              const angle = progress * 2 * Math.PI - Math.PI / 2;
-              const x = 60 + 50 * Math.cos(angle);
-              const y = 60 + 45 * Math.sin(angle);
+
+          <div className="flex items-center gap-4 relative z-10">
+            {/* Square Container with Circle Path */}
+            <div className="relative w-32 h-32 flex-shrink-0">
+              {/* Square Border */}
+              <div className="absolute inset-0 border border-green-500/30 rounded-sm" />
               
-              return (
-                <circle 
-                  cx={x} 
-                  cy={y} 
-                  r="8" 
-                  fill="#4ade80"
+              {/* Circle Path SVG */}
+              <svg 
+                className="absolute inset-0" 
+                width="128" 
+                height="128"
+                viewBox="0 0 128 128"
+              >
+                {/* Circle Path Background */}
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="52"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="3"
+                  opacity="0.3"
+                />
+                
+                {/* Animated Progress Circle */}
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="52"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 52}
+                  strokeDashoffset={(2 * Math.PI * 52) * (1 - Math.min(seconds / 600, 1))}
                   style={{ 
-                    filter: 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.9))',
-                    transition: 'cx 0.5s ease-out, cy 0.5s ease-out'
+                    transition: 'stroke-dashoffset 0.5s ease-out',
+                    transform: 'rotate(-90deg)',
+                    transformOrigin: 'center'
                   }}
                 />
-              );
-            })()}
-            
-            {/* End Point Marker */}
-            <circle 
-              cx="60" 
-              cy="15" 
-              r="6" 
-              fill="#22c55e"
-              opacity="0.5"
-            />
-          </svg>
-
-          {/* Time and Distance Display */}
-          <div className="relative z-10 flex flex-col items-end justify-center min-h-[160px] pr-4">
-            <div className="text-4xl font-bold text-white tabular-nums tracking-wider">
-              {formatTime(seconds)}
+                
+                {/* Moving Dot on Circle */}
+                {(() => {
+                  const progress = Math.min(seconds / 600, 1);
+                  const angle = progress * 2 * Math.PI - Math.PI / 2;
+                  const x = 64 + 52 * Math.cos(angle);
+                  const y = 64 + 52 * Math.sin(angle);
+                  
+                  return (
+                    <circle 
+                      cx={x} 
+                      cy={y} 
+                      r="8" 
+                      fill="#4ade80"
+                      style={{ 
+                        filter: 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.9))',
+                        transition: 'cx 0.5s ease-out, cy 0.5s ease-out'
+                      }}
+                    />
+                  );
+                })()}
+                
+                {/* End Point Marker */}
+                <circle 
+                  cx="64" 
+                  cy="12" 
+                  r="5" 
+                  fill="#22c55e"
+                  opacity="0.6"
+                />
+              </svg>
             </div>
-            <div className="text-xl font-semibold text-green-400 tabular-nums">
-              {liveDistance.toFixed(2)} km
+
+            {/* Time and Distance Display */}
+            <div className="flex flex-col items-end justify-center flex-1">
+              <div className="text-4xl font-bold text-white tabular-nums tracking-wider">
+                {formatTime(seconds)}
+              </div>
+              <div className="text-xl font-semibold text-green-400 tabular-nums">
+                {liveDistance.toFixed(2)} km
+              </div>
             </div>
           </div>
         </Card>
