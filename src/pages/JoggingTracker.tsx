@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Save, ArrowLeft, Trash2, Timer, Square } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Bike, PersonStanding, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { format } from "date-fns";
 import joggingBg from "@/assets/jogging-bg.png";
+import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 
 interface JoggingLog {
   id: string;
@@ -19,6 +20,16 @@ interface JoggingLog {
   distance: number;
   calories: number | null;
   completed_at: string;
+  notes: string | null;
+}
+
+type ActivityType = "bicycle" | "running" | "jogging";
+
+interface ActivitySession {
+  type: ActivityType;
+  city: string;
+  destination: string;
+  participants: number;
 }
 
 const JoggingTracker = () => {
@@ -29,14 +40,20 @@ const JoggingTracker = () => {
   const [isActive, setIsActive] = useState(false);
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
-  const [timerDialogOpen, setTimerDialogOpen] = useState(false);
-  const [timerHours, setTimerHours] = useState(0);
-  const [timerMinutes, setTimerMinutes] = useState(0);
-  const [targetTime, setTargetTime] = useState<number | null>(null);
   const [userId, setUserId] = useState<string>("");
   
-  // Circle animation angle
-  const [circleAngle, setCircleAngle] = useState(0);
+  // Activity dialog state
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
+  const [city, setCity] = useState("");
+  const [destination, setDestination] = useState("");
+  const [participants, setParticipants] = useState(1);
+  
+  // Active session
+  const [activeSession, setActiveSession] = useState<ActivitySession | null>(null);
+  
+  // Live speed that increases during activity
+  const [liveSpeed, setLiveSpeed] = useState(8.0);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -89,87 +106,112 @@ const JoggingTracker = () => {
 
     if (isActive) {
       interval = setInterval(() => {
-        setSeconds((prev) => {
-          const newSeconds = prev + 1;
-          
-          // Check if target time reached
-          if (targetTime && newSeconds >= targetTime) {
-            setIsActive(false);
-            autoSaveJoggingLog(newSeconds);
-            setSeconds(0);
-            setTargetTime(null);
-          }
-          
-          return newSeconds;
-        });
-        
-        // Animate the circle
-        setCircleAngle(prev => (prev + 3) % 360);
+        setSeconds((prev) => prev + 1);
+        // Speed increases live from 8.0
+        setLiveSpeed((prev) => Math.min(prev + 0.01, 25));
       }, 1000);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, targetTime]);
+  }, [isActive]);
 
-  const autoSaveJoggingLog = async (totalSeconds: number) => {
-    if (!userId) return;
-
-    const distanceKm = calculateFallbackDistance(totalSeconds);
-    const estimatedCalories = calculateCalories(distanceKm, totalSeconds);
-
-    const { error } = await supabase
-      .from("jogging_logs")
-      .insert({
-        user_id: userId,
-        duration: totalSeconds, // Store as seconds for precision
-        distance: parseFloat(distanceKm.toFixed(2)),
-        calories: estimatedCalories
-      });
-
-    if (!error) {
-      toast({ title: isGerman ? "Auto-gespeichert" : "Auto-saved", description: isGerman ? "Timer beendet - Lauf gespeichert" : "Timer ended - Run saved" });
-      loadLogs(userId);
+  const getBaseSpeed = (type: ActivityType) => {
+    switch (type) {
+      case "bicycle": return 20;
+      case "running": return 12;
+      case "jogging": return 8;
+      default: return 8;
     }
+  };
+
+  const calculateDistance = useCallback((totalSeconds: number, type: ActivityType) => {
+    const hours = totalSeconds / 3600;
+    const baseSpeed = getBaseSpeed(type);
+    return baseSpeed * hours;
+  }, []);
+
+  const calculateCalories = useCallback((distanceKm: number, totalSeconds: number, type: ActivityType) => {
+    if (totalSeconds === 0) return 0;
+    const hours = totalSeconds / 3600;
+    const MET = type === "bicycle" ? 8.0 : type === "running" ? 11.5 : 9.8;
+    return Math.round(MET * userWeight * hours);
+  }, [userWeight]);
+
+  const handleActivityClick = (type: ActivityType) => {
+    setSelectedActivity(type);
+    setCity("");
+    setDestination("");
+    setParticipants(1);
+    setActivityDialogOpen(true);
+  };
+
+  const handleStartActivity = () => {
+    if (!selectedActivity || !city) {
+      toast({ title: isGerman ? "Fehler" : "Error", description: isGerman ? "Bitte gib deinen Standort an" : "Please enter your location", variant: "destructive" });
+      return;
+    }
+
+    setActiveSession({
+      type: selectedActivity,
+      city,
+      destination,
+      participants
+    });
+    setSeconds(0);
+    setLiveSpeed(getBaseSpeed(selectedActivity));
+    setIsActive(true);
+    setActivityDialogOpen(false);
   };
 
   const toggle = () => {
     setIsActive(!isActive);
   };
-  
+
   const reset = () => {
     setSeconds(0);
     setIsActive(false);
-    setCircleAngle(0);
-    setTargetTime(null);
+    setActiveSession(null);
+    setLiveSpeed(8.0);
   };
 
-  // Stop and save to history - always saves current values
   const handleStop = async () => {
-    if (seconds === 0) {
-      return;
-    }
+    if (seconds === 0 || !activeSession) return;
     
     setIsActive(false);
     
-    // Calculate final values
-    const distanceKm = calculateFallbackDistance(seconds);
-    const estimatedCalories = calculateCalories(distanceKm, seconds);
+    const distanceKm = calculateDistance(seconds, activeSession.type);
+    const estimatedCalories = calculateCalories(distanceKm, seconds, activeSession.type);
 
     if (!userId) {
       reset();
       return;
     }
 
-    // Save to database - duration in seconds
+    const activityLabels = {
+      bicycle: isGerman ? "Fahrrad" : "Bicycle",
+      running: isGerman ? "Laufen" : "Running",
+      jogging: "Jogging"
+    };
+
+    const notes = JSON.stringify({
+      type: activeSession.type,
+      label: activityLabels[activeSession.type],
+      city: activeSession.city,
+      destination: activeSession.destination,
+      participants: activeSession.participants,
+      speed: liveSpeed.toFixed(1)
+    });
+
     const { error } = await supabase
       .from("jogging_logs")
       .insert({
         user_id: userId,
-        duration: seconds, // Store seconds directly
+        duration: seconds,
         distance: parseFloat(distanceKm.toFixed(2)),
-        calories: estimatedCalories
+        calories: estimatedCalories,
+        notes
       });
 
     if (error) {
@@ -177,45 +219,12 @@ const JoggingTracker = () => {
     } else {
       toast({ 
         title: isGerman ? "Gespeichert" : "Saved", 
-        description: `${distanceKm.toFixed(2)} km • ${formatTime(seconds)} • ${estimatedCalories} kcal` 
+        description: `${activityLabels[activeSession.type]} • ${distanceKm.toFixed(2)} km • ${formatTime(seconds)} • ${estimatedCalories} kcal` 
       });
       loadLogs(userId);
     }
     
     reset();
-  };
-
-  // Calculate fallback distance based on average jogging speed
-  const calculateFallbackDistance = useCallback((totalSeconds: number) => {
-    const hours = totalSeconds / 3600;
-    const avgSpeed = 8; // 8 km/h average jogging speed
-    return avgSpeed * hours;
-  }, []);
-
-  // Calculate calories based on MET value for jogging
-  const calculateCalories = useCallback((distanceKm: number, totalSeconds: number) => {
-    if (totalSeconds === 0) return 0;
-    const hours = totalSeconds / 3600;
-    const MET = 9.8; // MET for jogging at ~8 km/h
-    return Math.round(MET * userWeight * hours);
-  }, [userWeight]);
-
-  // Calculate speed in km/h - starts at 8.0, live updates
-  // Logic: Start at 8.0 km/h, updates live based on distance/time
-  const calculateSpeed = useCallback((totalSeconds: number, distanceKm: number) => {
-    // Default start value
-    if (totalSeconds === 0) return 8.0;
-    
-    // When activity is running, calculate live: speed = distance / time
-    const hours = totalSeconds / 3600;
-    if (hours === 0) return 8.0;
-    
-    const speed = distanceKm / hours;
-    return speed > 0 ? speed : 8.0;
-  }, []);
-
-  const saveToCalendar = (log: JoggingLog) => {
-    toast({ title: isGerman ? "Gespeichert" : "Saved", description: isGerman ? "Im Kalender gespeichert" : "Saved to calendar" });
   };
 
   const deleteLog = async (id: string) => {
@@ -226,7 +235,6 @@ const JoggingTracker = () => {
     }
   };
 
-  // Format time as HH:MM:SS
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -234,36 +242,33 @@ const JoggingTracker = () => {
     return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Format duration from stored value (could be seconds or minutes)
   const formatDuration = (duration: number) => {
-    // If duration is large (>100), assume it's in seconds
     if (duration > 100) {
       return formatTime(duration);
     }
-    // Otherwise assume minutes (legacy data)
     const hours = Math.floor(duration / 60);
     const mins = duration % 60;
     return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:00`;
   };
 
-  const setTimer = () => {
-    const totalSeconds = timerHours * 3600 + timerMinutes * 60;
-    if (totalSeconds > 0) {
-      setTargetTime(totalSeconds);
-      setTimerDialogOpen(false);
-      toast({ title: isGerman ? "Timer gesetzt" : "Timer set", description: `${timerHours}h ${timerMinutes}min` });
+  const parseLogNotes = (notes: string | null) => {
+    if (!notes) return null;
+    try {
+      return JSON.parse(notes);
+    } catch {
+      return null;
     }
   };
 
-  // Real-time calculated values - speed starts at 8.0 km/h
-  const liveDistance = calculateFallbackDistance(seconds);
-  const liveCalories = calculateCalories(liveDistance, seconds);
-  const liveSpeed = calculateSpeed(seconds, liveDistance);
+  // Live calculated values
+  const liveDistance = activeSession ? calculateDistance(seconds, activeSession.type) : 0;
+  const liveCalories = activeSession ? calculateCalories(liveDistance, seconds, activeSession.type) : 0;
 
-  // Calculate animated circle position
-  const circleRadius = 80;
-  const circleX = 100 + Math.cos((circleAngle - 90) * Math.PI / 180) * circleRadius;
-  const circleY = 100 + Math.sin((circleAngle - 90) * Math.PI / 180) * circleRadius;
+  const activityTypes = [
+    { type: "bicycle" as ActivityType, label: isGerman ? "Fahrrad" : "Bicycle", icon: Bike },
+    { type: "running" as ActivityType, label: isGerman ? "Laufen" : "Running", icon: PersonStanding },
+    { type: "jogging" as ActivityType, label: "Jogging", icon: Timer },
+  ];
 
   return (
     <div className="min-h-screen pb-24 relative">
@@ -278,120 +283,99 @@ const JoggingTracker = () => {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-white">Jogging Tracker</h1>
+            <h1 className="text-3xl font-bold text-white">{isGerman ? "Aktivitäts-Tracker" : "Activity Tracker"}</h1>
             <p className="text-white/60 text-sm">
-              {isActive ? (
+              {activeSession ? (
                 <span className="text-green-400">{isGerman ? "Läuft..." : "Running..."}</span>
               ) : (
-                <span>{isGerman ? "Drücke Play zum Starten" : "Press Play to start"}</span>
+                <span>{isGerman ? "Wähle eine Aktivität" : "Choose an activity"}</span>
               )}
             </p>
           </div>
         </div>
 
-        {/* Compact Square Map View */}
-        <Card className="bg-gradient-to-br from-green-900/80 to-green-700/60 backdrop-blur-sm border-white/10 p-4 mb-4 rounded-2xl">
-          <div className="flex gap-4 items-center">
-            {/* Square animated map */}
-            <div className="relative w-40 h-40 flex-shrink-0">
-              <svg className="w-full h-full" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
-                {/* Background */}
-                <defs>
-                  <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#2d5016" />
-                    <stop offset="100%" stopColor="#1a3409" />
-                  </radialGradient>
-                  <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#22c55e" />
-                    <stop offset="100%" stopColor="#16a34a" />
-                  </linearGradient>
-                </defs>
-                
-                <rect width="200" height="200" rx="16" fill="url(#mapBg)" />
-                
-                {/* Grid lines */}
-                {[...Array(8)].map((_, i) => (
-                  <line key={`h${i}`} x1="0" y1={i * 25} x2="200" y2={i * 25} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                ))}
-                {[...Array(8)].map((_, i) => (
-                  <line key={`v${i}`} x1={i * 25} y1="0" x2={i * 25} y2="200" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                ))}
-                
-                {/* Circular track outline */}
-                <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
-                
-                {/* Progress arc - animated when running */}
-                {isActive && (
-                  <circle 
-                    cx="100" 
-                    cy="100" 
-                    r="80" 
-                    fill="none" 
-                    stroke="url(#routeGradient)" 
-                    strokeWidth="6" 
-                    strokeLinecap="round"
-                    strokeDasharray={`${circleAngle * 1.4} 504`}
-                    transform="rotate(-90 100 100)"
-                  />
-                )}
-                
-                {/* Runner indicator - animated circle */}
-                {isActive && (
-                  <g>
-                    <circle cx={circleX} cy={circleY} r="10" fill="#22c55e" className="animate-pulse" />
-                    <circle cx={circleX} cy={circleY} r="5" fill="white" />
-                  </g>
-                )}
-                
-                {/* Start marker */}
-                <circle cx="100" cy="20" r="6" fill="#22c55e" stroke="white" strokeWidth="2" />
-                <text x="100" y="18" textAnchor="middle" fontSize="8" fill="white" fontWeight="bold">A</text>
-              </svg>
-            </div>
-            
-            {/* Stats display - HH:MM:SS format */}
-            <div className="flex-1 text-white">
-              <div className="text-3xl font-bold tabular-nums mb-2">{formatTime(seconds)}</div>
-              <div className="text-xl font-semibold text-green-400 mb-2">{liveDistance.toFixed(2)} km</div>
-              {targetTime && (
-                <div className="text-sm text-white/60">
-                  {isGerman ? "Ziel:" : "Target:"} {Math.floor(targetTime / 3600)}h {Math.floor((targetTime % 3600) / 60)}min
+        {/* Activity Type Boxes - 3 cards with FitBlaqs logo background */}
+        {!activeSession && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            {activityTypes.map((activity) => (
+              <Card
+                key={activity.type}
+                onClick={() => handleActivityClick(activity.type)}
+                className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-28"
+              >
+                <img 
+                  src={fitblaqsLogo} 
+                  alt="FitBlaqs" 
+                  className="absolute inset-0 w-full h-full object-contain opacity-10 p-4" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                  <activity.icon className="w-8 h-8 mb-2 text-primary" />
+                  <span className="text-sm font-bold">{activity.label}</span>
                 </div>
-              )}
-            </div>
+              </Card>
+            ))}
           </div>
-        </Card>
+        )}
 
-        {/* Control Buttons - Play/Stop only */}
-        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-4">
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Button variant="outline" size="lg" onClick={reset} className="w-14">
-              <RotateCcw className="w-5 h-5" />
-            </Button>
-            <Button variant="outline" size="lg" onClick={() => setTimerDialogOpen(true)} className="w-14">
-              <Timer className="w-5 h-5" />
-            </Button>
-            {/* Play Button */}
-            <Button 
-              size="lg" 
-              onClick={toggle}
-              className={`w-16 ${isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}`}
-            >
-              {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-            </Button>
-            {/* Stop Button - Red - Always clickable when seconds > 0 */}
-            <Button 
-              size="lg" 
-              onClick={handleStop}
-              className="w-16 bg-red-500 hover:bg-red-600"
-              disabled={seconds === 0}
-            >
-              <Square className="w-6 h-6" />
-            </Button>
-          </div>
-        </Card>
+        {/* Active Session Display */}
+        {activeSession && (
+          <>
+            {/* Session Info Card */}
+            <Card className="bg-gradient-to-br from-green-900/80 to-green-700/60 backdrop-blur-sm border-white/10 p-4 mb-4 rounded-2xl">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  {activityTypes.find(a => a.type === activeSession.type)?.icon && (
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      {(() => {
+                        const Icon = activityTypes.find(a => a.type === activeSession.type)?.icon;
+                        return Icon ? <Icon className="w-5 h-5 text-white" /> : null;
+                      })()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-lg font-bold text-white">
+                      {activityTypes.find(a => a.type === activeSession.type)?.label}
+                    </div>
+                    <div className="text-xs text-white/70">
+                      {activeSession.city} → {activeSession.destination || (isGerman ? "Keine Angabe" : "Not specified")}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white tabular-nums">{formatTime(seconds)}</div>
+                  <div className="text-xs text-white/60">{activeSession.participants} {isGerman ? "Personen" : "people"}</div>
+                </div>
+              </div>
+            </Card>
 
-        {/* Live Stats - Distance (km), Time (HH:MM:SS), kcal / kmh */}
+            {/* Control Buttons */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 mb-4">
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Button variant="outline" size="lg" onClick={reset} className="w-14">
+                  <RotateCcw className="w-5 h-5" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  onClick={toggle}
+                  className={`w-16 ${isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'}`}
+                >
+                  {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                </Button>
+                <Button 
+                  size="lg" 
+                  onClick={handleStop}
+                  className="w-16 bg-red-500 hover:bg-red-600"
+                  disabled={seconds === 0}
+                >
+                  <Square className="w-6 h-6" />
+                </Button>
+              </div>
+            </Card>
+          </>
+        )}
+
+        {/* Live Stats - Distance, Time, kcal/kmh */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
             <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
@@ -407,52 +391,94 @@ const JoggingTracker = () => {
           </Card>
         </div>
 
-        {/* History - Shows all values with units */}
+        {/* History */}
         <h2 className="text-xl font-bold mb-4 text-white">{isGerman ? "Verlauf" : "History"}</h2>
         <div className="space-y-3">
-          {logs.map((log) => (
-            <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="font-medium text-white">{log.distance.toFixed(2)} km</div>
-                  <div className="text-sm text-white/60">
-                    {formatDuration(log.duration)} • {log.calories || 0} kcal • {(log.distance / (log.duration > 100 ? log.duration / 3600 : log.duration / 60)).toFixed(1)} km/h
+          {logs.map((log) => {
+            const parsed = parseLogNotes(log.notes);
+            return (
+              <Card key={log.id} className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    {parsed && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-primary">{parsed.label || "Activity"}</span>
+                        {parsed.city && (
+                          <span className="text-xs text-white/50">
+                            {parsed.city} {parsed.destination ? `→ ${parsed.destination}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="font-medium text-white">{log.distance.toFixed(2)} km</div>
+                    <div className="text-sm text-white/60">
+                      {formatDuration(log.duration)} • {log.calories || 0} kcal • {parsed?.speed || (log.distance / (log.duration > 100 ? log.duration / 3600 : log.duration / 60)).toFixed(1)} km/h
+                    </div>
+                    {parsed?.participants && parsed.participants > 1 && (
+                      <div className="text-xs text-white/40 mt-1">{parsed.participants} {isGerman ? "Personen" : "people"}</div>
+                    )}
+                    <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy HH:mm")}</div>
                   </div>
-                  <div className="text-xs text-white/40">{format(new Date(log.completed_at), "dd.MM.yyyy HH:mm")}</div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => saveToCalendar(log)} className="text-primary">
-                    <Save className="w-4 h-4" />
-                  </Button>
                   <Button variant="ghost" size="icon" onClick={() => deleteLog(log.id)} className="text-destructive">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
           {logs.length === 0 && (
             <div className="text-center text-white/50 py-8">{isGerman ? "Keine Einträge" : "No entries"}</div>
           )}
         </div>
 
-        {/* Timer Dialog - Hours & Minutes */}
-        <Dialog open={timerDialogOpen} onOpenChange={setTimerDialogOpen}>
-          <DialogContent className="sm:max-w-sm">
+        {/* Activity Start Dialog */}
+        <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
+          <DialogContent className="sm:max-w-md bg-black/90 backdrop-blur-lg border-white/20">
             <DialogHeader>
-              <DialogTitle>{isGerman ? "Timer einstellen" : "Set Timer"}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 text-white">
+                {selectedActivity && activityTypes.find(a => a.type === selectedActivity)?.icon && (
+                  (() => {
+                    const Icon = activityTypes.find(a => a.type === selectedActivity)?.icon;
+                    return Icon ? <Icon className="w-5 h-5 text-primary" /> : null;
+                  })()
+                )}
+                {selectedActivity && activityTypes.find(a => a.type === selectedActivity)?.label}
+              </DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4 py-4">
               <div>
-                <Label>{isGerman ? "Stunden" : "Hours"}</Label>
-                <Input type="number" min="0" max="24" value={timerHours} onChange={(e) => setTimerHours(parseInt(e.target.value) || 0)} />
+                <Label className="text-white">{isGerman ? "Dein Standort / Stadt" : "Your Location / City"} *</Label>
+                <Input 
+                  value={city} 
+                  onChange={(e) => setCity(e.target.value)} 
+                  placeholder={isGerman ? "z.B. Berlin" : "e.g. Berlin"}
+                  className="bg-white/10 border-white/20 text-white"
+                />
               </div>
               <div>
-                <Label>{isGerman ? "Minuten" : "Minutes"}</Label>
-                <Input type="number" min="0" max="59" value={timerMinutes} onChange={(e) => setTimerMinutes(parseInt(e.target.value) || 0)} />
+                <Label className="text-white">{isGerman ? "Ziel (optional)" : "Destination (optional)"}</Label>
+                <Input 
+                  value={destination} 
+                  onChange={(e) => setDestination(e.target.value)} 
+                  placeholder={isGerman ? "z.B. Park" : "e.g. Park"}
+                  className="bg-white/10 border-white/20 text-white"
+                />
               </div>
+              <div>
+                <Label className="text-white">{isGerman ? "Anzahl Personen" : "Number of People"}</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  value={participants} 
+                  onChange={(e) => setParticipants(parseInt(e.target.value) || 1)}
+                  className="bg-white/10 border-white/20 text-white"
+                />
+              </div>
+              <Button onClick={handleStartActivity} className="w-full bg-green-500 hover:bg-green-600">
+                <Play className="w-4 h-4 mr-2" />
+                Start
+              </Button>
             </div>
-            <Button onClick={setTimer} className="w-full mt-4">{isGerman ? "Timer setzen" : "Set Timer"}</Button>
           </DialogContent>
         </Dialog>
       </div>

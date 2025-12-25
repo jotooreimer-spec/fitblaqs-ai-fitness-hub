@@ -18,9 +18,6 @@ import Settings from "./pages/Settings";
 import TrainingDetail from "./pages/TrainingDetail";
 import WeightTracker from "./pages/WeightTracker";
 import ExerciseCategory from "./pages/ExerciseCategory";
-import ProPremium from "./pages/ProPremium";
-import ProAthlete from "./pages/ProAthlete";
-import ProNutrition from "./pages/ProNutrition";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Impressum from "./pages/Impressum";
@@ -59,11 +56,8 @@ const App = () => (
                 <Route path="/nutrition" element={<Nutrition />} />
                 <Route path="/jogging-tracker" element={<JoggingTracker />} />
                 <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/performance" element={<CalendarPage />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/pro-premium" element={<ProPremium />} />
-                <Route path="/pro-subscription" element={<ProPremium />} />
-                <Route path="/pro-athlete" element={<ProAthlete />} />
-                <Route path="/pro-nutrition" element={<ProNutrition />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
