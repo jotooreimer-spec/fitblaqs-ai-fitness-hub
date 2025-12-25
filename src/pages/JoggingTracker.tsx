@@ -15,6 +15,7 @@ import joggingBg from "@/assets/jogging-bg.png";
 import bicycleBg from "@/assets/bicycle-bg.jpg";
 import joggingImg from "@/assets/jogging-bg.jpg";
 import laufenBg from "@/assets/laufen-bg.jpg";
+import CircularProgress from "@/components/CircularProgress";
 
 interface JoggingLog {
   id: string;
@@ -381,20 +382,56 @@ const JoggingTracker = () => {
           </>
         )}
 
-        {/* Live Stats - Distance, Time, kcal/kmh */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">{isGerman ? "Distanz" : "Distance"}</div>
-            <div className="text-lg font-bold text-white">{liveDistance.toFixed(2)} km</div>
-          </Card>
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">{isGerman ? "Zeit" : "Time"}</div>
-            <div className="text-lg font-bold text-white">{formatTime(seconds)}</div>
-          </Card>
-          <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-            <div className="text-xs text-white/60 mb-1">kcal / km/h</div>
-            <div className="text-lg font-bold text-white">{liveCalories} / {liveSpeed.toFixed(1)}</div>
-          </Card>
+        {/* Circular Progress Indicators */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Time Progress Circle */}
+          <CircularProgress
+            value={seconds}
+            max={3600}
+            size={160}
+            strokeWidth={12}
+            mainValue={formatTime(seconds)}
+            secondaryLabel={isGerman ? "Zeit" : "Time"}
+            mainLabel={isGerman ? "Dauer" : "Duration"}
+            className="bg-black/50 border-white/10"
+          />
+          
+          {/* Distance Progress Circle */}
+          <CircularProgress
+            value={liveDistance}
+            max={10}
+            size={160}
+            strokeWidth={12}
+            mainValue={`${liveDistance.toFixed(2)}`}
+            secondaryLabel={isGerman ? "Distanz" : "Distance"}
+            mainLabel="km"
+            className="bg-black/50 border-white/10"
+          />
+        </div>
+
+        {/* Additional Stats Row */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <CircularProgress
+            value={liveCalories}
+            max={1000}
+            size={140}
+            strokeWidth={10}
+            mainValue={`${liveCalories}`}
+            secondaryLabel={isGerman ? "Verbrannt" : "Burned"}
+            mainLabel="kcal"
+            className="bg-black/50 border-white/10"
+          />
+          
+          <CircularProgress
+            value={liveSpeed}
+            max={30}
+            size={140}
+            strokeWidth={10}
+            mainValue={`${liveSpeed.toFixed(1)}`}
+            secondaryLabel={isGerman ? "Tempo" : "Speed"}
+            mainLabel="km/h"
+            className="bg-black/50 border-white/10"
+          />
         </div>
 
         {/* History */}
