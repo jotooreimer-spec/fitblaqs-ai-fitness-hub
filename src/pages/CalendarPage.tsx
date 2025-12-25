@@ -11,7 +11,7 @@ import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRig
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
 import { useLiveData } from "@/contexts/LiveDataContext";
@@ -290,94 +290,268 @@ const CalendarPage = () => {
     return `${Math.floor(duration / 60).toString().padStart(2, '0')}:${(duration % 60).toString().padStart(2, '0')}:00`;
   };
 
+  // Calculate nutrition data for selected day - LIVE for pie chart
+  const selectedDayNutrition = useMemo(() => {
+    const totals = { calories: 0, protein: 0, carbs: 0, fats: 0 };
+    selectedDayData.nutrition.forEach(n => {
+      totals.calories += n.calories || 0;
+      totals.protein += n.protein || 0;
+      totals.carbs += n.carbs || 0;
+      totals.fats += n.fats || 0;
+    });
+    return totals;
+  }, [selectedDayData.nutrition]);
+
+  const nutritionPieData = useMemo(() => {
+    const { protein, carbs, fats } = selectedDayNutrition;
+    const total = protein + carbs + fats;
+    if (total === 0) return [];
+    return [
+      { name: 'Protein', value: protein, color: 'hsl(142, 76%, 36%)' },
+      { name: 'Carbs', value: carbs, color: 'hsl(38, 92%, 50%)' },
+      { name: 'Fats', value: fats, color: 'hsl(0, 84%, 60%)' },
+    ];
+  }, [selectedDayNutrition]);
+
   return (
     <div className="min-h-screen pb-24 relative">
       {/* Background */}
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${performanceBg})` }} />
       <div className="fixed inset-0 bg-black/60" />
 
-      <div className="relative z-10 max-w-screen-xl mx-auto p-6">
+      <div className="relative z-10 max-w-screen-xl mx-auto p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-white">Performance</h1>
-          <p className="text-white/60">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold mb-1 text-white">Performance</h1>
+          <p className="text-white/60 text-sm">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
         </div>
 
-        {/* Challenges Box - Renamed labels: Weight, Weight Goal, Tage verbleibend */}
-        <Card 
-          className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-6 cursor-pointer hover:scale-[1.02] transition-all"
-          onClick={() => setIsChallengeDialogOpen(true)}
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-bold text-white">Challenges</h3>
-          </div>
-
-          {savedGoal ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-xs text-white/60 mb-1">Weight</div>
-                  <div className="text-2xl font-bold text-white">{userWeight} kg</div>
-                </div>
-                <div>
-                  <div className="text-xs text-white/60 mb-1">Weight Goal</div>
-                  <div className="text-2xl font-bold text-green-400">{savedGoal.goal} kg</div>
-                </div>
-                <div>
-                  <div className="text-xs text-white/60 mb-1">{isGerman ? "Tage verbleibend" : "Days remaining"}</div>
-                  <div className="text-2xl font-bold text-primary flex items-center justify-center gap-1">
-                    <CalendarIcon className="w-4 h-4" />
-                    {daysRemaining}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/60">{isGerman ? "Fortschritt" : "Progress"}</span>
-                  <span className="font-bold text-white">{Math.round(progress)}%</span>
-                </div>
-                <Progress value={progress} className="h-3" />
-              </div>
-
-              {userWeight < savedGoal.startWeight && (
-                <div className="flex items-center justify-center gap-2 text-green-400 text-sm">
-                  <TrendingDown className="w-4 h-4" />
-                  <span>{(savedGoal.startWeight - userWeight).toFixed(1)} kg {isGerman ? "verloren" : "lost"}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center text-white/60 py-4">
-              {isGerman ? "Klicken um Challenge zu starten" : "Click to start a challenge"}
-            </div>
-          )}
-        </Card>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left Side */}
-          <div className="space-y-6">
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6">
-              <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md" />
+        {/* Main Grid - 3 columns on desktop */}
+        <div className="grid lg:grid-cols-3 gap-4">
+          {/* Column 1: Calendar + Challenges */}
+          <div className="space-y-4">
+            {/* Calendar - Compact */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
+              <Calendar 
+                mode="single" 
+                selected={date} 
+                onSelect={setDate} 
+                className="rounded-md text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-head_th]:w-8" 
+              />
             </Card>
 
-            {/* Performance Bar Chart - Monthly - LIVE from all training logs */}
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4">
-              <h3 className="text-lg font-bold mb-4 text-white">Performance</h3>
-              <div className="h-40">
+            {/* Challenges Box - Compact */}
+            <Card 
+              className="bg-black/40 backdrop-blur-sm border-white/10 p-4 cursor-pointer hover:scale-[1.02] transition-all"
+              onClick={() => setIsChallengeDialogOpen(true)}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-bold text-white">Challenges</h3>
+              </div>
+
+              {savedGoal ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <div className="text-[10px] text-white/60 mb-0.5">Weight</div>
+                      <div className="text-lg font-bold text-white">{userWeight} kg</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-white/60 mb-0.5">Goal</div>
+                      <div className="text-lg font-bold text-green-400">{savedGoal.goal} kg</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-white/60 mb-0.5">{isGerman ? "Tage" : "Days"}</div>
+                      <div className="text-lg font-bold text-primary flex items-center justify-center gap-0.5">
+                        <CalendarIcon className="w-3 h-3" />
+                        {daysRemaining}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-white/60">{isGerman ? "Fortschritt" : "Progress"}</span>
+                      <span className="font-bold text-white">{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-white/60 py-2 text-xs">
+                  {isGerman ? "Klicken um Challenge zu starten" : "Click to start a challenge"}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Column 2: Dailyplaner */}
+          <div>
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-4 h-full max-h-[500px] flex flex-col">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-bold text-white">Dailyplaner</h3>
+                <div className="text-right">
+                  <span className="text-xs text-white/60">{date ? format(date, "dd.MM.yyyy") : ""}</span>
+                  {totalDuration > 0 && (
+                    <div className="text-[10px] text-primary">
+                      {isGerman ? "Dauer:" : "Duration:"} {totalDuration} min
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {dataLoading ? (
+                <CalendarSkeleton />
+              ) : !hasData ? (
+                <p className="text-white/60 text-center py-8 text-sm">{isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}</p>
+              ) : (
+                <div className="space-y-2 flex-1 overflow-y-auto">
+                  {/* Workouts */}
+                  {selectedDayData.workouts.map((w) => {
+                    const exerciseName = w.notes?.split(" (")[0] || (isGerman ? w.exercises?.name_de : w.exercises?.name_en) || "Training";
+                    const exerciseImage = findExerciseImage(exerciseName);
+                    
+                    return (
+                      <div 
+                        key={w.id} 
+                        className={`p-2 bg-white/5 rounded-lg flex gap-2 items-start ${exerciseImage ? 'cursor-pointer hover:bg-white/10' : ''}`}
+                        onClick={() => {
+                          if (exerciseImage) {
+                            setSelectedExerciseName(exerciseName);
+                            setExerciseImageOpen(true);
+                          }
+                        }}
+                      >
+                        {exerciseImage && (
+                          <div className="flex-shrink-0 w-10 h-10 rounded overflow-hidden bg-black/30 border border-white/10">
+                            <img src={exerciseImage} alt={exerciseName} className="w-full h-full object-contain p-0.5" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-blue-400 text-xs flex items-center gap-1">
+                            {isGerman ? "Training" : "Workout"}
+                            {exerciseImage && <Image className="w-2.5 h-2.5 text-white/40" />}
+                          </div>
+                          <div className="text-xs text-white truncate">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
+                          <div className="text-[10px] text-white/60">
+                            {w.sets}×{w.reps} | {w.weight || 0}{w.unit || 'kg'}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Nutrition */}
+                  {selectedDayData.nutrition.map((n) => (
+                    <div key={n.id} className="p-2 bg-white/5 rounded-lg">
+                      <div className="font-semibold text-green-400 text-xs">{isGerman ? "Ernährung" : "Nutrition"}</div>
+                      <div className="text-xs text-white">{n.food_name}</div>
+                      <div className="text-[10px] text-white/60">{n.calories} kcal | P: {n.protein || 0}g</div>
+                    </div>
+                  ))}
+
+                  {/* Jogging */}
+                  {selectedDayData.jogging.map((j) => (
+                    <div key={j.id} className="p-2 bg-white/5 rounded-lg">
+                      <div className="font-semibold text-purple-400 text-xs">Jogging</div>
+                      <div className="text-xs text-white">{j.distance} km | {formatJoggingDuration(j.duration)}</div>
+                      <div className="text-[10px] text-white/60">{j.calories || 0} kcal</div>
+                    </div>
+                  ))}
+
+                  {/* Weight */}
+                  {selectedDayData.weight.map((w) => (
+                    <div key={w.id} className="p-2 bg-white/5 rounded-lg">
+                      <div className="font-semibold text-orange-400 text-xs">{isGerman ? "Gewicht" : "Weight"}</div>
+                      <div className="text-xs text-white">{w.weight} kg</div>
+                    </div>
+                  ))}
+
+                  {/* Body Analysis */}
+                  {selectedDayData.bodyAnalysis.map((ba) => (
+                    <div key={ba.id} className="p-2 bg-white/5 rounded-lg">
+                      <div className="font-semibold text-cyan-400 text-xs">{isGerman ? "Körperanalyse" : "Body Analysis"}</div>
+                      {ba.image_url && <img src={ba.image_url} alt="" className="w-10 h-10 rounded object-cover mt-1" />}
+                    </div>
+                  ))}
+
+                  {/* Food Analysis */}
+                  {selectedDayData.foodAnalysis.map((fa) => (
+                    <div key={fa.id} className="p-2 bg-white/5 rounded-lg">
+                      <div className="font-semibold text-amber-400 text-xs">{isGerman ? "Essensanalyse" : "Food Analysis"}</div>
+                      {fa.total_calories && <div className="text-[10px] text-white/60">{fa.total_calories} kcal</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Column 3: Performance + Nutrition Pie */}
+          <div className="space-y-4">
+            {/* Performance Bar Chart - Compact */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
+              <h3 className="text-sm font-bold mb-2 text-white">Performance</h3>
+              <div className="h-32">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyChartData}>
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={12} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Stunden' : 'Hours']} />
-                    <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={10} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={10} width={25} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: '12px' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Stunden' : 'Hours']} />
+                    <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-xs text-white/60 mt-2">{isGerman ? "Trainingsdauer pro Monat (Stunden) - Live" : "Training Duration per Month (Hours) - Live"}</div>
+              <div className="text-center text-[10px] text-white/60 mt-1">{isGerman ? "Stunden/Monat - Live" : "Hours/Month - Live"}</div>
+            </Card>
+
+            {/* Nutrition Pie Chart - Weight Watcher style */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
+              <h3 className="text-sm font-bold mb-2 text-white">{isGerman ? "Tages-Ernährung" : "Daily Nutrition"}</h3>
+              {nutritionPieData.length > 0 ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-24 h-24 flex-shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={nutritionPieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={25}
+                          outerRadius={40}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {nutritionPieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="text-lg font-bold text-white">{selectedDayNutrition.calories} kcal</div>
+                    {nutritionPieData.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-white/80">{item.name}: {item.value}g</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-white/60 py-4 text-xs">
+                  {isGerman ? "Keine Daten für diesen Tag" : "No data for this day"}
+                </div>
+              )}
+              <div className="text-[10px] text-white/40 text-center mt-2">
+                {date ? format(date, "dd.MM.yyyy") : ""} - Live
+              </div>
             </Card>
           </div>
+        </div>
+      </div>
 
           {/* Right Side - Dailyplaner (read-only, no delete) */}
           <div className="space-y-6">

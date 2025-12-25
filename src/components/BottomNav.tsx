@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Dumbbell, Apple, MapPin, Settings, Scale, BarChart3 } from "lucide-react";
+import { Dumbbell, Apple, MapPin, Settings, Scale } from "lucide-react";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -10,7 +10,6 @@ const BottomNav = () => {
     { icon: Apple, label: "Nutrition", path: "/nutrition" },
     { icon: MapPin, label: "Jogging", path: "/jogging-tracker" },
     { icon: Scale, label: "Weight", path: "/weight-tracker" },
-    { icon: BarChart3, label: "Performance", path: "/performance" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
@@ -19,8 +18,7 @@ const BottomNav = () => {
       <div className="flex items-center justify-around h-16 max-w-screen-xl mx-auto px-4">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = loc.pathname === item.path || 
-            (item.path === "/performance" && loc.pathname === "/calendar");
+          const isActive = loc.pathname === item.path;
           
           return (
             <button
