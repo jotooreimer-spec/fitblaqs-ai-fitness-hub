@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
+import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell, Image } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -15,12 +15,25 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recha
 import { useToast } from "@/hooks/use-toast";
 import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
 import { useLiveData } from "@/contexts/LiveDataContext";
+import { ExerciseImageDialog } from "@/components/ExerciseImageDialog";
+import { allExercises } from "@/data/exerciseImages";
 import performanceBg from "@/assets/performance-bg.png";
 import bodyworkoutplan1 from "@/assets/bodyworkoutplan-1.png";
 import bodyworkoutplan2 from "@/assets/bodyworkoutplan-2.png";
 import bodyworkoutplan3 from "@/assets/bodyworkoutplan-3.png";
 import bodyworkoutplan4 from "@/assets/bodyworkoutplan-4.png";
 import bodyworkoutplan5 from "@/assets/bodyworkoutplan-5.png";
+
+// Helper to find exercise image
+const findExerciseImage = (name: string): string | null => {
+  const exercise = allExercises.find(
+    ex => ex.name.toLowerCase() === name.toLowerCase() || 
+          ex.name_de.toLowerCase() === name.toLowerCase() ||
+          name.toLowerCase().includes(ex.name.toLowerCase()) ||
+          name.toLowerCase().includes(ex.name_de.toLowerCase())
+  );
+  return exercise?.image || null;
+};
 
 interface DayData {
   workouts: any[];
@@ -63,6 +76,10 @@ const CalendarPage = () => {
   // Upload detail dialog state
   const [uploadDetailOpen, setUploadDetailOpen] = useState(false);
   const [selectedUpload, setSelectedUpload] = useState<{ type: 'body' | 'food'; data: any } | null>(null);
+  
+  // Exercise image dialog
+  const [exerciseImageOpen, setExerciseImageOpen] = useState(false);
+  const [selectedExerciseName, setSelectedExerciseName] = useState("");
   
   const bodyworkoutImages = [bodyworkoutplan1, bodyworkoutplan2, bodyworkoutplan3, bodyworkoutplan4, bodyworkoutplan5];
 
@@ -383,16 +400,44 @@ const CalendarPage = () => {
                 <p className="text-white/60 text-center py-8">{isGerman ? "Keine Einträge für diesen Tag" : "No entries for this day"}</p>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto">
-                  {/* Workouts - Category, Sets, Reps, KG/LBS, Kcal */}
-                  {selectedDayData.workouts.map((w) => (
-                    <div key={w.id} className="p-3 bg-white/5 rounded-lg">
-                      <div className="font-semibold text-blue-400">{isGerman ? "Training" : "Workout"}</div>
-                      <div className="text-sm text-white">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
-                      <div className="text-xs text-white/60 mt-1">
-                        Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'} | {(w.sets * w.reps * 2)} kcal
+                  {/* Workouts - Category, Sets, Reps, KG/LBS, Kcal - with clickable image */}
+                  {selectedDayData.workouts.map((w) => {
+                    const exerciseName = w.notes?.split(" (")[0] || (isGerman ? w.exercises?.name_de : w.exercises?.name_en) || "Training";
+                    const exerciseImage = findExerciseImage(exerciseName);
+                    
+                    return (
+                      <div 
+                        key={w.id} 
+                        className={`p-3 bg-white/5 rounded-lg flex gap-3 items-start ${exerciseImage ? 'cursor-pointer hover:bg-white/10' : ''}`}
+                        onClick={() => {
+                          if (exerciseImage) {
+                            setSelectedExerciseName(exerciseName);
+                            setExerciseImageOpen(true);
+                          }
+                        }}
+                      >
+                        {exerciseImage && (
+                          <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-black/30 border border-white/10">
+                            <img 
+                              src={exerciseImage} 
+                              alt={exerciseName}
+                              className="w-full h-full object-contain p-1"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-blue-400 flex items-center gap-2">
+                            {isGerman ? "Training" : "Workout"}
+                            {exerciseImage && <Image className="w-3 h-3 text-white/40" />}
+                          </div>
+                          <div className="text-sm text-white truncate">{w.notes || (isGerman ? w.exercises?.name_de : w.exercises?.name_en)}</div>
+                          <div className="text-xs text-white/60 mt-1">
+                            Sets: {w.sets} | Reps: {w.reps} | {w.weight || 0} {w.unit || 'kg'} | {(w.sets * w.reps * 2)} kcal
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Nutrition */}
                   {selectedDayData.nutrition.map((n) => (
@@ -544,6 +589,14 @@ const CalendarPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Exercise Image Dialog */}
+      <ExerciseImageDialog
+        open={exerciseImageOpen}
+        onOpenChange={setExerciseImageOpen}
+        exerciseName={selectedExerciseName}
+        isGerman={isGerman}
+      />
 
       <BottomNav />
     </div>
