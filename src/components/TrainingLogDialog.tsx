@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Minus } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import ExerciseIconGrid from "./ExerciseIconGrid";
+import { ExerciseItem } from "@/data/exerciseImages";
 
 interface TrainingLogDialogProps {
   open: boolean;
@@ -20,33 +22,6 @@ interface TrainingLogDialogProps {
   onSuccess: () => void;
   defaultBodyPart?: "lower_body" | "upper_body" | "middle_body" | "fullbody" | null;
 }
-
-// Exercise categories - only show exercises for the selected body part
-const lowerBodyExercises = [
-  "Squats", "Lunges", "Leg Press", "Leg Extension", "Leg Curl",
-  "Standing Calf Raise", "Seated Calf Raise", "Single Leg Calf Raise",
-  "Calf Press", "Donkey Calf Raises", "Classic Squat", "Goblet Squat",
-  "Bulgarian Split Squat", "Sumo Squat", "Front Squat", "Hip Thrust",
-  "Glute Bridge", "Kickbacks", "Side Leg Raises", "Donkey Kicks"
-];
-
-const upperBodyExercises = [
-  "Bench Press", "Incline Bench Press", "Decline Bench Press", "Dumbbell Bench Press",
-  "Incline Dumbbell Press", "Close Grip Bench Press", "Reverse Grip Bench Press",
-  "Smith Machine Bench Press", "Chest Press Machine", "Floor Press", "Chest Fly",
-  "Push-ups", "Cable Chest Press", "Pull-ups", "Deadlift", "Rows", "Lat Pulldown",
-  "Reverse Flys", "Shoulder Press", "Lateral Raises", "Front Raises", "Arnold Press",
-  "Face Pulls", "Tricep Pushdown", "Dips", "Overhead Tricep Extension", "Tricep Kickbacks",
-  "Diamond Push-ups", "Bicep Curls", "Hammer Curls", "Concentration Curls",
-  "Preacher Curls", "21s Bicep Exercise"
-];
-
-const middleBodyExercises = [
-  "Forearm Plank", "Side Plank", "Mountain Climbers", "Russian Twists",
-  "Dead Bug", "Crunches", "Hanging Leg Raise", "Toe Touches",
-  "Bicycle Crunches", "V-ups", "Hollow Body Hold", "Flutter Kicks",
-  "Lying Leg Raise", "Heel Touches", "Jackknife Sit-ups"
-];
 
 interface ExerciseSet {
   sets: string;
@@ -59,11 +34,13 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
   const { toast } = useToast();
   const [bodyPart, setBodyPart] = useState(defaultBodyPart || "");
   const [exercise, setExercise] = useState("");
+  const [selectedExerciseItem, setSelectedExerciseItem] = useState<ExerciseItem | null>(null);
   const [customExercise, setCustomExercise] = useState("");
   const [customBodyPart, setCustomBodyPart] = useState("");
   const [date, setDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
+  const [showExerciseGrid, setShowExerciseGrid] = useState(false);
   
   // 4 Exercise Sets
   const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([
@@ -83,19 +60,17 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     }
   }, [defaultBodyPart]);
 
-  const getExercises = () => {
-    switch (bodyPart) {
-      case "lower_body":
-        return lowerBodyExercises;
-      case "upper_body":
-        return upperBodyExercises;
-      case "middle_body":
-        return middleBodyExercises;
-      case "fullbody":
-        return []; // Empty - user inputs custom
-      default:
-        return [];
-    }
+  const handleExerciseSelect = (exerciseItem: ExerciseItem) => {
+    setSelectedExerciseItem(exerciseItem);
+    setExercise(isGerman ? exerciseItem.name_de : exerciseItem.name);
+    setShowExerciseGrid(false);
+  };
+
+  const getBodyPartFilter = (): "upper_body" | "lower_body" | "core" | null => {
+    if (bodyPart === "upper_body") return "upper_body";
+    if (bodyPart === "lower_body") return "lower_body";
+    if (bodyPart === "middle_body") return "core";
+    return null;
   };
 
   const getBodyPartLabel = () => {
@@ -269,16 +244,28 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
           ) : (
             <div>
               <Label>{isGerman ? "Übung" : "Exercise"} ({getBodyPartLabel()} {isGerman ? "nur" : "only"})</Label>
-              <Select value={exercise} onValueChange={setExercise} disabled={!bodyPart}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isGerman ? "Übung wählen..." : "Select exercise..."} />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {getExercises().map((ex) => (
-                    <SelectItem key={ex} value={ex}>{ex}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {selectedExerciseItem ? (
+                <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg">
+                  <img src={selectedExerciseItem.image} alt="" className="w-12 h-12 rounded object-contain bg-black/20" />
+                  <span className="font-medium">{isGerman ? selectedExerciseItem.name_de : selectedExerciseItem.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setShowExerciseGrid(true)} className="ml-auto">
+                    {isGerman ? "Ändern" : "Change"}
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" onClick={() => setShowExerciseGrid(true)} className="w-full justify-start" disabled={!bodyPart}>
+                  {isGerman ? "Übung wählen..." : "Select exercise..."}
+                </Button>
+              )}
+              {showExerciseGrid && (
+                <div className="mt-3">
+                  <ExerciseIconGrid 
+                    isGerman={isGerman} 
+                    onSelectExercise={handleExerciseSelect}
+                    bodyPartFilter={getBodyPartFilter()}
+                  />
+                </div>
+              )}
             </div>
           )}
           
