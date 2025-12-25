@@ -9,6 +9,23 @@ const Index = () => {
       </div>
     </div>
   );
-};
+};{
+  "name": "FitBlaqs - AI Fitness & Nutrition",
+  "short_name": "FitBlaqs",
+  "description": "Professional AI-powered fitness and nutrition tracking app...",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#8B5CF6",
+  "id": "/",
+  "icons": [
+    { "src": "/icons/pwa-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["fitness","health","lifestyle"]
+}
+
 
 export default Index;
