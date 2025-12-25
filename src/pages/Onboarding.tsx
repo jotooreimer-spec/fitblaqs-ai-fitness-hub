@@ -133,7 +133,8 @@ const Onboarding = () => {
       
       if (success) {
         toast.success(isGerman ? "Willkommen bei FitBlaqs!" : "Welcome to FitBlaqs!");
-        navigate("/dashboard", { replace: true });
+        // Navigate to loading screen instead of dashboard
+        navigate("/loading", { replace: true });
       } else {
         toast.error(isGerman ? "Fehler beim Speichern" : "Error saving");
       }

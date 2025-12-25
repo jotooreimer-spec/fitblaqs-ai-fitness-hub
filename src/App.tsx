@@ -24,6 +24,7 @@ import Impressum from "./pages/Impressum";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import BodyworkoutPlan from "./pages/BodyworkoutPlan";
+import PostOnboardingLoading from "./pages/PostOnboardingLoading";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/loading" element={<PostOnboardingLoading />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/training/:muscleGroup" element={<TrainingDetail />} />
                 <Route path="/exercise/:category" element={<ExerciseCategory />} />

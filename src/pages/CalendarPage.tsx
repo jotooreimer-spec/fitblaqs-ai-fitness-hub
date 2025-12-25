@@ -328,7 +328,7 @@ const CalendarPage = () => {
 
         {/* Main Grid - 3 columns on desktop */}
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Column 1: Calendar + Challenges */}
+          {/* Column 1: Calendar */}
           <div className="space-y-4">
             {/* Calendar - Compact */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
@@ -338,51 +338,6 @@ const CalendarPage = () => {
                 onSelect={setDate} 
                 className="rounded-md text-sm [&_.rdp-day]:h-8 [&_.rdp-day]:w-8 [&_.rdp-head_th]:w-8" 
               />
-            </Card>
-
-            {/* Challenges Box - Compact */}
-            <Card 
-              className="bg-black/40 backdrop-blur-sm border-white/10 p-4 cursor-pointer hover:scale-[1.02] transition-all"
-              onClick={() => setIsChallengeDialogOpen(true)}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-bold text-white">Challenges</h3>
-              </div>
-
-              {savedGoal ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <div className="text-[10px] text-white/60 mb-0.5">Weight</div>
-                      <div className="text-lg font-bold text-white">{userWeight} kg</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-white/60 mb-0.5">Goal</div>
-                      <div className="text-lg font-bold text-green-400">{savedGoal.goal} kg</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-white/60 mb-0.5">{isGerman ? "Tage" : "Days"}</div>
-                      <div className="text-lg font-bold text-primary flex items-center justify-center gap-0.5">
-                        <CalendarIcon className="w-3 h-3" />
-                        {daysRemaining}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-white/60">{isGerman ? "Fortschritt" : "Progress"}</span>
-                      <span className="font-bold text-white">{Math.round(progress)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-white/60 py-2 text-xs">
-                  {isGerman ? "Klicken um Challenge zu starten" : "Click to start a challenge"}
-                </div>
-              )}
             </Card>
           </div>
 
@@ -488,38 +443,38 @@ const CalendarPage = () => {
             </Card>
           </div>
 
-          {/* Column 3: Performance + Nutrition Pie */}
-          <div className="space-y-4">
-            {/* Performance Bar Chart - Compact */}
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
-              <h3 className="text-sm font-bold mb-2 text-white">Performance</h3>
-              <div className="h-32">
+          {/* Column 3: Performance + Nutrition Pie - SMALLER */}
+          <div className="space-y-3">
+            {/* Performance Bar Chart - Smaller */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
+              <h3 className="text-xs font-bold mb-1 text-white">Performance</h3>
+              <div className="h-20">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={monthlyChartData}>
-                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={10} width={25} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: '12px' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Stunden' : 'Hours']} />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={8} tickLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" domain={[0, 100]} fontSize={8} width={20} tickLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: '10px' }} formatter={(value: number) => [`${value.toFixed(1)}h`, isGerman ? 'Std' : 'Hrs']} />
                     <Bar dataKey="hours" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-[10px] text-white/60 mt-1">{isGerman ? "Stunden/Monat - Live" : "Hours/Month - Live"}</div>
+              <div className="text-center text-[8px] text-white/50">{isGerman ? "Std/Monat" : "Hrs/Month"}</div>
             </Card>
 
-            {/* Nutrition Pie Chart - Weight Watcher style */}
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3">
-              <h3 className="text-sm font-bold mb-2 text-white">{isGerman ? "Tages-Ernährung" : "Daily Nutrition"}</h3>
+            {/* Nutrition Pie Chart - Smaller */}
+            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
+              <h3 className="text-xs font-bold mb-1 text-white">{isGerman ? "Ernährung" : "Nutrition"}</h3>
               {nutritionPieData.length > 0 ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-24 h-24 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-16 flex-shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={nutritionPieData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={25}
-                          outerRadius={40}
+                          innerRadius={15}
+                          outerRadius={28}
                           paddingAngle={2}
                           dataKey="value"
                         >
@@ -530,24 +485,21 @@ const CalendarPage = () => {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="text-lg font-bold text-white">{selectedDayNutrition.calories} kcal</div>
+                  <div className="flex-1 space-y-0.5">
+                    <div className="text-sm font-bold text-white">{selectedDayNutrition.calories} kcal</div>
                     {nutritionPieData.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-white/80">{item.name}: {item.value}g</span>
+                      <div key={idx} className="flex items-center gap-1 text-[10px]">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-white/70">{item.name}: {item.value}g</span>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-white/60 py-4 text-xs">
-                  {isGerman ? "Keine Daten für diesen Tag" : "No data for this day"}
+                <div className="text-center text-white/50 py-2 text-[10px]">
+                  {isGerman ? "Keine Daten" : "No data"}
                 </div>
               )}
-              <div className="text-[10px] text-white/40 text-center mt-2">
-                {date ? format(date, "dd.MM.yyyy") : ""} - Live
-              </div>
             </Card>
           </div>
         </div>
