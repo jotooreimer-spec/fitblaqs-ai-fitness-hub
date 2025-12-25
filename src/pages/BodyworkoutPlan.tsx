@@ -398,21 +398,7 @@ const BodyworkoutPlan = () => {
           </DialogHeader>
           
           <ScrollArea className="flex-1">
-            {moduleWorkouts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">
-                  {isGerman 
-                    ? "Noch keine Übungen in diesem Modul gespeichert" 
-                    : "No exercises saved in this module yet"}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {isGerman 
-                    ? "Speichere Trainings im Dashboard um sie hier zu sehen" 
-                    : "Save workouts in the Dashboard to see them here"}
-                </p>
-              </div>
-            ) : (
+            {moduleWorkouts.length > 0 && (
               <div className="space-y-2 p-2">
                 {moduleWorkouts.map((log) => {
                   const exerciseName = log.notes?.split(" (")[0] || "Training";
