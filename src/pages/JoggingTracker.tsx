@@ -15,7 +15,7 @@ import joggingBg from "@/assets/jogging-bg.png";
 import bicycleBg from "@/assets/bicycle-bg.jpg";
 import joggingImg from "@/assets/jogging-bg.jpg";
 import laufenBg from "@/assets/laufen-bg.jpg";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -53,14 +53,7 @@ interface ActivitySession {
   participants: number;
 }
 
-// Component to handle map center updates
-function MapUpdater({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, 15);
-  }, [center, map]);
-  return null;
-}
+// Removed MapUpdater - no live tracking needed, just static location display
 
 const JoggingTracker = () => {
   const navigate = useNavigate();
@@ -380,41 +373,41 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* GPS Map Section - Square format */}
-        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3 mb-6 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
+        {/* GPS Map Section - Smaller compact format */}
+        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3 mb-4 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              <span className="text-white font-medium">{isGerman ? "Dein Standort" : "Your Location"}</span>
+              <MapPin className="w-4 h-4 text-primary" />
+              <span className="text-white text-sm font-medium">{isGerman ? "Dein Standort" : "Your Location"}</span>
             </div>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setShowRadius(!showRadius)}
-                className={`text-xs ${showRadius ? 'bg-primary text-primary-foreground' : ''}`}
+                className={`text-xs h-7 px-2 ${showRadius ? 'bg-primary text-primary-foreground' : ''}`}
               >
-                5km Radius
+                5km
               </Button>
-              <Button variant="outline" size="sm" onClick={refreshLocation} disabled={isLoadingLocation}>
-                <Navigation className="w-4 h-4" />
+              <Button variant="outline" size="sm" className="h-7 px-2" onClick={refreshLocation} disabled={isLoadingLocation}>
+                <Navigation className="w-3 h-3" />
               </Button>
             </div>
           </div>
           
-          {/* Square Map Container */}
-          <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-black/30">
+          {/* Smaller Map Container - 200px height */}
+          <div className="relative w-full h-48 rounded-xl overflow-hidden bg-black/30">
             {isLoadingLocation ? (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-                <span className="ml-3 text-white">{isGerman ? "Standort wird ermittelt..." : "Getting location..."}</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                <span className="ml-2 text-white text-sm">{isGerman ? "Standort..." : "Location..."}</span>
               </div>
             ) : locationError ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 p-4">
-                <MapPin className="w-12 h-12 mb-3 text-destructive" />
-                <p className="text-center mb-3">{locationError}</p>
+                <MapPin className="w-10 h-10 mb-2 text-destructive" />
+                <p className="text-center text-sm mb-2">{locationError}</p>
                 <Button variant="outline" size="sm" onClick={refreshLocation}>
-                  {isGerman ? "Erneut versuchen" : "Try again"}
+                  {isGerman ? "Erneut" : "Retry"}
                 </Button>
               </div>
             ) : userLocation ? (
@@ -423,14 +416,15 @@ const JoggingTracker = () => {
                 zoom={15}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
+                dragging={true}
+                scrollWheelZoom={false}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <MapUpdater center={userLocation} />
                 
-                {/* User location marker */}
+                {/* User location marker - static, no live tracking */}
                 <Marker position={userLocation} icon={userLocationIcon}>
                   <Popup>
                     <div className="text-center font-medium">
@@ -457,8 +451,8 @@ const JoggingTracker = () => {
           </div>
 
           {userLocation && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-white/50">
-              <CircleIcon className="w-3 h-3 fill-blue-500 text-blue-500" />
+            <div className="mt-2 flex items-center justify-center gap-2 text-xs text-white/50">
+              <CircleIcon className="w-2 h-2 fill-blue-500 text-blue-500" />
               <span>{userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}</span>
             </div>
           )}

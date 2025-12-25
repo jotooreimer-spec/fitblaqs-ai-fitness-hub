@@ -10,6 +10,30 @@ import { useToast } from "@/hooks/use-toast";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 
+// Import exercise images for Upper Body
+import arnoldPress from "@/assets/exercises/upperbody/arnold-press.jpg";
+import barbellCurl from "@/assets/exercises/upperbody/barbell-curl.jpg";
+import barbellFrontRaise from "@/assets/exercises/upperbody/barbell-front-raise.jpg";
+import benchPress from "@/assets/exercises/upperbody/bench-press.jpg";
+import cableFly from "@/assets/exercises/upperbody/cable-fly.jpg";
+import chestPress from "@/assets/exercises/upperbody/chest-press.jpg";
+import closeGripBenchPress from "@/assets/exercises/upperbody/close-grip-bench-press.jpg";
+import deadlift from "@/assets/exercises/upperbody/deadlift.jpg";
+import diamondPushUps from "@/assets/exercises/upperbody/diamond-push-ups.jpg";
+
+// Map image URLs to imported images
+const exerciseImageMap: { [key: string]: string } = {
+  "/exercises/upperbody/arnold-press.jpg": arnoldPress,
+  "/exercises/upperbody/barbell-curl.jpg": barbellCurl,
+  "/exercises/upperbody/barbell-front-raise.jpg": barbellFrontRaise,
+  "/exercises/upperbody/bench-press.jpg": benchPress,
+  "/exercises/upperbody/cable-fly.jpg": cableFly,
+  "/exercises/upperbody/chest-press.jpg": chestPress,
+  "/exercises/upperbody/close-grip-bench-press.jpg": closeGripBenchPress,
+  "/exercises/upperbody/deadlift.jpg": deadlift,
+  "/exercises/upperbody/diamond-push-ups.jpg": diamondPushUps,
+};
+
 interface Exercise {
   id: string;
   name_de: string;
@@ -144,6 +168,11 @@ const ExerciseCategory = () => {
     return isGerman ? categoryMap[cat]?.de || cat : categoryMap[cat]?.en || cat;
   };
 
+  const getExerciseImage = (imageUrl: string | null): string | null => {
+    if (!imageUrl) return null;
+    return exerciseImageMap[imageUrl] || null;
+  };
+
   return (
     <div className="min-h-screen pb-24 gradient-male">
       <div className="max-w-screen-xl mx-auto p-6">
@@ -164,105 +193,145 @@ const ExerciseCategory = () => {
 
         {/* Exercises List */}
         <div className="grid gap-4">
-          {exercises.map((exercise) => (
-            <Card
-              key={exercise.id}
-              className="gradient-card card-shadow border-white/10 p-6"
-            >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">
-                    {isGerman ? exercise.name_de : exercise.name_en}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {isGerman ? exercise.description_de : exercise.description_en}
-                  </p>
-                </div>
-                <Dialog open={isLogDialogOpen && selectedExercise?.id === exercise.id} onOpenChange={(open) => {
-                  setIsLogDialogOpen(open);
-                  if (!open) setSelectedExercise(null);
-                }}>
-                  <DialogTrigger asChild>
-                    <Button
-                      onClick={() => {
-                        setSelectedExercise(exercise);
-                        setIsLogDialogOpen(true);
-                      }}
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {isGerman ? "Eintragen" : "Log"}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {isGerman ? "Workout eintragen" : "Log Workout"}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>{isGerman ? "Übung" : "Exercise"}</Label>
-                        <p className="font-semibold">
-                          {isGerman ? exercise.name_de : exercise.name_en}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="sets">{isGerman ? "Sätze" : "Sets"}</Label>
-                          <Input
-                            id="sets"
-                            type="number"
-                            min="1"
-                            value={workoutForm.sets}
-                            onChange={(e) => setWorkoutForm({ ...workoutForm, sets: parseInt(e.target.value) || 1 })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="reps">{isGerman ? "Wiederholungen" : "Reps"}</Label>
-                          <Input
-                            id="reps"
-                            type="number"
-                            min="1"
-                            value={workoutForm.reps}
-                            onChange={(e) => setWorkoutForm({ ...workoutForm, reps: parseInt(e.target.value) || 1 })}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="weight">{isGerman ? "Gewicht" : "Weight"}</Label>
-                          <Input
-                            id="weight"
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={workoutForm.weight}
-                            onChange={(e) => setWorkoutForm({ ...workoutForm, weight: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="unit">{isGerman ? "Einheit" : "Unit"}</Label>
-                          <select
-                            id="unit"
-                            className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                            value={workoutForm.unit}
-                            onChange={(e) => setWorkoutForm({ ...workoutForm, unit: e.target.value })}
-                          >
-                            <option value="kg">kg</option>
-                            <option value="lbs">lbs</option>
-                          </select>
-                        </div>
-                      </div>
-                      <Button onClick={handleLogWorkout} className="w-full">
-                        {isGerman ? "Speichern" : "Save"}
-                      </Button>
+          {exercises.map((exercise) => {
+            const exerciseImage = getExerciseImage(exercise.image_url);
+            
+            return (
+              <Card
+                key={exercise.id}
+                className="gradient-card card-shadow border-white/10 p-4 overflow-hidden"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Exercise Icon/Image - Prominent and proportional */}
+                  {exerciseImage && (
+                    <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-white/10 border border-white/20">
+                      <img 
+                        src={exerciseImage} 
+                        alt={isGerman ? exercise.name_de : exercise.name_en}
+                        className="w-full h-full object-contain p-1"
+                      />
                     </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+                  )}
+                  
+                  {/* Exercise Info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                      {isGerman ? exercise.name_de : exercise.name_en}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {isGerman ? exercise.description_de : exercise.description_en}
+                    </p>
+                    <span className="text-xs text-primary/70 mt-1 inline-block capitalize">
+                      {exercise.body_part === "upper_body" 
+                        ? (isGerman ? "Oberkörper" : "Upper Body")
+                        : (isGerman ? "Unterkörper" : "Lower Body")
+                      }
+                    </span>
+                  </div>
+
+                  {/* Log Button */}
+                  <Dialog open={isLogDialogOpen && selectedExercise?.id === exercise.id} onOpenChange={(open) => {
+                    setIsLogDialogOpen(open);
+                    if (!open) setSelectedExercise(null);
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button
+                        onClick={() => {
+                          setSelectedExercise(exercise);
+                          setIsLogDialogOpen(true);
+                        }}
+                        size="sm"
+                        className="flex-shrink-0"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        {isGerman ? "Log" : "Log"}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-3">
+                          {exerciseImage && (
+                            <img 
+                              src={exerciseImage} 
+                              alt="" 
+                              className="w-10 h-10 rounded-lg object-contain bg-white/10 p-1"
+                            />
+                          )}
+                          {isGerman ? "Workout eintragen" : "Log Workout"}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>{isGerman ? "Übung" : "Exercise"}</Label>
+                          <p className="font-semibold">
+                            {isGerman ? exercise.name_de : exercise.name_en}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="sets">{isGerman ? "Sätze" : "Sets"}</Label>
+                            <Input
+                              id="sets"
+                              type="number"
+                              min="1"
+                              value={workoutForm.sets}
+                              onChange={(e) => setWorkoutForm({ ...workoutForm, sets: parseInt(e.target.value) || 1 })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="reps">{isGerman ? "Wiederholungen" : "Reps"}</Label>
+                            <Input
+                              id="reps"
+                              type="number"
+                              min="1"
+                              value={workoutForm.reps}
+                              onChange={(e) => setWorkoutForm({ ...workoutForm, reps: parseInt(e.target.value) || 1 })}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="weight">{isGerman ? "Gewicht" : "Weight"}</Label>
+                            <Input
+                              id="weight"
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={workoutForm.weight}
+                              onChange={(e) => setWorkoutForm({ ...workoutForm, weight: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="unit">{isGerman ? "Einheit" : "Unit"}</Label>
+                            <select
+                              id="unit"
+                              className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                              value={workoutForm.unit}
+                              onChange={(e) => setWorkoutForm({ ...workoutForm, unit: e.target.value })}
+                            >
+                              <option value="kg">kg</option>
+                              <option value="lbs">lbs</option>
+                            </select>
+                          </div>
+                        </div>
+                        <Button onClick={handleLogWorkout} className="w-full">
+                          {isGerman ? "Speichern" : "Save"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </Card>
+            );
+          })}
+
+          {exercises.length === 0 && (
+            <Card className="gradient-card card-shadow border-white/10 p-8 text-center">
+              <p className="text-muted-foreground">
+                {isGerman ? "Keine Übungen in dieser Kategorie" : "No exercises in this category"}
+              </p>
             </Card>
-          ))}
+          )}
         </div>
       </div>
 
