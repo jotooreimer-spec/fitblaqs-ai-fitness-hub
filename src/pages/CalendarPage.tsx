@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell, Image } from "lucide-react";
+import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell, Image, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -320,10 +321,20 @@ const CalendarPage = () => {
       <div className="fixed inset-0 bg-black/60" />
 
       <div className="relative z-10 max-w-screen-xl mx-auto p-4 md:p-6">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-3xl font-bold mb-1 text-white">Performance</h1>
-          <p className="text-white/60 text-sm">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
+        {/* Header with Back Navigation */}
+        <div className="mb-4 flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/dashboard")}
+            className="text-white hover:bg-white/10 flex-shrink-0"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Performance</h1>
+            <p className="text-white/60 text-xs">{isGerman ? "Dein Tag und Trainingsdauer" : "Your day and training duration"}</p>
+          </div>
         </div>
 
         {/* Main Grid - 3 columns on desktop */}
