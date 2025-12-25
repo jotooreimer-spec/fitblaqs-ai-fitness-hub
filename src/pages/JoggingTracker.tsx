@@ -6,13 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Bike, PersonStanding, Timer } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Bike, PersonStanding, Timer, MapPin, Navigation, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { format } from "date-fns";
 import joggingBg from "@/assets/jogging-bg.png";
-import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import bicycleBg from "@/assets/bicycle-bg.jpg";
+import joggingImg from "@/assets/jogging-bg.jpg";
+import laufenBg from "@/assets/laufen-bg.jpg";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom user location icon
+const userLocationIcon = new L.DivIcon({
+  className: 'custom-div-icon',
+  html: `<div style="background: #3B82F6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+});
 
 interface JoggingLog {
   id: string;
@@ -32,6 +53,15 @@ interface ActivitySession {
   participants: number;
 }
 
+// Component to handle map center updates
+function MapUpdater({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, 15);
+  }, [center, map]);
+  return null;
+}
+
 const JoggingTracker = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,6 +71,12 @@ const JoggingTracker = () => {
   const [logs, setLogs] = useState<JoggingLog[]>([]);
   const [userWeight, setUserWeight] = useState(70);
   const [userId, setUserId] = useState<string>("");
+  
+  // GPS/Map state
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
+  const [showRadius, setShowRadius] = useState(false);
   
   // Activity dialog state
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
@@ -54,6 +90,56 @@ const JoggingTracker = () => {
   
   // Live speed that increases during activity
   const [liveSpeed, setLiveSpeed] = useState(8.0);
+
+  // Get user location
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError(isGerman ? "Geolocation wird nicht unterstützt" : "Geolocation is not supported");
+      setIsLoadingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation([position.coords.latitude, position.coords.longitude]);
+        setIsLoadingLocation(false);
+      },
+      (error) => {
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError(isGerman ? "Standortzugriff verweigert" : "Location access denied");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError(isGerman ? "Standort nicht verfügbar" : "Location unavailable");
+            break;
+          case error.TIMEOUT:
+            setLocationError(isGerman ? "Zeitüberschreitung" : "Location timeout");
+            break;
+          default:
+            setLocationError(isGerman ? "Unbekannter Fehler" : "Unknown error");
+        }
+        setIsLoadingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [isGerman]);
+
+  const refreshLocation = () => {
+    setIsLoadingLocation(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation([position.coords.latitude, position.coords.longitude]);
+        setIsLoadingLocation(false);
+        toast({ title: isGerman ? "Standort aktualisiert" : "Location updated" });
+      },
+      (error) => {
+        setLocationError(isGerman ? "Standort konnte nicht ermittelt werden" : "Could not get location");
+        setIsLoadingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -265,9 +351,9 @@ const JoggingTracker = () => {
   const liveCalories = activeSession ? calculateCalories(liveDistance, seconds, activeSession.type) : 0;
 
   const activityTypes = [
-    { type: "bicycle" as ActivityType, label: isGerman ? "Fahrrad" : "Bicycle", icon: Bike },
-    { type: "running" as ActivityType, label: isGerman ? "Laufen" : "Running", icon: PersonStanding },
-    { type: "jogging" as ActivityType, label: "Jogging", icon: Timer },
+    { type: "bicycle" as ActivityType, label: isGerman ? "Fahrrad" : "Bicycle", icon: Bike, bgImage: bicycleBg },
+    { type: "running" as ActivityType, label: isGerman ? "Laufen" : "Running", icon: PersonStanding, bgImage: laufenBg },
+    { type: "jogging" as ActivityType, label: "Jogging", icon: Timer, bgImage: joggingImg },
   ];
 
   return (
@@ -294,24 +380,99 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* Activity Type Boxes - 3 cards with FitBlaqs logo background */}
+        {/* GPS Map Section - Square format */}
+        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-3 mb-6 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              <span className="text-white font-medium">{isGerman ? "Dein Standort" : "Your Location"}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowRadius(!showRadius)}
+                className={`text-xs ${showRadius ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                5km Radius
+              </Button>
+              <Button variant="outline" size="sm" onClick={refreshLocation} disabled={isLoadingLocation}>
+                <Navigation className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Square Map Container */}
+          <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-black/30">
+            {isLoadingLocation ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+                <span className="ml-3 text-white">{isGerman ? "Standort wird ermittelt..." : "Getting location..."}</span>
+              </div>
+            ) : locationError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 p-4">
+                <MapPin className="w-12 h-12 mb-3 text-destructive" />
+                <p className="text-center mb-3">{locationError}</p>
+                <Button variant="outline" size="sm" onClick={refreshLocation}>
+                  {isGerman ? "Erneut versuchen" : "Try again"}
+                </Button>
+              </div>
+            ) : userLocation ? (
+              <MapContainer
+                center={userLocation}
+                zoom={15}
+                style={{ height: '100%', width: '100%' }}
+                zoomControl={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapUpdater center={userLocation} />
+                
+                {/* User location marker */}
+                <Marker position={userLocation} icon={userLocationIcon}>
+                  <Popup>
+                    <div className="text-center font-medium">
+                      {isGerman ? "Du bist hier" : "You are here"}
+                    </div>
+                  </Popup>
+                </Marker>
+
+                {/* 5km radius circle */}
+                {showRadius && (
+                  <circle cx="50%" cy="50%" r="5000" fill="rgba(59, 130, 246, 0.1)" stroke="#3B82F6" strokeWidth="2" />
+                )}
+              </MapContainer>
+            ) : null}
+          </div>
+
+          {userLocation && (
+            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-white/50">
+              <Circle className="w-3 h-3 fill-blue-500 text-blue-500" />
+              <span>{userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}</span>
+            </div>
+          )}
+        </Card>
+
+        {/* Activity Type Boxes - 3 cards with images as background */}
         {!activeSession && (
           <div className="grid grid-cols-3 gap-3 mb-6">
             {activityTypes.map((activity) => (
               <Card
                 key={activity.type}
                 onClick={() => handleActivityClick(activity.type)}
-                className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 h-28"
+                className="relative overflow-hidden border-white/10 hover:scale-105 transition-all duration-300 cursor-pointer hover:border-primary/50 aspect-square"
               >
                 <img 
-                  src={fitblaqsLogo} 
-                  alt="FitBlaqs" 
-                  className="absolute inset-0 w-full h-full object-contain opacity-10 p-4" 
+                  src={activity.bgImage} 
+                  alt={activity.label} 
+                  className="absolute inset-0 w-full h-full object-cover" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <activity.icon className="w-8 h-8 mb-2 text-primary" />
-                  <span className="text-sm font-bold">{activity.label}</span>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                <div className="absolute inset-0 flex flex-col items-center justify-end pb-4 text-white">
+                  <activity.icon className="w-8 h-8 mb-2 text-primary drop-shadow-lg" />
+                  <span className="text-sm font-bold drop-shadow-lg">{activity.label}</span>
                 </div>
               </Card>
             ))}
@@ -460,7 +621,7 @@ const JoggingTracker = () => {
                 <Input 
                   value={destination} 
                   onChange={(e) => setDestination(e.target.value)} 
-                  placeholder={isGerman ? "z.B. Park" : "e.g. Park"}
+                  placeholder={isGerman ? "z.B. München" : "e.g. Munich"}
                   className="bg-white/10 border-white/20 text-white"
                 />
               </div>
@@ -468,15 +629,15 @@ const JoggingTracker = () => {
                 <Label className="text-white">{isGerman ? "Anzahl Personen" : "Number of People"}</Label>
                 <Input 
                   type="number" 
-                  min="1" 
+                  min={1}
                   value={participants} 
-                  onChange={(e) => setParticipants(parseInt(e.target.value) || 1)}
+                  onChange={(e) => setParticipants(parseInt(e.target.value) || 1)} 
                   className="bg-white/10 border-white/20 text-white"
                 />
               </div>
               <Button onClick={handleStartActivity} className="w-full bg-green-500 hover:bg-green-600">
                 <Play className="w-4 h-4 mr-2" />
-                Start
+                {isGerman ? "Starten" : "Start"}
               </Button>
             </div>
           </DialogContent>
