@@ -199,8 +199,8 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* Map Area with Grid and Animated Arc */}
-        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden min-h-[160px]">
+        {/* Map Area with Grid and Circular Path */}
+        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden min-h-[180px]">
           {/* Grid Pattern */}
           <div className="absolute inset-0 opacity-30">
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -213,70 +213,78 @@ const JoggingTracker = () => {
             </svg>
           </div>
           
-          {/* Animated Arc Path with Moving Dot */}
+          {/* Circular Path with Moving Dot */}
           <svg 
-            className="absolute inset-0 w-full h-full" 
-            viewBox="0 0 200 120" 
-            preserveAspectRatio="xMidYMid meet"
+            className="absolute left-4 top-1/2 -translate-y-1/2" 
+            width="120" 
+            height="120"
+            viewBox="0 0 120 120"
           >
-            {/* Arc Path - curved line */}
-            <path
-              d="M 30 20 Q 50 80, 90 90"
+            {/* Circle Path Background */}
+            <ellipse
+              cx="60"
+              cy="60"
+              rx="50"
+              ry="45"
               fill="none"
               stroke="#22c55e"
               strokeWidth="3"
               strokeLinecap="round"
-              strokeDasharray="100"
-              strokeDashoffset={100 - Math.min((seconds / 600) * 100, 100)}
-              style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+              opacity="0.3"
             />
             
-            {/* Start Point */}
-            <circle 
-              cx="30" 
-              cy="20" 
-              r="5" 
-              fill="#22c55e" 
-              className="drop-shadow-lg"
+            {/* Animated Circle Path */}
+            <ellipse
+              cx="60"
+              cy="60"
+              rx="50"
+              ry="45"
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="300"
+              strokeDashoffset={300 - Math.min((seconds / 600) * 300, 300)}
+              style={{ 
+                transition: 'stroke-dashoffset 0.5s ease-out',
+                transform: 'rotate(-90deg)',
+                transformOrigin: 'center'
+              }}
             />
             
-            {/* Moving Dot along arc */}
+            {/* Moving Dot on Circle */}
             {(() => {
-              // Calculate position along the quadratic bezier curve
-              const progress = Math.min(seconds / 600, 1); // 10 minutes = full arc
-              const t = progress;
-              // Quadratic Bezier: P = (1-t)²P0 + 2(1-t)tP1 + t²P2
-              const x = Math.pow(1 - t, 2) * 30 + 2 * (1 - t) * t * 50 + Math.pow(t, 2) * 90;
-              const y = Math.pow(1 - t, 2) * 20 + 2 * (1 - t) * t * 80 + Math.pow(t, 2) * 90;
+              const progress = Math.min(seconds / 600, 1);
+              const angle = progress * 2 * Math.PI - Math.PI / 2;
+              const x = 60 + 50 * Math.cos(angle);
+              const y = 60 + 45 * Math.sin(angle);
               
               return (
                 <circle 
                   cx={x} 
                   cy={y} 
-                  r="6" 
-                  fill="#4ade80" 
-                  className="drop-shadow-lg"
+                  r="8" 
+                  fill="#4ade80"
                   style={{ 
-                    filter: 'drop-shadow(0 0 6px rgba(74, 222, 128, 0.8))',
+                    filter: 'drop-shadow(0 0 8px rgba(74, 222, 128, 0.9))',
                     transition: 'cx 0.5s ease-out, cy 0.5s ease-out'
                   }}
                 />
               );
             })()}
             
-            {/* End Point (visible when approaching) */}
+            {/* End Point Marker */}
             <circle 
-              cx="90" 
-              cy="90" 
-              r="5" 
-              fill="#22c55e" 
-              opacity={seconds > 300 ? 0.8 : 0.3}
-              className="drop-shadow-lg"
+              cx="60" 
+              cy="15" 
+              r="6" 
+              fill="#22c55e"
+              opacity="0.5"
             />
           </svg>
 
           {/* Time and Distance Display */}
-          <div className="relative z-10 flex flex-col items-end justify-center min-h-[120px] pr-2">
+          <div className="relative z-10 flex flex-col items-end justify-center min-h-[160px] pr-4">
             <div className="text-4xl font-bold text-white tabular-nums tracking-wider">
               {formatTime(seconds)}
             </div>
