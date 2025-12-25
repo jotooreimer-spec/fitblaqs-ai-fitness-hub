@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Timer } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2, Square, ArrowLeft, Timer, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +32,9 @@ const JoggingTracker = () => {
   const [userWeight, setUserWeight] = useState(70);
   const [userId, setUserId] = useState<string>("");
   const [liveSpeed, setLiveSpeed] = useState(8.0);
+  const [timerDialogOpen, setTimerDialogOpen] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState("");
+  const [targetTime, setTargetTime] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -84,7 +87,18 @@ const JoggingTracker = () => {
 
     if (isActive) {
       interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
+        setSeconds((prev) => {
+          const newSeconds = prev + 1;
+          // Check if timer target reached
+          if (targetTime && newSeconds >= targetTime) {
+            setIsActive(false);
+            toast({
+              title: isGerman ? "Timer abgelaufen!" : "Timer finished!",
+              description: isGerman ? "Dein Zeitziel wurde erreicht" : "Your time goal has been reached",
+            });
+          }
+          return newSeconds;
+        });
         setLiveSpeed((prev) => Math.min(prev + 0.01, 25));
       }, 1000);
     }
@@ -92,7 +106,7 @@ const JoggingTracker = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive]);
+  }, [isActive, targetTime, toast, isGerman]);
 
   const calculateDistance = useCallback((totalSeconds: number) => {
     const hours = totalSeconds / 3600;
@@ -114,6 +128,33 @@ const JoggingTracker = () => {
     setSeconds(0);
     setIsActive(false);
     setLiveSpeed(8.0);
+    setTargetTime(null);
+  };
+
+  const handleSetTimer = () => {
+    const mins = parseInt(timerMinutes);
+    if (mins > 0 && mins <= 999) {
+      setTargetTime(mins * 60);
+      setTimerDialogOpen(false);
+      toast({
+        title: isGerman ? "Timer gesetzt" : "Timer set",
+        description: `${mins} ${isGerman ? "Minuten" : "minutes"}`,
+      });
+    } else {
+      toast({
+        title: isGerman ? "Ungültige Eingabe" : "Invalid input",
+        description: isGerman ? "Bitte gib 1-999 Minuten ein" : "Please enter 1-999 minutes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearTimer = () => {
+    setTargetTime(null);
+    setTimerDialogOpen(false);
+    toast({
+      title: isGerman ? "Timer gelöscht" : "Timer cleared",
+    });
   };
 
   const handleStop = async () => {
@@ -313,9 +354,10 @@ const JoggingTracker = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="w-16 h-14 rounded-xl bg-background/10 border-border/30 hover:bg-background/20"
+              onClick={() => setTimerDialogOpen(true)}
+              className={`w-16 h-14 rounded-xl border-border/30 hover:bg-background/20 ${targetTime ? 'bg-orange-500/30 border-orange-500/50' : 'bg-background/10'}`}
             >
-              <Timer className="w-6 h-6 text-white" />
+              <Timer className={`w-6 h-6 ${targetTime ? 'text-orange-400' : 'text-white'}`} />
             </Button>
             <Button 
               size="lg" 
@@ -378,6 +420,50 @@ const JoggingTracker = () => {
           )}
         </div>
       </div>
+
+      {/* Timer Dialog */}
+      <Dialog open={timerDialogOpen} onOpenChange={setTimerDialogOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Timer className="w-5 h-5" />
+              {isGerman ? "Timer setzen" : "Set Timer"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{isGerman ? "Minuten" : "Minutes"}</Label>
+              <Input
+                type="number"
+                min="1"
+                max="999"
+                placeholder={isGerman ? "z.B. 30" : "e.g. 30"}
+                value={timerMinutes}
+                onChange={(e) => setTimerMinutes(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            {targetTime && (
+              <div className="p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                <p className="text-sm text-orange-400 flex items-center gap-2">
+                  <Bell className="w-4 h-4" />
+                  {isGerman ? "Aktiver Timer:" : "Active timer:"} {Math.floor(targetTime / 60)} {isGerman ? "Minuten" : "minutes"}
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3">
+              <Button onClick={handleSetTimer} className="flex-1 bg-green-600 hover:bg-green-700">
+                {isGerman ? "Timer setzen" : "Set Timer"}
+              </Button>
+              {targetTime && (
+                <Button variant="outline" onClick={clearTimer} className="text-destructive border-destructive/50">
+                  {isGerman ? "Löschen" : "Clear"}
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
