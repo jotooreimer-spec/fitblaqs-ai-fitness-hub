@@ -199,8 +199,8 @@ const JoggingTracker = () => {
           </div>
         </div>
 
-        {/* Map Area with Grid */}
-        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden">
+        {/* Map Area with Grid and Animated Arc */}
+        <Card className="bg-[#1a2e1a]/90 border-green-900/50 rounded-2xl p-4 mb-4 relative overflow-hidden min-h-[160px]">
           {/* Grid Pattern */}
           <div className="absolute inset-0 opacity-30">
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -213,10 +213,67 @@ const JoggingTracker = () => {
             </svg>
           </div>
           
-          {/* Location Dot */}
-          <div className="absolute top-6 left-1/3">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50" />
-          </div>
+          {/* Animated Arc Path with Moving Dot */}
+          <svg 
+            className="absolute inset-0 w-full h-full" 
+            viewBox="0 0 200 120" 
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Arc Path - curved line */}
+            <path
+              d="M 30 20 Q 50 80, 90 90"
+              fill="none"
+              stroke="#22c55e"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="100"
+              strokeDashoffset={100 - Math.min((seconds / 600) * 100, 100)}
+              style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+            />
+            
+            {/* Start Point */}
+            <circle 
+              cx="30" 
+              cy="20" 
+              r="5" 
+              fill="#22c55e" 
+              className="drop-shadow-lg"
+            />
+            
+            {/* Moving Dot along arc */}
+            {(() => {
+              // Calculate position along the quadratic bezier curve
+              const progress = Math.min(seconds / 600, 1); // 10 minutes = full arc
+              const t = progress;
+              // Quadratic Bezier: P = (1-t)²P0 + 2(1-t)tP1 + t²P2
+              const x = Math.pow(1 - t, 2) * 30 + 2 * (1 - t) * t * 50 + Math.pow(t, 2) * 90;
+              const y = Math.pow(1 - t, 2) * 20 + 2 * (1 - t) * t * 80 + Math.pow(t, 2) * 90;
+              
+              return (
+                <circle 
+                  cx={x} 
+                  cy={y} 
+                  r="6" 
+                  fill="#4ade80" 
+                  className="drop-shadow-lg"
+                  style={{ 
+                    filter: 'drop-shadow(0 0 6px rgba(74, 222, 128, 0.8))',
+                    transition: 'cx 0.5s ease-out, cy 0.5s ease-out'
+                  }}
+                />
+              );
+            })()}
+            
+            {/* End Point (visible when approaching) */}
+            <circle 
+              cx="90" 
+              cy="90" 
+              r="5" 
+              fill="#22c55e" 
+              opacity={seconds > 300 ? 0.8 : 0.3}
+              className="drop-shadow-lg"
+            />
+          </svg>
 
           {/* Time and Distance Display */}
           <div className="relative z-10 flex flex-col items-end justify-center min-h-[120px] pr-2">
