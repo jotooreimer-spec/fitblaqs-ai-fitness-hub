@@ -23,6 +23,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Impressum from "./pages/Impressum";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
+import BodyworkoutPlan from "./pages/BodyworkoutPlan";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/jogging-tracker" element={<JoggingTracker />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/performance" element={<CalendarPage />} />
+                <Route path="/bodyworkout-plan" element={<BodyworkoutPlan />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />

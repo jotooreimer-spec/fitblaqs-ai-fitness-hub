@@ -9,13 +9,14 @@ import { UpdateNotification, useUpdateNotification } from "@/components/UpdateNo
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Dumbbell } from "lucide-react";
+import { Dumbbell, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import upperbodyImg from "@/assets/upperbody-bg.png";
 import middlebodyImg from "@/assets/middlebody.png";
 import lowerbodyImg from "@/assets/lowerbody.png";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import fitblaqsLogoSmall from "@/assets/fitblaqs-logo-small.png";
 import dashboardBg from "@/assets/dashboard-bg.png";
 
 type BodyPartType = "lower_body" | "upper_body" | "middle_body" | "fullbody" | null;
@@ -152,6 +153,44 @@ const Dashboard = () => {
               isGerman={isGerman} 
             />
           </div>
+          
+          {/* Quick Access Buttons */}
+          <div className="flex items-center gap-3 mb-4">
+            {/* Performance Button */}
+            <button
+              onClick={() => navigate("/performance")}
+              className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/20 hover:border-primary/50 hover:scale-105 transition-all group"
+            >
+              <img 
+                src={fitblaqsLogoSmall} 
+                alt="Performance" 
+                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-primary mb-0.5" />
+                <span className="text-[8px] font-bold text-white text-center leading-tight">Performance</span>
+              </div>
+            </button>
+            
+            {/* Bodyworkout Plan Button */}
+            <button
+              onClick={() => navigate("/bodyworkout-plan")}
+              className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/20 hover:border-primary/50 hover:scale-105 transition-all group"
+            >
+              <img 
+                src={fitblaqsLogoSmall} 
+                alt="Bodyworkout" 
+                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <Dumbbell className="w-4 h-4 text-primary mb-0.5" />
+                <span className="text-[7px] font-bold text-white text-center leading-tight">Bodyworkout<br/>Plan</span>
+              </div>
+            </button>
+          </div>
+          
           <p className="text-white/70">
             {isGerman ? "Wähle deine Trainingseinheit" : "Choose your training session"}
           </p>
