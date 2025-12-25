@@ -50,15 +50,20 @@ export const TrainingLogDialog = ({ open, onOpenChange, userId, isGerman, onSucc
     { sets: "", reps: "", weight: "", unit: "kg" }
   ]);
 
-  // Update body part when defaultBodyPart changes
+  // Update body part when defaultBodyPart changes - show grid immediately
   useEffect(() => {
     if (defaultBodyPart) {
       setBodyPart(defaultBodyPart);
       setExercise("");
+      setSelectedExerciseItem(null);
       setCustomExercise("");
       setCustomBodyPart("");
+      // Show exercise grid immediately when dialog opens with a body part
+      if (defaultBodyPart !== "fullbody") {
+        setShowExerciseGrid(true);
+      }
     }
-  }, [defaultBodyPart]);
+  }, [defaultBodyPart, open]);
 
   const handleExerciseSelect = (exerciseItem: ExerciseItem) => {
     setSelectedExerciseItem(exerciseItem);
