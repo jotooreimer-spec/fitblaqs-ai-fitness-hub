@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import CookieBanner from "./components/CookieBanner";
 import BodyworkoutPlan from "./pages/BodyworkoutPlan";
 import PostOnboardingLoading from "./pages/PostOnboardingLoading";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <CookieBanner />
+              <PWAInstallPrompt />
             </BrowserRouter>
           </TooltipProvider>
         </LiveDataProvider>
