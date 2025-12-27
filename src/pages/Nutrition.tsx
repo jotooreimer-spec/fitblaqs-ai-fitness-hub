@@ -235,9 +235,9 @@ const Nutrition = () => {
     { image: supplementsImg, title: "Supplements", description: isGerman ? "Nahrungsergänzung" : "Nutritional supplements", key: "supplements" as const },
   ];
 
-  // Group logs by date
+  // Group logs by date - limit to 10 entries
   const today = new Date().toISOString().split('T')[0];
-  const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
+  const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today).slice(0, 10);
 
   return (
     <div className="min-h-screen pb-24 relative">

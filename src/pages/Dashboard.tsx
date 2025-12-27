@@ -253,7 +253,7 @@ const Dashboard = () => {
         {/* Training History */}
         <div>
           <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingsverlauf" : "Training History"}</h2>
-          <TrainingHistory userId={userId} isGerman={isGerman} refreshTrigger={refreshHistory} />
+          <TrainingHistory userId={userId} isGerman={isGerman} refreshTrigger={refreshHistory} maxEntries={10} />
         </div>
       </div>
 
