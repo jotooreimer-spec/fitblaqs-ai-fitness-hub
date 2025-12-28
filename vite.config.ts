@@ -15,39 +15,14 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt"],
-      manifest: {
-        name: "FitBlaqs - AI Fitness & Nutrition",
-        short_name: "FitBlaqs",
-        description: "Professional AI-powered fitness and nutrition tracking app",
-        theme_color: "#8B5CF6",
-        background_color: "#0a0a0a",
-        display: "standalone",
-        orientation: "portrait",
-        scope: "/",
-        start_url: "/",
-        icons: [
-          {
-            src: "/pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png"
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable"
-          }
-        ]
-      },
+      includeAssets: ["favicon.ico", "robots.txt", "manifest.json", ".well-known/assetlinks.json"],
+      // Use external manifest.json from public folder instead of generating one
+      manifest: false,
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Exclude static TWA files from service worker caching to ensure direct delivery
+        navigateFallbackDenylist: [/^\/manifest\.json$/, /^\/.well-known\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
