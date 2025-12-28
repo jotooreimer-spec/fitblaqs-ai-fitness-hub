@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "app.fitblaqsstudio.twa",
+      "package_name": "app.fitblaqs.studio.twa",
       "sha256_cert_fingerprints": [
         "76:20:6E:D5:9F:31:6E:29:61:7F:6A:6D:9D:57:93:58:E0:DC:C9:39"
       ]
