@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitblaqs-studio-v2';
+const CACHE_NAME = 'fitblaqs-studio-v3';
 const URLS_TO_CACHE = [
   '/',
   '/dashboard',
@@ -10,9 +10,11 @@ const URLS_TO_CACHE = [
   '/settings',
   '/index.html',
   '/pwa-192x192.png',
-  '/pwa-512x512.png',
-  '/manifest.json'
+  '/pwa-512x512.png'
 ];
+
+// Static files that should NEVER be cached or intercepted (for TWA/Bubblewrap compatibility)
+const TWA_STATIC_FILES = ['/manifest.json', '/.well-known/assetlinks.json'];
 
 // Install: Cache all main pages and assets
 self.addEventListener('install', (event) => {
@@ -42,8 +44,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: Try cache first, fallback to network
+// Fetch: Handle requests with TWA static file bypass
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // CRITICAL: Let TWA static files pass through directly to server (no caching, no interception)
+  if (TWA_STATIC_FILES.some(file => url.pathname === file) || url.pathname.startsWith('/.well-known/')) {
+    return; // Don't call event.respondWith() - let browser fetch directly
+  }
+
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
