@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { Card } from "@/components/ui/card";
@@ -13,6 +13,13 @@ import { NutritionHistory } from "@/components/NutritionHistory";
 import { LiveUpdatePopup } from "@/components/LiveUpdatePopup";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLiveData } from "@/contexts/LiveDataContext";
+import {
+  calculateDailyNutrition,
+  calculatePercentageChange,
+  formatMLToLiters,
+  DailyNutritionTotals
+} from "@/lib/calculationUtils";
 import vegetableImg from "@/assets/vegetable.jpg";
 import veganImg from "@/assets/vegan.jpg";
 import proteinImg from "@/assets/protein.jpg";
@@ -32,6 +39,7 @@ const Nutrition = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isGerman } = useLanguage();
+  const { nutritionLogs: liveNutritionLogs, stats, refetch, setUserId: setLiveUserId } = useLiveData();
   const [userId, setUserId] = useState<string>("");
   const [userWeight, setUserWeight] = useState(70);
   const [selectedCategory, setSelectedCategory] = useState<"vegetarian" | "vegan" | "protein" | "supplements" | null>(null);
@@ -54,6 +62,7 @@ const Nutrition = () => {
       }
 
       setUserId(session.user.id);
+      setLiveUserId(session.user.id);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -75,7 +84,7 @@ const Nutrition = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, refreshTrigger]);
+  }, [navigate, refreshTrigger, setLiveUserId]);
 
   const loadNutritionLogs = async (uid: string) => {
     const { data, error } = await supabase
@@ -113,84 +122,24 @@ const Nutrition = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Convert water value to ml based on unit
-  const parseWaterToMl = (waterData: any): number => {
-    if (!waterData || !waterData.value) return 0;
-    const value = parseFloat(waterData.value) || 0;
-    const unit = waterData.unit || 'ml';
+  // Use centralized calculation from LiveDataContext - auto-calculated with proper unit normalization
+  const dailyTotals = useMemo(() => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    switch (unit) {
-      case 'l':
-      case 'liter':
-        return value * 1000;
-      case 'dl':
-        return value * 100;
-      case 'ml':
-      default:
-        return value;
-    }
-  };
-
-  // Parse nutrition notes (JSON format)
-  const parseNutritionNotes = (notes: string | null) => {
-    if (!notes) return null;
-    try {
-      return JSON.parse(notes);
-    } catch {
-      // Legacy format fallback
-      const waterMatch = notes.match(/Water: ([\d.]+)/);
-      return waterMatch ? { water: { value: parseFloat(waterMatch[1]), unit: 'ml', ml: parseFloat(waterMatch[1]) } } : null;
-    }
-  };
-
-  // Auto-calculate daily totals with proper unit conversion
-  const calculateDailyTotals = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const todayNutrition = calculateDailyNutrition(nutritionLogs, today);
+    const yesterdayNutrition = calculateDailyNutrition(nutritionLogs, yesterday);
     
-    const todayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === today);
-    const yesterdayLogs = nutritionLogs.filter(log => log.completed_at.split('T')[0] === yesterday);
-
-    let totalCalories = 0, totalProtein = 0, totalHydration = 0;
-    let yesterdayCalories = 0, yesterdayProtein = 0, yesterdayHydration = 0;
-
-    todayLogs.forEach(log => {
-      totalCalories += log.calories || 0;
-      totalProtein += log.protein || 0;
-      
-      const parsed = parseNutritionNotes(log.notes);
-      if (parsed?.water) {
-        totalHydration += parseWaterToMl(parsed.water);
-      }
-    });
-
-    yesterdayLogs.forEach(log => {
-      yesterdayCalories += log.calories || 0;
-      yesterdayProtein += log.protein || 0;
-      
-      const parsed = parseNutritionNotes(log.notes);
-      if (parsed?.water) {
-        yesterdayHydration += parseWaterToMl(parsed.water);
-      }
-    });
-
-    // Calculate percentage changes
-    const calcChange = (today: number, yesterday: number) => {
-      if (yesterday === 0) return today > 0 ? 100 : 0;
-      return ((today - yesterday) / yesterday) * 100;
+    return {
+      calories: todayNutrition.calories,
+      protein: todayNutrition.protein,
+      hydration: todayNutrition.hydration,
+      caloriesChange: calculatePercentageChange(todayNutrition.calories, yesterdayNutrition.calories),
+      proteinChange: calculatePercentageChange(todayNutrition.protein, yesterdayNutrition.protein),
+      hydrationChange: calculatePercentageChange(todayNutrition.hydration, yesterdayNutrition.hydration),
     };
-
-    return { 
-      calories: totalCalories, 
-      protein: totalProtein, 
-      hydration: totalHydration,
-      caloriesChange: calcChange(totalCalories, yesterdayCalories),
-      proteinChange: calcChange(totalProtein, yesterdayProtein),
-      hydrationChange: calcChange(totalHydration, yesterdayHydration),
-    };
-  };
-
-  const dailyTotals = calculateDailyTotals();
+  }, [nutritionLogs]);
 
   // Show live update popup when values change
   useEffect(() => {

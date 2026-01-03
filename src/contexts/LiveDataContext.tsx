@@ -1,6 +1,16 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  calculateDailyNutrition,
+  calculateDailyTrainingDuration,
+  calculateMonthlyTrainingHours,
+  extractHydrationFromNotes,
+  extractProteinFromLog,
+  safeParseFloat,
+  safeCalculation,
+  DailyNutritionTotals
+} from "@/lib/calculationUtils";
 
 interface NutritionLog {
   id: string;
@@ -90,6 +100,16 @@ interface LiveStats {
   totalDistance: number;
   currentWeight: number;
   monthlyWorkoutHours: number;
+  // New enhanced stats
+  todayCarbs: number;
+  todayFats: number;
+  todayVitamins: number;
+  yesterdayCalories: number;
+  yesterdayProtein: number;
+  yesterdayWater: number;
+  caloriesChange: number;
+  proteinChange: number;
+  waterChange: number;
 }
 
 interface LiveDataContextType {
@@ -104,6 +124,9 @@ interface LiveDataContextType {
   
   // Computed stats
   stats: LiveStats;
+  
+  // Daily nutrition for selected date
+  getDailyNutrition: (date: Date) => DailyNutritionTotals;
   
   // State
   isLoading: boolean;
@@ -129,83 +152,89 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   const [bodyAnalysis, setBodyAnalysis] = useState<BodyAnalysis[]>([]);
   const [foodAnalysis, setFoodAnalysis] = useState<FoodAnalysis[]>([]);
   
-  // Computed stats
-  const [stats, setStats] = useState<LiveStats>({
-    totalWorkouts: 0,
-    todayCalories: 0,
-    todayProtein: 0,
-    todayWater: 0,
-    totalDistance: 0,
-    currentWeight: 0,
-    monthlyWorkoutHours: 0,
-  });
+  // Get daily nutrition for any date
+  const getDailyNutrition = useCallback((date: Date): DailyNutritionTotals => {
+    return safeCalculation(
+      () => calculateDailyNutrition(nutritionLogs, date),
+      { calories: 0, protein: 0, hydration: 0, carbs: 0, fats: 0, vitamins: 0, hasData: false },
+      "Error calculating daily nutrition"
+    );
+  }, [nutritionLogs]);
 
-  // Calculate stats from data
-  const calculateStats = useCallback(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
-    
-    // Today's nutrition
-    const todayNutrition = nutritionLogs.filter(n => {
-      const date = new Date(n.completed_at);
-      return date >= today && date <= todayEnd;
-    });
-    
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalWater = 0;
-    
-    todayNutrition.forEach(log => {
-      totalCalories += log.calories || 0;
-      totalProtein += log.protein || 0;
+  // Calculate stats from data using new utility functions
+  const stats = useMemo((): LiveStats => {
+    return safeCalculation(() => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
       
-      // Parse water from notes
-      if (log.notes) {
-        try {
-          const parsed = JSON.parse(log.notes);
-          if (parsed?.water?.value) {
-            const value = parseFloat(parsed.water.value) || 0;
-            const unit = parsed.water.unit || 'ml';
-            if (unit === 'l' || unit === 'liter') totalWater += value * 1000;
-            else if (unit === 'dl') totalWater += value * 100;
-            else totalWater += value;
-          }
-        } catch {}
-      }
-    });
-    
-    // Total distance from jogging
-    const totalDistance = joggingLogs.reduce((sum, j) => sum + (parseFloat(String(j.distance)) || 0), 0);
-    
-    // Current weight
-    const currentWeight = weightLogs.length > 0 
-      ? parseFloat(String(weightLogs[0].weight)) || (profile?.weight || 0)
-      : (profile?.weight || 0);
-    
-    // This year workouts
-    const yearStart = new Date(today.getFullYear(), 0, 1);
-    const yearWorkouts = workoutLogs.filter(w => new Date(w.completed_at) >= yearStart);
-    const yearJogging = joggingLogs.filter(j => new Date(j.completed_at) >= yearStart);
-    
-    // Monthly workout hours
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthWorkouts = workoutLogs.filter(w => new Date(w.completed_at) >= monthStart);
-    const monthJogging = joggingLogs.filter(j => new Date(j.completed_at) >= monthStart);
-    
-    const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0);
-    const joggingHours = monthJogging.reduce((sum, j) => sum + ((j.duration || 0) / 60), 0);
-    
-    setStats({
-      totalWorkouts: yearWorkouts.length + yearJogging.length,
-      todayCalories: totalCalories,
-      todayProtein: totalProtein,
-      todayWater: totalWater,
-      totalDistance: totalDistance,
-      currentWeight: currentWeight,
-      monthlyWorkoutHours: workoutHours + joggingHours,
-    });
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      // Calculate today's nutrition using utility function
+      const todayNutrition = calculateDailyNutrition(nutritionLogs, today);
+      const yesterdayNutrition = calculateDailyNutrition(nutritionLogs, yesterday);
+      
+      // Calculate percentage changes
+      const calcChange = (current: number, previous: number): number => {
+        if (previous === 0) return current > 0 ? 100 : 0;
+        return ((current - previous) / previous) * 100;
+      };
+      
+      // Total distance from jogging
+      const totalDistance = joggingLogs.reduce((sum, j) => sum + safeParseFloat(j.distance, 0), 0);
+      
+      // Current weight
+      const currentWeight = weightLogs.length > 0 
+        ? safeParseFloat(weightLogs[0].weight, profile?.weight || 0)
+        : safeParseFloat(profile?.weight, 0);
+      
+      // This year workouts
+      const yearStart = new Date(today.getFullYear(), 0, 1);
+      const yearWorkouts = workoutLogs.filter(w => new Date(w.completed_at) >= yearStart);
+      const yearJogging = joggingLogs.filter(j => new Date(j.completed_at) >= yearStart);
+      
+      // Monthly workout hours using utility function
+      const monthlyData = calculateMonthlyTrainingHours(workoutLogs, joggingLogs, today.getFullYear());
+      const currentMonthHours = monthlyData[today.getMonth()]?.hours || 0;
+      
+      return {
+        totalWorkouts: yearWorkouts.length + yearJogging.length,
+        todayCalories: todayNutrition.calories,
+        todayProtein: todayNutrition.protein,
+        todayWater: todayNutrition.hydration,
+        todayCarbs: todayNutrition.carbs,
+        todayFats: todayNutrition.fats,
+        todayVitamins: todayNutrition.vitamins,
+        yesterdayCalories: yesterdayNutrition.calories,
+        yesterdayProtein: yesterdayNutrition.protein,
+        yesterdayWater: yesterdayNutrition.hydration,
+        caloriesChange: calcChange(todayNutrition.calories, yesterdayNutrition.calories),
+        proteinChange: calcChange(todayNutrition.protein, yesterdayNutrition.protein),
+        waterChange: calcChange(todayNutrition.hydration, yesterdayNutrition.hydration),
+        totalDistance,
+        currentWeight,
+        monthlyWorkoutHours: currentMonthHours,
+      };
+    }, {
+      totalWorkouts: 0,
+      todayCalories: 0,
+      todayProtein: 0,
+      todayWater: 0,
+      todayCarbs: 0,
+      todayFats: 0,
+      todayVitamins: 0,
+      yesterdayCalories: 0,
+      yesterdayProtein: 0,
+      yesterdayWater: 0,
+      caloriesChange: 0,
+      proteinChange: 0,
+      waterChange: 0,
+      totalDistance: 0,
+      currentWeight: 0,
+      monthlyWorkoutHours: 0,
+    }, "Error calculating live stats");
   }, [nutritionLogs, workoutLogs, joggingLogs, weightLogs, profile]);
 
   // Fetch all data
@@ -372,10 +401,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [userId, fetchAllData]);
 
-  // Recalculate stats when data changes
-  useEffect(() => {
-    calculateStats();
-  }, [calculateStats]);
+  // Stats are now calculated via useMemo, no need for separate effect
 
   return (
     <LiveDataContext.Provider value={{
@@ -387,6 +413,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
       bodyAnalysis,
       foodAnalysis,
       stats,
+      getDailyNutrition,
       isLoading,
       userId,
       refetch: fetchAllData,
