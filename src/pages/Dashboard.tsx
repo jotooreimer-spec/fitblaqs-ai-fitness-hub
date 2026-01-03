@@ -250,9 +250,9 @@ const Dashboard = () => {
           </div>
         </Card>
 
-        {/* Training History */}
+        {/* Trainingstag (Training History) */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingsverlauf" : "Training History"}</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">{isGerman ? "Trainingstag" : "Training Day"}</h2>
           <TrainingHistory userId={userId} isGerman={isGerman} refreshTrigger={refreshHistory} maxEntries={10} />
         </div>
       </div>

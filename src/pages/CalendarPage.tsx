@@ -17,6 +17,13 @@ import { CalendarSkeleton } from "@/components/AnalysisSkeleton";
 import { useLiveData } from "@/contexts/LiveDataContext";
 import { ExerciseImageDialog } from "@/components/ExerciseImageDialog";
 import { allExercises } from "@/data/exerciseImages";
+import {
+  calculateDailyNutrition,
+  calculateDailyTrainingDuration,
+  calculateMonthlyTrainingHours,
+  calculateChallengeStats,
+  formatMLToLiters
+} from "@/lib/calculationUtils";
 import performanceBg from "@/assets/performance-bg.png";
 import bodyworkoutplan1 from "@/assets/bodyworkoutplan-1.png";
 import bodyworkoutplan2 from "@/assets/bodyworkoutplan-2.png";
@@ -173,40 +180,18 @@ const CalendarPage = () => {
     };
   }, [date, workoutLogs, nutritionLogs, joggingLogs, weightLogs, bodyAnalysis, foodAnalysis]);
 
-  // Calculate monthly chart data from live data - LIVE from all training logs
+  // Calculate monthly chart data using centralized calculation
   const monthlyChartData = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const selectedYear = date?.getFullYear() || currentYear;
-    
+    const selectedYear = date?.getFullYear() || new Date().getFullYear();
     const monthNames = isGerman 
       ? ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
       : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    return monthNames.map((month, index) => {
-      // Calculate hours from ALL workout logs for this month
-      const monthWorkouts = workoutLogs.filter(w => {
-        const d = new Date(w.completed_at);
-        return d.getMonth() === index && d.getFullYear() === selectedYear;
-      });
-      const monthJogging = joggingLogs.filter(j => {
-        const d = new Date(j.completed_at);
-        return d.getMonth() === index && d.getFullYear() === selectedYear;
-      });
-      
-      // Calculate hours from jogging (duration in seconds or minutes)
-      const joggingHours = monthJogging.reduce((sum, j) => {
-        const duration = j.duration || 0;
-        // If > 100, assume seconds
-        return sum + (duration > 100 ? duration / 3600 : duration / 60);
-      }, 0);
-      
-      // Calculate hours from workouts (estimate 3 min per set)
-      const workoutHours = monthWorkouts.reduce((sum, w) => sum + ((w.sets || 1) * 3 / 60), 0);
-
-      return { month, hours: Math.min(Math.round((joggingHours + workoutHours) * 10) / 10, 100) };
-    });
+    const data = calculateMonthlyTrainingHours(workoutLogs, joggingLogs, selectedYear);
+    return data.map((item, index) => ({
+      month: monthNames[index],
+      hours: item.hours
+    }));
   }, [date, workoutLogs, joggingLogs, isGerman]);
 
   const handleSaveChallenge = () => {
@@ -262,16 +247,16 @@ const CalendarPage = () => {
 
   const hasData = selectedDayData.workouts.length > 0 || selectedDayData.nutrition.length > 0 || selectedDayData.jogging.length > 0 || selectedDayData.weight.length > 0 || selectedDayData.bodyAnalysis.length > 0 || selectedDayData.foodAnalysis.length > 0;
 
-  // Calculate total training duration for selected day - LIVE
+  // Calculate total training duration for selected day using centralized calculation
   const totalDuration = useMemo(() => {
-    const joggingMins = selectedDayData.jogging.reduce((sum, j) => {
-      const duration = j.duration || 0;
-      // If > 100, assume seconds
-      return sum + (duration > 100 ? duration / 60 : duration);
-    }, 0);
-    const workoutMins = selectedDayData.workouts.length * 30; // Estimate 30 min per workout
-    return Math.round(joggingMins + workoutMins);
-  }, [selectedDayData]);
+    if (!date) return 0;
+    const duration = calculateDailyTrainingDuration(
+      selectedDayData.workouts,
+      selectedDayData.jogging,
+      date
+    );
+    return duration.totalMinutes;
+  }, [selectedDayData, date]);
 
   const daysRemaining = calculateDaysRemaining();
   const weightRemaining = calculateWeightRemaining();
@@ -290,17 +275,11 @@ const CalendarPage = () => {
     return `${Math.floor(duration / 60).toString().padStart(2, '0')}:${(duration % 60).toString().padStart(2, '0')}:00`;
   };
 
-  // Calculate nutrition data for selected day - LIVE for pie chart
+  // Calculate nutrition data for selected day using centralized calculation
   const selectedDayNutrition = useMemo(() => {
-    const totals = { calories: 0, protein: 0, carbs: 0, fats: 0 };
-    selectedDayData.nutrition.forEach(n => {
-      totals.calories += n.calories || 0;
-      totals.protein += n.protein || 0;
-      totals.carbs += n.carbs || 0;
-      totals.fats += n.fats || 0;
-    });
-    return totals;
-  }, [selectedDayData.nutrition]);
+    if (!date) return { calories: 0, protein: 0, carbs: 0, fats: 0, hydration: 0, vitamins: 0, hasData: false };
+    return calculateDailyNutrition(nutritionLogs, date);
+  }, [nutritionLogs, date]);
 
   const nutritionPieData = useMemo(() => {
     const { protein, carbs, fats } = selectedDayNutrition;

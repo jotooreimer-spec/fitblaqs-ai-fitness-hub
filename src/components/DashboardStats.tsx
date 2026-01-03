@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Activity, Flame, MapPin, Droplets } from "lucide-react";
 import { useLiveData } from "@/contexts/LiveDataContext";
+import { calculateMonthlyTrainingHours, formatMLToLiters } from "@/lib/calculationUtils";
 
 interface Props {
   isGerman: boolean;
@@ -16,6 +17,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     joggingLogs, 
     stats, 
     setUserId,
+    getDailyNutrition,
     isLoading 
   } = useLiveData();
 
@@ -25,87 +27,27 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     }
   }, [userId, setUserId]);
 
-  // Build monthly chart data from live data
-  const buildMonthlyChartData = () => {
+  // Build monthly chart data using centralized calculation
+  const monthlyWorkoutData = useMemo(() => {
     const today = new Date();
-    const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthNamesDE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const monthNames = isGerman 
+      ? ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    return monthNames.map((month, index) => {
-      const isCompletedMonth = index < currentMonth;
-      
-      if (!isCompletedMonth) {
-        return { month: isGerman ? monthNamesDE[index] : month, count: 0 };
-      }
-      
-      const monthWorkouts = workoutLogs.filter(w => {
-        const d = new Date(w.completed_at);
-        return d.getMonth() === index && d.getFullYear() === currentYear;
-      });
-      
-      const workoutHours = monthWorkouts.reduce((total, w) => {
-        return total + ((w.sets || 1) * 3 / 60);
-      }, 0);
+    const data = calculateMonthlyTrainingHours(workoutLogs, joggingLogs, currentYear);
+    return data.map((item, index) => ({
+      month: monthNames[index],
+      count: item.hours
+    }));
+  }, [workoutLogs, joggingLogs, isGerman]);
 
-      const monthJogging = joggingLogs.filter(j => {
-        const d = new Date(j.completed_at);
-        return d.getMonth() === index && d.getFullYear() === currentYear;
-      });
-      
-      const joggingHours = monthJogging.reduce((total, j) => {
-        return total + ((j.duration || 0) / 60);
-      }, 0);
-
-      return { 
-        month: isGerman ? monthNamesDE[index] : month,
-        count: Math.round((workoutHours + joggingHours) * 10) / 10
-      };
-    });
-  };
-
-  // Calculate today's nutrition from live data
-  const getTodayNutrition = () => {
+  // Calculate today's nutrition using the centralized method
+  const todayNutrition = useMemo(() => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
+    return getDailyNutrition(today);
+  }, [getDailyNutrition]);
 
-    const todayLogs = nutritionLogs.filter(n => {
-      const date = new Date(n.completed_at);
-      return date >= today && date <= todayEnd;
-    });
-
-    let calories = 0, protein = 0, fats = 0, vitamins = 0, water = 0;
-
-    todayLogs.forEach(log => {
-      calories += log.calories || 0;
-      protein += log.protein || 0;
-      fats += log.fats || 0;
-
-      if (log.notes) {
-        try {
-          const parsed = JSON.parse(log.notes);
-          if (parsed?.water?.value) {
-            const value = parseFloat(parsed.water.value) || 0;
-            const unit = parsed.water.unit || 'ml';
-            if (unit === 'l' || unit === 'liter') water += value * 1000;
-            else if (unit === 'dl') water += value * 100;
-            else water += value;
-          }
-          if (parsed?.vitamin?.value) {
-            vitamins += parseFloat(parsed.vitamin.value) || 0;
-          }
-        } catch {}
-      }
-    });
-
-    return { calories, protein, fats, vitamins, water, hasData: todayLogs.length > 0 };
-  };
-
-  const monthlyWorkoutData = buildMonthlyChartData();
-  const todayNutrition = getTodayNutrition();
   const hasNutritionData = todayNutrition.hasData;
 
   const NUTRITION_COLORS = {
@@ -121,7 +63,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
     { name: 'Protein', value: todayNutrition.protein, color: NUTRITION_COLORS.protein, key: 'protein' },
     { name: 'Vitamin', value: todayNutrition.vitamins, color: NUTRITION_COLORS.vitamin, key: 'vitamin' },
     { name: isGerman ? 'Fette' : 'Fats', value: todayNutrition.fats, color: NUTRITION_COLORS.fats, key: 'fats' },
-    { name: 'Hydration', value: todayNutrition.water, color: NUTRITION_COLORS.water, key: 'water' },
+    { name: 'Hydration', value: todayNutrition.hydration, color: NUTRITION_COLORS.water, key: 'water' },
   ].filter(item => item.value > 0) : [];
 
   const total = pieData.reduce((sum, item) => sum + item.value, 0);

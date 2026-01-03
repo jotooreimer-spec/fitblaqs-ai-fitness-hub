@@ -133,7 +133,7 @@ export const ChallengesBox = ({ isGerman, userId, currentWeight = 0 }: Challenge
     <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6">
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-bold text-white">{isGerman ? "Challenges" : "Challenges"}</h3>
+        <h3 className="text-lg font-bold text-white">{isGerman ? "Body Weight Challenge" : "Body Weight Challenge"}</h3>
       </div>
 
       {savedGoal ? (
