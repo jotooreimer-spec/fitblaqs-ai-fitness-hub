@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell, Image } from "lucide-react";
+import { Target, Calendar as CalendarIcon, TrendingDown, ChevronLeft, ChevronRight, Dumbbell, Image, Droplets, Flame, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -22,7 +22,9 @@ import {
   calculateDailyTrainingDuration,
   calculateMonthlyTrainingHours,
   calculateChallengeStats,
-  formatMLToLiters
+  formatMLToLiters,
+  generateDonutChartData,
+  calculateMonthlyCompletionPercentage
 } from "@/lib/calculationUtils";
 import performanceBg from "@/assets/performance-bg.png";
 import bodyworkoutplan1 from "@/assets/bodyworkoutplan-1.png";
@@ -30,6 +32,13 @@ import bodyworkoutplan2 from "@/assets/bodyworkoutplan-2.png";
 import bodyworkoutplan3 from "@/assets/bodyworkoutplan-3.png";
 import bodyworkoutplan4 from "@/assets/bodyworkoutplan-4.png";
 import bodyworkoutplan5 from "@/assets/bodyworkoutplan-5.png";
+
+// Daily targets for nutrition
+const DAILY_TARGETS = {
+  calories: 2000,
+  hydration: 2000, // ml
+  protein: 50 // g
+};
 
 // Helper to find exercise image
 const findExerciseImage = (name: string): string | null => {
@@ -87,6 +96,13 @@ const CalendarPage = () => {
   // Exercise image dialog
   const [exerciseImageOpen, setExerciseImageOpen] = useState(false);
   const [selectedExerciseName, setSelectedExerciseName] = useState("");
+  
+  // Donut chart popup dialogs
+  const [caloriesPopupOpen, setCaloriesPopupOpen] = useState(false);
+  const [hydrationPopupOpen, setHydrationPopupOpen] = useState(false);
+  const [proteinPopupOpen, setProteinPopupOpen] = useState(false);
+  const [performancePopupOpen, setPerformancePopupOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   
   const bodyworkoutImages = [bodyworkoutplan1, bodyworkoutplan2, bodyworkoutplan3, bodyworkoutplan4, bodyworkoutplan5];
 
@@ -281,6 +297,23 @@ const CalendarPage = () => {
     return calculateDailyNutrition(nutritionLogs, date);
   }, [nutritionLogs, date]);
 
+  // Donut chart data for Weight Watcher style display
+  const donutChartData = useMemo(() => {
+    return generateDonutChartData(selectedDayNutrition, DAILY_TARGETS);
+  }, [selectedDayNutrition]);
+
+  // Calculate percentages for popups
+  const caloriesPercentage = Math.min(100, Math.round((selectedDayNutrition.calories / DAILY_TARGETS.calories) * 100));
+  const hydrationPercentage = Math.min(100, Math.round((selectedDayNutrition.hydration / DAILY_TARGETS.hydration) * 100));
+  const proteinPercentage = Math.min(100, Math.round((selectedDayNutrition.protein / DAILY_TARGETS.protein) * 100));
+
+  // Performance completion percentage
+  const performanceCompletionPercentage = useMemo(() => {
+    const currentMonth = date?.getMonth() ?? new Date().getMonth();
+    const currentYear = date?.getFullYear() ?? new Date().getFullYear();
+    return calculateMonthlyCompletionPercentage(workoutLogs, joggingLogs, currentMonth, currentYear);
+  }, [date, workoutLogs, joggingLogs]);
+
   const nutritionPieData = useMemo(() => {
     const { protein, carbs, fats } = selectedDayNutrition;
     const total = protein + carbs + fats;
@@ -424,10 +457,13 @@ const CalendarPage = () => {
             </Card>
           </div>
 
-          {/* Column 3: Performance + Nutrition - Ultra Compact */}
+          {/* Column 3: Performance + Weight Watcher Style - Ultra Compact */}
           <div className="space-y-2 md:col-span-2 lg:col-span-1">
-            {/* Performance Bar Chart */}
-            <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
+            {/* Performance Bar Chart with Click */}
+            <Card 
+              className="bg-black/40 backdrop-blur-sm border-white/10 p-2 cursor-pointer hover:bg-black/50 transition-colors"
+              onClick={() => setPerformancePopupOpen(true)}
+            >
               <h3 className="text-[10px] font-bold mb-1 text-white">Performance</h3>
               <div className="h-16">
                 <ResponsiveContainer width="100%" height="100%">
@@ -439,52 +475,221 @@ const CalendarPage = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-center text-[7px] text-white/50">{isGerman ? "Std/Monat" : "Hrs/Month"}</div>
+              <div className="text-center text-[7px] text-white/50">{isGerman ? "Klicken für Details" : "Click for details"}</div>
             </Card>
 
-            {/* Nutrition Pie Chart */}
+            {/* Weight Watcher Style - 3 Donut Charts */}
             <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-2">
-              <h3 className="text-[10px] font-bold mb-1 text-white">{isGerman ? "Ernährung" : "Nutrition"}</h3>
-              {nutritionPieData.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-12 h-12 flex-shrink-0">
+              <h3 className="text-[10px] font-bold mb-2 text-white">{isGerman ? "Tagesziele" : "Daily Goals"}</h3>
+              <div className="grid grid-cols-3 gap-2">
+                {/* Calories Donut */}
+                <div 
+                  className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setCaloriesPopupOpen(true)}
+                >
+                  <div className="w-12 h-12 relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={nutritionPieData}
+                          data={donutChartData.calories}
                           cx="50%"
                           cy="50%"
-                          innerRadius={10}
-                          outerRadius={20}
-                          paddingAngle={2}
+                          innerRadius={14}
+                          outerRadius={22}
+                          paddingAngle={0}
                           dataKey="value"
+                          startAngle={90}
+                          endAngle={-270}
                         >
-                          {nutritionPieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          {donutChartData.calories.map((entry, index) => (
+                            <Cell key={`cal-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                       </PieChart>
                     </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Flame className="w-3 h-3 text-orange-400" />
+                    </div>
                   </div>
-                  <div className="flex-1 space-y-0.5">
-                    <div className="text-xs font-bold text-white">{selectedDayNutrition.calories} kcal</div>
-                    {nutritionPieData.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-1 text-[8px]">
-                        <div className="w-1 h-1 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-white/70">{item.name}: {item.value}g</span>
-                      </div>
-                    ))}
+                  <div className="text-[9px] font-bold text-white">{selectedDayNutrition.calories}</div>
+                  <div className="text-[7px] text-white/50">kcal</div>
+                </div>
+
+                {/* Hydration Donut */}
+                <div 
+                  className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setHydrationPopupOpen(true)}
+                >
+                  <div className="w-12 h-12 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutChartData.hydration}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={14}
+                          outerRadius={22}
+                          paddingAngle={0}
+                          dataKey="value"
+                          startAngle={90}
+                          endAngle={-270}
+                        >
+                          {donutChartData.hydration.map((entry, index) => (
+                            <Cell key={`hyd-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Droplets className="w-3 h-3 text-blue-400" />
+                    </div>
                   </div>
+                  <div className="text-[9px] font-bold text-white">{formatMLToLiters(selectedDayNutrition.hydration)}</div>
+                  <div className="text-[7px] text-white/50">{isGerman ? "Wasser" : "Water"}</div>
                 </div>
-              ) : (
-                <div className="text-center text-white/50 py-2 text-[9px]">
-                  {isGerman ? "Keine Daten" : "No data"}
+
+                {/* Protein Donut */}
+                <div 
+                  className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setProteinPopupOpen(true)}
+                >
+                  <div className="w-12 h-12 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutChartData.protein}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={14}
+                          outerRadius={22}
+                          paddingAngle={0}
+                          dataKey="value"
+                          startAngle={90}
+                          endAngle={-270}
+                        >
+                          {donutChartData.protein.map((entry, index) => (
+                            <Cell key={`pro-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[8px] font-bold text-green-400">P</span>
+                    </div>
+                  </div>
+                  <div className="text-[9px] font-bold text-white">{selectedDayNutrition.protein.toFixed(0)}</div>
+                  <div className="text-[7px] text-white/50">g</div>
                 </div>
-              )}
+              </div>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Calories Popup */}
+      <Dialog open={caloriesPopupOpen} onOpenChange={setCaloriesPopupOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flame className="w-5 h-5 text-orange-400" />
+              {isGerman ? "Kalorien" : "Calories"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="text-5xl font-bold text-orange-400 mb-2">{caloriesPercentage}%</div>
+            <div className="text-lg text-muted-foreground">{isGerman ? "des Tagesziels" : "of daily goal"}</div>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Verbraucht:" : "Consumed:"}</span>
+                <span className="font-semibold">{selectedDayNutrition.calories} kcal</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Tagesziel:" : "Daily goal:"}</span>
+                <span className="font-semibold">{DAILY_TARGETS.calories} kcal</span>
+              </div>
+              <Progress value={caloriesPercentage} className="h-2 mt-2" />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hydration Popup */}
+      <Dialog open={hydrationPopupOpen} onOpenChange={setHydrationPopupOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Droplets className="w-5 h-5 text-blue-400" />
+              {isGerman ? "Hydration" : "Hydration"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="text-5xl font-bold text-blue-400 mb-2">{hydrationPercentage}%</div>
+            <div className="text-lg text-muted-foreground">{isGerman ? "des Tagesziels" : "of daily goal"}</div>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Getrunken:" : "Consumed:"}</span>
+                <span className="font-semibold">{formatMLToLiters(selectedDayNutrition.hydration)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Tagesziel:" : "Daily goal:"}</span>
+                <span className="font-semibold">{formatMLToLiters(DAILY_TARGETS.hydration)}</span>
+              </div>
+              <Progress value={hydrationPercentage} className="h-2 mt-2" />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Protein Popup */}
+      <Dialog open={proteinPopupOpen} onOpenChange={setProteinPopupOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-green-400 font-bold">P</span>
+              Protein
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="text-5xl font-bold text-green-400 mb-2">{proteinPercentage}%</div>
+            <div className="text-lg text-muted-foreground">{isGerman ? "des Tagesziels" : "of daily goal"}</div>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Aufgenommen:" : "Consumed:"}</span>
+                <span className="font-semibold">{selectedDayNutrition.protein.toFixed(1)} g</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Tagesziel:" : "Daily goal:"}</span>
+                <span className="font-semibold">{DAILY_TARGETS.protein} g</span>
+              </div>
+              <Progress value={proteinPercentage} className="h-2 mt-2" />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Performance Popup */}
+      <Dialog open={performancePopupOpen} onOpenChange={setPerformancePopupOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle>{isGerman ? "Monatsleistung" : "Monthly Performance"}</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="text-5xl font-bold text-primary mb-2">{performanceCompletionPercentage}%</div>
+            <div className="text-lg text-muted-foreground">{isGerman ? "Trainingseinheiten abgeschlossen" : "Training sessions completed"}</div>
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Monat:" : "Month:"}</span>
+                <span className="font-semibold">{date ? format(date, 'MMMM yyyy') : ''}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">{isGerman ? "Stunden:" : "Hours:"}</span>
+                <span className="font-semibold">{monthlyChartData[date?.getMonth() ?? new Date().getMonth()]?.hours?.toFixed(1) ?? 0}h</span>
+              </div>
+              <Progress value={performanceCompletionPercentage} className="h-2 mt-2" />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Challenge Dialog */}
       <Dialog open={isChallengeDialogOpen} onOpenChange={setIsChallengeDialogOpen}>
