@@ -1,19 +1,21 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 type LanguageCode = "de" | "en" | "es" | "fr" | "pt" | "ru" | "tr" | "it";
 
+interface TranslationEntry {
+  de: string;
+  en: string;
+  es: string;
+  fr: string;
+  pt: string;
+  ru: string;
+  tr: string;
+  it: string;
+}
+
 interface Translations {
-  [key: string]: {
-    de: string;
-    en: string;
-    es: string;
-    fr: string;
-    pt: string;
-    ru: string;
-    tr: string;
-    it: string;
-  };
+  [key: string]: TranslationEntry;
 }
 
 const translations: Translations = {
@@ -96,22 +98,26 @@ export const languages = [
   { code: "it" as const, name: "Italiano", flag: "🇮🇹" },
 ];
 
-export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState<LanguageCode>("en");
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = React.useState<LanguageCode>("en");
 
-  useEffect(() => {
+  React.useEffect(() => {
     const loadLanguage = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.user_metadata?.language) {
-        const lang = session.user.user_metadata.language as LanguageCode;
-        if (languages.some(l => l.code === lang)) {
-          setLanguageState(lang);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.user_metadata?.language) {
+          const lang = session.user.user_metadata.language as LanguageCode;
+          if (languages.some(l => l.code === lang)) {
+            setLanguageState(lang);
+          }
         }
+      } catch (error) {
+        console.error("Error loading language:", error);
       }
     };
     loadLanguage();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.user_metadata?.language) {
         const lang = session.user.user_metadata.language as LanguageCode;
         if (languages.some(l => l.code === lang)) {
@@ -143,12 +149,12 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </LanguageContext.Provider>
   );
-};
+}
 
-export const useLanguage = () => {
+export function useLanguage() {
   const context = useContext(LanguageContext);
   if (context === undefined) {
     throw new Error("useLanguage must be used within a LanguageProvider");
   }
   return context;
-};
+}
