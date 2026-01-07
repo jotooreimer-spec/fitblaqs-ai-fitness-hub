@@ -60,5 +60,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Prevent "two Reacts" (hooks dispatcher = null) in Vite optimized deps
+    dedupe: ["react", "react-dom"],
   },
 }));
