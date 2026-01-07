@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import postOnboardingBg from "@/assets/post-onboarding-bg.png";
+import postOnboardingBg from "@/assets/post-onboarding-new-bg.jpg";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import fitblaqsLogoWhite from "@/assets/fitblaqs-logo-white.png";
 
 const PostOnboardingLoading = () => {
   const navigate = useNavigate();
@@ -39,9 +40,11 @@ const PostOnboardingLoading = () => {
       <div className="relative z-10 flex flex-col items-center">
         {/* Logo */}
         <div className="absolute top-6 right-6 flex items-center gap-2">
-          <span className="text-white/80 text-sm font-medium">Fb</span>
-          <span className="text-white font-bold">FitBlaqs</span>
-          <span className="text-white/60 text-xs">Power & Healthy</span>
+          <img src={fitblaqsLogoWhite} alt="FitBlaqs" className="h-8 w-auto" />
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-lg">FitBlaqs</span>
+            <span className="text-white/60 text-xs">Power & Healthy</span>
+          </div>
         </div>
 
         {/* Main Text */}
@@ -58,25 +61,27 @@ const PostOnboardingLoading = () => {
         </div>
 
         {/* Stats at bottom */}
-        <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-8 px-8">
-          <div className="text-center">
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-yellow-500 text-2xl">🏆</span>
-              <span className="text-white font-bold text-2xl">50M+</span>
-              <span className="text-yellow-500 text-2xl">🏆</span>
-            </div>
-            <p className="text-white/60 text-xs">INSTALLS</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-yellow-500 text-2xl">🏆</span>
-              <div>
-                <div className="flex text-yellow-400 text-xs">★★★★★</div>
-                <span className="text-white font-bold text-2xl">4.9</span>
+        <div className="absolute bottom-24 left-0 right-0 flex justify-center gap-6 px-6">
+          <div className="text-center flex items-center gap-2">
+            <span className="text-yellow-500 text-xl">🏆</span>
+            <div>
+              <div className="flex items-center gap-1">
+                <span className="text-white font-bold text-xl">50M+</span>
               </div>
-              <span className="text-yellow-500 text-2xl">🏆</span>
+              <p className="text-white/60 text-xs uppercase">Installs</p>
             </div>
-            <p className="text-white/60 text-xs">370K+ Reviews</p>
+            <span className="text-yellow-500 text-xl">🏆</span>
+          </div>
+          <div className="text-center flex items-center gap-2">
+            <span className="text-yellow-500 text-xl">🏆</span>
+            <div>
+              <div className="flex text-yellow-400 text-sm mb-0.5">★★★★★</div>
+              <div className="flex items-center gap-1">
+                <span className="text-white font-bold text-xl">4.9</span>
+              </div>
+              <p className="text-white/60 text-xs">370K+ Reviews</p>
+            </div>
+            <span className="text-yellow-500 text-xl">🏆</span>
           </div>
         </div>
 
