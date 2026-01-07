@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import postOnboardingBg from "@/assets/post-onboarding-new-bg.jpg";
+import loadscreenBg from "@/assets/loadscreen-bg.jpg";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
 import fitblaqsLogoWhite from "@/assets/fitblaqs-logo-white.png";
 
@@ -29,7 +29,7 @@ const PostOnboardingLoading = () => {
     <div 
       className={`min-h-screen flex flex-col items-center justify-center relative transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
       style={{
-        backgroundImage: `url(${postOnboardingBg})`,
+        backgroundImage: `url(${loadscreenBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
