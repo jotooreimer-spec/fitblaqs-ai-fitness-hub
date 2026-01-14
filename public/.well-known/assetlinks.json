@@ -4,8 +4,16 @@
     "target": {
       "namespace": "android_app",
       "package_name": "app.fitblaqs.studio.twa",
+      "sha256_cert_fingerprints": ["76:20:6E:D5:9F:31:6E:29:61:7F:6A:6D:9D:57:93:58:E0:DC:C9:39"]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.fitblaqsstudio.twa",
       "sha256_cert_fingerprints": [
-        "76:20:6E:D5:9F:31:6E:29:61:7F:6A:6D:9D:57:93:58:E0:DC:C9:39"
+        "6A:57:A1:08:D5:7B:6F:4E:23:AD:58:13:DC:8E:46:68:90:BE:51:28:50:D5:79:6C:AD:B2:98:49:63:41:AE:EC"
       ]
     }
   }
