@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 type LanguageCode = "de" | "en" | "es" | "fr" | "pt" | "ru" | "tr" | "it";

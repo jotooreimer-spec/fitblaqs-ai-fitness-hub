@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from "react";
+import React, { createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -139,21 +139,21 @@ interface LiveDataContextType {
 
 const LiveDataContext = createContext<LiveDataContextType | undefined>(undefined);
 
-export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function LiveDataProvider({ children }: { children: ReactNode }) {
+  const [userId, setUserId] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   
   // Data states
-  const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
-  const [joggingLogs, setJoggingLogs] = useState<JoggingLog[]>([]);
-  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [bodyAnalysis, setBodyAnalysis] = useState<BodyAnalysis[]>([]);
-  const [foodAnalysis, setFoodAnalysis] = useState<FoodAnalysis[]>([]);
+  const [nutritionLogs, setNutritionLogs] = React.useState<NutritionLog[]>([]);
+  const [workoutLogs, setWorkoutLogs] = React.useState<WorkoutLog[]>([]);
+  const [joggingLogs, setJoggingLogs] = React.useState<JoggingLog[]>([]);
+  const [weightLogs, setWeightLogs] = React.useState<WeightLog[]>([]);
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [bodyAnalysis, setBodyAnalysis] = React.useState<BodyAnalysis[]>([]);
+  const [foodAnalysis, setFoodAnalysis] = React.useState<FoodAnalysis[]>([]);
   
   // Get daily nutrition for any date
-  const getDailyNutrition = useCallback((date: Date): DailyNutritionTotals => {
+  const getDailyNutrition = React.useCallback((date: Date): DailyNutritionTotals => {
     return safeCalculation(
       () => calculateDailyNutrition(nutritionLogs, date),
       { calories: 0, protein: 0, hydration: 0, carbs: 0, fats: 0, vitamins: 0, hasData: false },
@@ -162,7 +162,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [nutritionLogs]);
 
   // Calculate stats from data using new utility functions
-  const stats = useMemo((): LiveStats => {
+  const stats = React.useMemo((): LiveStats => {
     return safeCalculation(() => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -238,7 +238,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [nutritionLogs, workoutLogs, joggingLogs, weightLogs, profile]);
 
   // Fetch all data
-  const fetchAllData = useCallback(async () => {
+  const fetchAllData = React.useCallback(async () => {
     if (!userId) return;
     
     setIsLoading(true);
@@ -277,7 +277,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [userId]);
 
   // Subscribe to realtime updates
-  useEffect(() => {
+  React.useEffect(() => {
     if (!userId) return;
 
     const channels: ReturnType<typeof supabase.channel>[] = [];
@@ -395,7 +395,7 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
   }, [userId]);
 
   // Initial fetch when userId changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (userId) {
       fetchAllData();
     }
@@ -422,12 +422,12 @@ export const LiveDataProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </LiveDataContext.Provider>
   );
-};
+}
 
-export const useLiveData = () => {
+export function useLiveData() {
   const context = useContext(LiveDataContext);
   if (context === undefined) {
     throw new Error("useLiveData must be used within a LiveDataProvider");
   }
   return context;
-};
+}
