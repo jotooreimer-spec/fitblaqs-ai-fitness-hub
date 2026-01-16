@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import React, { createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RealtimeChannel } from "@supabase/supabase-js";
@@ -23,14 +23,14 @@ interface OfflineAction {
   timestamp: number;
 }
 
-export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [channels, setChannels] = useState<Map<string, RealtimeChannel>>(new Map());
+export function RealtimeProvider({ children }: { children: ReactNode }) {
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = React.useState(false);
+  const [lastSync, setLastSync] = React.useState<Date | null>(null);
+  const [channels, setChannels] = React.useState<Map<string, RealtimeChannel>>(new Map());
 
   // Online/Offline detection
-  useEffect(() => {
+  React.useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       toast.success("Wieder online", { description: "Daten werden synchronisiert..." });
@@ -90,14 +90,14 @@ export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem(OFFLINE_QUEUE_KEY);
   };
 
-  const triggerSync = useCallback(() => {
+  const triggerSync = React.useCallback(() => {
     if (isOnline) {
       syncOfflineQueue();
     }
   }, [isOnline]);
 
   // Subscribe to real-time changes for a specific table
-  const subscribeToTable = useCallback((table: string, callback: (payload: any) => void) => {
+  const subscribeToTable = React.useCallback((table: string, callback: (payload: any) => void) => {
     const channelName = `realtime-${table}-${Date.now()}`;
     
     const channel = supabase
@@ -138,7 +138,7 @@ export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Cleanup channels on unmount
-  useEffect(() => {
+  React.useEffect(() => {
     return () => {
       channels.forEach((channel) => {
         supabase.removeChannel(channel);
@@ -151,15 +151,15 @@ export const RealtimeProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </RealtimeContext.Provider>
   );
-};
+}
 
-export const useRealtime = () => {
+export function useRealtime() {
   const context = useContext(RealtimeContext);
   if (context === undefined) {
     throw new Error("useRealtime must be used within a RealtimeProvider");
   }
   return context;
-};
+}
 
 // Helper function to queue offline actions
 export const queueOfflineAction = (table: string, action: "insert" | "update" | "delete", data: any) => {
