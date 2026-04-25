@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock, Building2 } from "lucide-react";
+import { LogOut, User, Bell, Globe, Shield, X, Mail, Lock, Building2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { signOut } from "@/lib/auth";
@@ -118,6 +118,33 @@ const Settings = () => {
         // Ignore
       }
     }, 200);
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmMsg = language === "de"
+      ? "Konto wirklich endgültig löschen? Alle Daten gehen verloren."
+      : "Permanently delete your account? All data will be lost.";
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+
+      toast.success(language === "de" ? "Konto gelöscht" : "Account deleted");
+
+      try { await signOut(); } catch (e) { /* ignore */ }
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
+
+      window.location.href = "/";
+    } catch (e: any) {
+      toast.error(language === "de" ? "Löschen fehlgeschlagen" : "Delete failed");
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -280,6 +307,17 @@ const Settings = () => {
             );
           })}
         </div>
+
+        {/* Delete Account Button */}
+        <Button
+          variant="destructive"
+          size="lg"
+          onClick={handleDeleteAccount}
+          className="w-full"
+        >
+          <Trash2 className="w-5 h-5 mr-2" />
+          {language === "de" ? "Konto löschen" : "Delete Account"}
+        </Button>
 
         {/* Logout Button */}
         <Button
