@@ -36,6 +36,11 @@ const Settings = () => {
   const [shopDialogOpen, setShopDialogOpen] = useState(false);
   
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduledDeleteDate, setScheduledDeleteDate] = useState<Date | null>(() => {
+    const saved = localStorage.getItem("fitblaqs-account-deletion-date");
+    return saved ? new Date(saved) : null;
+  });
   
   // Settings states
   const [updateNotifications, setUpdateNotifications] = useState(false);
