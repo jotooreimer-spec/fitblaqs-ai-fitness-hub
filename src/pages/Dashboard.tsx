@@ -211,27 +211,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Workout Activity Progress - Monthly */}
-        <Card className="bg-black/40 backdrop-blur-sm border-white/10 p-6 mb-8">
-          <h3 className="text-lg font-bold mb-4 text-white">{isGerman ? "Workout Aktivitäten" : "Workout Activities"}</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-white/60">{isGerman ? "Monatlicher Fortschritt" : "Monthly Progress"}</span>
-              <span className="font-bold text-white">{Math.round(monthlyProgress)}%</span>
-            </div>
-            <Progress value={monthlyProgress} className="h-3" />
-            <div className="flex justify-between text-xs text-white/40">
-              <span>0</span>
-              <span>5</span>
-              <span>10</span>
-              <span>25</span>
-              <span>50</span>
-              <span>75</span>
-              <span>100</span>
-            </div>
-            <p className="text-xs text-white/50 text-center mt-2">Hours</p>
-          </div>
-        </Card>
 
         {/* Trainingstag (Training History) */}
         <div>
