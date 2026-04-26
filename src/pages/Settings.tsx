@@ -125,12 +125,17 @@ const Settings = () => {
     }, 200);
   };
 
-  const handleDeleteAccount = async () => {
-    const confirmMsg = language === "de"
-      ? "Konto wirklich endgültig löschen? Alle Daten gehen verloren."
-      : "Permanently delete your account? All data will be lost.";
-    if (!window.confirm(confirmMsg)) return;
+  const handleOpenDeleteDialog = () => {
+    if (!scheduledDeleteDate) {
+      const date = new Date();
+      date.setDate(date.getDate() + 30);
+      localStorage.setItem("fitblaqs-account-deletion-date", date.toISOString());
+      setScheduledDeleteDate(date);
+    }
+    setDeleteDialogOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -142,6 +147,7 @@ const Settings = () => {
       if (error) throw error;
 
       toast.success(language === "de" ? "Konto gelöscht" : "Account deleted");
+      localStorage.removeItem("fitblaqs-account-deletion-date");
 
       try { await signOut(); } catch (e) { /* ignore */ }
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
@@ -150,6 +156,13 @@ const Settings = () => {
     } catch (e: any) {
       toast.error(language === "de" ? "Löschen fehlgeschlagen" : "Delete failed");
     }
+  };
+
+  const handleCancelDeletion = () => {
+    localStorage.removeItem("fitblaqs-account-deletion-date");
+    setScheduledDeleteDate(null);
+    setDeleteDialogOpen(false);
+    toast.success(language === "de" ? "Löschung abgebrochen" : "Deletion cancelled");
   };
 
   const handleSaveProfile = async () => {
