@@ -62,10 +62,9 @@ export default defineConfig(({ mode }) => ({
       react: path.resolve(__dirname, "node_modules/react"),
       "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+    dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime", "react-router-dom"],
-    force: true,
+    include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react-router-dom"],
   },
 }));
