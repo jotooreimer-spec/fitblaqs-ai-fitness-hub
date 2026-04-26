@@ -57,15 +57,15 @@ export default defineConfig(({ mode }) => ({
     })
   ].filter(Boolean),
   resolve: {
-    alias: [
-      { find: "@", replacement: path.resolve(__dirname, "./src") },
-      { find: /^react$/, replacement: path.resolve(__dirname, "node_modules/react") },
-      { find: /^react\/jsx-runtime$/, replacement: path.resolve(__dirname, "node_modules/react/jsx-runtime.js") },
-      { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, "node_modules/react/jsx-dev-runtime.js") },
-      { find: /^react-dom$/, replacement: path.resolve(__dirname, "node_modules/react-dom") },
-      { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, "node_modules/react-dom/client.js") },
-    ],
-    // Prevent "two Reacts" (hooks dispatcher = null) in Vite optimized deps
-    dedupe: ["react", "react-dom"],
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      react: path.resolve(__dirname, "node_modules/react"),
+      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
+    },
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime", "react-router-dom"],
+    force: true,
   },
 }));
