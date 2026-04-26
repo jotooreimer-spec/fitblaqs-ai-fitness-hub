@@ -113,7 +113,10 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               {isGerman ? "Kalorien" : "Calories"}
             </span>
           </div>
-          <div className="text-3xl font-bold">{stats.todayCalories.toLocaleString()}</div>
+          <div className="text-3xl font-bold">
+            {stats.todayCalories.toLocaleString(isGerman ? "de-DE" : "en-US")}
+            <span className="text-base font-normal text-muted-foreground ml-1">kcal</span>
+          </div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
@@ -135,7 +138,10 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
             <Droplets className="w-5 h-5 text-cyan-400" />
             <span className="text-sm text-muted-foreground">Hydration</span>
           </div>
-          <div className="text-3xl font-bold">{stats.todayWater > 0 ? (stats.todayWater / 1000).toFixed(1) : "0"} L</div>
+          <div className="text-3xl font-bold">
+            {(stats.todayWater / 1000).toLocaleString(isGerman ? "de-DE" : "en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
+            <span className="text-base font-normal text-muted-foreground ml-1">L | ml</span>
+          </div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
