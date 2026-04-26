@@ -328,10 +328,10 @@ const Settings = () => {
 
         {/* Delete Account Button */}
         <Button
-          variant="destructive"
+          variant="outline"
           size="lg"
-          onClick={handleDeleteAccount}
-          className="w-full"
+          onClick={handleOpenDeleteDialog}
+          className="w-full bg-background hover:bg-muted text-foreground border-border"
         >
           <Trash2 className="w-5 h-5 mr-2" />
           {language === "de" ? "Konto löschen" : "Delete Account"}
