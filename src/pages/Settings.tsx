@@ -36,6 +36,11 @@ const Settings = () => {
   const [shopDialogOpen, setShopDialogOpen] = useState(false);
   
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduledDeleteDate, setScheduledDeleteDate] = useState<Date | null>(() => {
+    const saved = localStorage.getItem("fitblaqs-account-deletion-date");
+    return saved ? new Date(saved) : null;
+  });
   
   // Settings states
   const [updateNotifications, setUpdateNotifications] = useState(false);
@@ -120,12 +125,17 @@ const Settings = () => {
     }, 200);
   };
 
-  const handleDeleteAccount = async () => {
-    const confirmMsg = language === "de"
-      ? "Konto wirklich endgültig löschen? Alle Daten gehen verloren."
-      : "Permanently delete your account? All data will be lost.";
-    if (!window.confirm(confirmMsg)) return;
+  const handleOpenDeleteDialog = () => {
+    if (!scheduledDeleteDate) {
+      const date = new Date();
+      date.setDate(date.getDate() + 30);
+      localStorage.setItem("fitblaqs-account-deletion-date", date.toISOString());
+      setScheduledDeleteDate(date);
+    }
+    setDeleteDialogOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -137,6 +147,7 @@ const Settings = () => {
       if (error) throw error;
 
       toast.success(language === "de" ? "Konto gelöscht" : "Account deleted");
+      localStorage.removeItem("fitblaqs-account-deletion-date");
 
       try { await signOut(); } catch (e) { /* ignore */ }
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) { /* ignore */ }
@@ -145,6 +156,13 @@ const Settings = () => {
     } catch (e: any) {
       toast.error(language === "de" ? "Löschen fehlgeschlagen" : "Delete failed");
     }
+  };
+
+  const handleCancelDeletion = () => {
+    localStorage.removeItem("fitblaqs-account-deletion-date");
+    setScheduledDeleteDate(null);
+    setDeleteDialogOpen(false);
+    toast.success(language === "de" ? "Löschung abgebrochen" : "Deletion cancelled");
   };
 
   const handleSaveProfile = async () => {
@@ -310,10 +328,10 @@ const Settings = () => {
 
         {/* Delete Account Button */}
         <Button
-          variant="destructive"
+          variant="outline"
           size="lg"
-          onClick={handleDeleteAccount}
-          className="w-full"
+          onClick={handleOpenDeleteDialog}
+          className="w-full bg-background hover:bg-muted text-foreground border-border"
         >
           <Trash2 className="w-5 h-5 mr-2" />
           {language === "de" ? "Konto löschen" : "Delete Account"}
@@ -335,6 +353,33 @@ const Settings = () => {
           <img src={fitblaqsLogoSmall} alt="FitBlaqs" className="w-16 h-16 object-contain" />
         </div>
       </div>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center text-center space-y-4 py-2">
+            <img src={fitblaqsLogoSmall} alt="FitBlaqs" className="w-20 h-20 object-contain" />
+            <DialogHeader>
+              <DialogTitle className="text-xl">
+                {language === "de" ? "Konto löschen" : "Delete Account"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              {language === "de"
+                ? `Dein Konto ist zur Löschung am ${scheduledDeleteDate?.toLocaleDateString("de-DE")} vorgemerkt.`
+                : `Your account is scheduled for deletion on ${scheduledDeleteDate?.toLocaleDateString("en-GB")}.`}
+            </p>
+            <div className="flex flex-col w-full gap-2 pt-2">
+              <Button onClick={handleCancelDeletion} className="w-full">
+                {language === "de" ? "Löschung abbrechen" : "Cancel Deletion"}
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete} className="w-full">
+                {language === "de" ? "Jetzt endgültig löschen" : "Delete Now Permanently"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Profile Dialog */}
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
