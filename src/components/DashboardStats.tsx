@@ -113,7 +113,10 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
               {isGerman ? "Kalorien" : "Calories"}
             </span>
           </div>
-          <div className="text-3xl font-bold">{stats.todayCalories.toLocaleString()}</div>
+          <div className="text-3xl font-bold">
+            {stats.todayCalories.toLocaleString(isGerman ? "de-DE" : "en-US")}
+            <span className="text-base font-normal text-muted-foreground ml-1">kcal</span>
+          </div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
           </div>
