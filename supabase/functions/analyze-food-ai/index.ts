@@ -402,8 +402,7 @@ Antworte NUR mit validem JSON in diesem Format:
     });
   } catch (error: unknown) {
     console.error("analyze-food-ai error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
