@@ -354,6 +354,33 @@ const Settings = () => {
         </div>
       </div>
 
+      {/* Delete Account Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center text-center space-y-4 py-2">
+            <img src={fitblaqsLogoSmall} alt="FitBlaqs" className="w-20 h-20 object-contain" />
+            <DialogHeader>
+              <DialogTitle className="text-xl">
+                {language === "de" ? "Konto löschen" : "Delete Account"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              {language === "de"
+                ? `Dein Konto ist zur Löschung am ${scheduledDeleteDate?.toLocaleDateString("de-DE")} vorgemerkt.`
+                : `Your account is scheduled for deletion on ${scheduledDeleteDate?.toLocaleDateString("en-GB")}.`}
+            </p>
+            <div className="flex flex-col w-full gap-2 pt-2">
+              <Button onClick={handleCancelDeletion} className="w-full">
+                {language === "de" ? "Löschung abbrechen" : "Cancel Deletion"}
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete} className="w-full">
+                {language === "de" ? "Jetzt endgültig löschen" : "Delete Now Permanently"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Profile Dialog */}
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent className="sm:max-w-md">
