@@ -248,8 +248,8 @@ const Nutrition = () => {
             </div>
             <div>
               <div className="text-sm text-white/60 mb-1">Hydration</div>
-              <div className="text-3xl font-bold text-blue-400">{dailyTotals.hydration.toFixed(2).replace('.', ',')}</div>
-              <div className="text-xs text-white/50">ml / L</div>
+              <div className="text-3xl font-bold text-blue-400">{(dailyTotals.hydration / 1000).toLocaleString(isGerman ? 'de-DE' : 'en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>
+              <div className="text-xs text-white/50">L</div>
               {dailyTotals.hydrationChange !== 0 && (
                 <div className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block ${dailyTotals.hydrationChange > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                   {dailyTotals.hydrationChange > 0 ? '+' : ''}{dailyTotals.hydrationChange.toFixed(0)}%

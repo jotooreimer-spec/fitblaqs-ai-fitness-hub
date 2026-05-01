@@ -28,8 +28,8 @@ export const HydrationDialog = ({ open, onOpenChange, userId, isGerman, onSucces
     // dz (dl) → *100 (1dl = 100ml)
     // liter → *1000 (1l = 1000ml)
     let waterInML = parseFloat(water);
-    if (waterUnit === "dz" || waterUnit === "dl") waterInML *= 100;
-    if (waterUnit === "liter" || waterUnit === "l") waterInML *= 1000;
+    if (waterUnit === "dl") waterInML *= 100;
+    if (waterUnit === "l") waterInML *= 1000;
 
     const notes = JSON.stringify({
       category: "hydration",
@@ -74,8 +74,8 @@ export const HydrationDialog = ({ open, onOpenChange, userId, isGerman, onSucces
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ml">ml</SelectItem>
-                  <SelectItem value="dz">dz</SelectItem>
-                  <SelectItem value="liter">liter</SelectItem>
+                  <SelectItem value="dl">dl</SelectItem>
+                  <SelectItem value="l">L</SelectItem>
                 </SelectContent>
               </Select>
             </div>

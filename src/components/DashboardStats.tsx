@@ -140,7 +140,7 @@ const DashboardStats = ({ isGerman, userId }: Props) => {
           </div>
           <div className="text-3xl font-bold">
             {(stats.todayWater / 1000).toLocaleString(isGerman ? "de-DE" : "en-US", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-            <span className="text-base font-normal text-muted-foreground ml-1">L | ml</span>
+            <span className="text-base font-normal text-muted-foreground ml-1">L</span>
           </div>
           <div className="text-xs text-muted-foreground mt-1">
             {hasNutritionData ? (isGerman ? "Aus Essensplan" : "From meal plan") : "0"}
