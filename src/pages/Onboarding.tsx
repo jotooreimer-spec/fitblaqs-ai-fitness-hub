@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dumbbell, Zap, Heart, Play, Crown } from "lucide-react";
+import { Dumbbell, Zap, Heart, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   completeOnboarding,
@@ -42,7 +42,51 @@ const Onboarding = () => {
   const [bodyType, setBodyType] = useState("");
   const [healthOptions, setHealthOptions] = useState<string[]>([]);
 
-  // ---------- PURCHASE ----------
+  // ---------- SESSION ----------
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          navigate("/login");
+          return;
+        }
+
+        const id = session.user.id;
+        setUserId(id);
+        setIsGerman(session.user.user_metadata.language === "de");
+
+        await checkPurchase();
+
+        const done = await checkOnboardingStatus(id);
+        if (done) {
+          navigate("/dashboard");
+          return;
+        }
+
+        const { data } = await supabase
+          .from("profiles")
+          .select("athlete_level, body_type")
+          .eq("user_id", id)
+          .single();
+
+        if (data) {
+          setLevel(data.athlete_level || "");
+          setBodyType(data.body_type || "");
+        }
+
+      } catch (e) {
+        navigate("/login");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    init();
+  }, []);
+
+  // ---------- PREMIUM ----------
   const checkPurchase = async () => {
     try {
       if (!window.getDigitalGoodsService) return;
@@ -53,26 +97,15 @@ const Onboarding = () => {
 
       const purchases = await service.listPurchases();
 
-      if (purchases?.length > 0) {
-        setHasPremium(true);
-      }
-    } catch (err) {
-      console.error(err);
+      setHasPremium(purchases?.length > 0);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const buyPremium = async () => {
     try {
       setIsPremiumLoading(true);
-
-      if (!window.getDigitalGoodsService) {
-        toast.error(
-          isGerman
-            ? "Google Play Billing nicht verfügbar"
-            : "Billing not available"
-        );
-        return;
-      }
 
       const service = await window.getDigitalGoodsService(
         "https://play.google.com/billing"
@@ -82,96 +115,52 @@ const Onboarding = () => {
 
       await checkPurchase();
 
-      toast.success(
-        isGerman ? "Premium aktiviert" : "Premium activated"
-      );
-    } catch (err) {
-      console.error(err);
+      toast.success(isGerman ? "Premium aktiv" : "Premium active");
+    } catch {
       toast.error(isGerman ? "Fehler beim Kauf" : "Purchase failed");
     } finally {
       setIsPremiumLoading(false);
     }
   };
 
-  // ---------- SESSION ----------
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) return navigate("/login");
-
-        setUserId(session.user.id);
-        setIsGerman(session.user.user_metadata.language === "de");
-
-        await checkPurchase();
-
-        const done = await checkOnboardingStatus(session.user.id);
-        if (done) return navigate("/dashboard");
-
-        const { data } = await supabase
-          .from("profiles")
-          .select("athlete_level, body_type")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (data) {
-          setLevel(data.athlete_level || "");
-          setBodyType(data.body_type || "");
-        }
-
-        setIsLoading(false);
-      } catch {
-        navigate("/login");
-      }
-    };
-
-    init();
-  }, [navigate]);
-
   // ---------- SAVE ----------
-  const handleLevelSave = async () => {
-    if (!level || !userId) return;
-
+  const saveLevel = async () => {
     await supabase
       .from("profiles")
       .update({ athlete_level: level })
       .eq("user_id", userId);
 
     setLevelDialogOpen(false);
-    toast.success(isGerman ? "Gespeichert" : "Saved");
   };
 
-  const handlePowerSave = async () => {
-    if (!bodyType || !userId) return;
-
+  const savePower = async () => {
     await supabase
       .from("profiles")
       .update({ body_type: bodyType })
       .eq("user_id", userId);
 
     setPowerDialogOpen(false);
-    toast.success(isGerman ? "Gespeichert" : "Saved");
   };
 
-  const handleHealthySave = () => {
+  const saveHealth = () => {
     setHealthyDialogOpen(false);
-    toast.success(isGerman ? "Gespeichert" : "Saved");
   };
 
   // ---------- START ----------
-  const handleStart = async () => {
+  const start = async () => {
     if (!level || !bodyType || healthOptions.length === 0) {
-      toast.error(isGerman ? "Felder fehlen" : "Missing fields");
+      toast.error("Bitte alles ausfüllen");
       return;
     }
 
-    if (!hasPremium) return buyPremium();
+    if (!hasPremium) {
+      await buyPremium();
+      return;
+    }
 
     const success = await completeOnboarding(userId);
 
     if (success) {
-      toast.success("Welcome!");
       navigate("/loading");
     }
   };
@@ -184,9 +173,6 @@ const Onboarding = () => {
     );
   };
 
-  const allCompleted =
-    !!level && !!bodyType && healthOptions.length > 0;
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -195,12 +181,15 @@ const Onboarding = () => {
     );
   }
 
+  const allCompleted =
+    level && bodyType && healthOptions.length > 0;
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-6"
+      className="min-h-screen flex items-center justify-center p-6 relative"
       style={{ backgroundImage: `url(${onboardingBg})` }}
     >
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/60" />
 
       <div className="relative z-10 w-full max-w-lg">
 
@@ -214,33 +203,32 @@ const Onboarding = () => {
         <div className="grid grid-cols-2 gap-3">
 
           <Card onClick={() => setLevelDialogOpen(true)} className="p-4">
-            <Dumbbell />
-            Level
+            <Dumbbell /> Level
           </Card>
 
           <Card onClick={() => setPowerDialogOpen(true)} className="p-4">
-            <Zap />
-            Power
+            <Zap /> Power
           </Card>
 
           <Card onClick={() => setHealthyDialogOpen(true)} className="p-4">
-            <Heart />
-            Healthy
+            <Heart /> Healthy
           </Card>
 
-          <Card onClick={handleStart} className="p-4">
+          <Card onClick={start} className="p-4">
             <Play />
             {hasPremium ? "Start" : "Premium"}
           </Card>
         </div>
 
-        {/* HEALTH OPTIONS FIX */}
+        {/* HEALTH OPTIONS */}
         <div className="mt-4 text-white">
-          <Checkbox
-            checked={healthOptions.includes("sleep")}
-            onCheckedChange={() => toggleHealth("sleep")}
-          />
-          Sleep
+          <label className="flex gap-2">
+            <Checkbox
+              checked={healthOptions.includes("sleep")}
+              onCheckedChange={() => toggleHealth("sleep")}
+            />
+            Sleep
+          </label>
         </div>
 
         {/* LEVEL DIALOG */}
@@ -249,14 +237,27 @@ const Onboarding = () => {
             <DialogTitle>Level</DialogTitle>
 
             <RadioGroup value={level} onValueChange={setLevel}>
-              <RadioGroupItem value="beginner" />
-              Beginner
-
-              <RadioGroupItem value="pro" />
-              Pro
+              <RadioGroupItem value="beginner" /> Beginner
+              <RadioGroupItem value="pro" /> Pro
             </RadioGroup>
 
-            <Button onClick={handleLevelSave}>Save</Button>
+            <Button onClick={saveLevel}>Save</Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* POWER DIALOG */}
+        <Dialog open={powerDialogOpen} onOpenChange={setPowerDialogOpen}>
+          <DialogContent>
+            <DialogTitle>Power</DialogTitle>
+            <Button onClick={savePower}>Save</Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* HEALTH DIALOG */}
+        <Dialog open={healthyDialogOpen} onOpenChange={setHealthyDialogOpen}>
+          <DialogContent>
+            <DialogTitle>Healthy</DialogTitle>
+            <Button onClick={saveHealth}>Save</Button>
           </DialogContent>
         </Dialog>
 
