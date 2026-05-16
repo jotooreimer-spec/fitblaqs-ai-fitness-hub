@@ -59,14 +59,13 @@ const Onboarding = () => {
     }
   };
 
-  const buyPremium = async () => {
+  const buyPremium = async (): Promise<boolean> => {
     try {
       setIsPremiumLoading(true);
       if (!window.getDigitalGoodsService) {
-        // Fallback: allow continue when billing not available (web preview)
         setHasPremium(true);
         toast.success(t("Premium aktiviert", "Premium activated"));
-        return;
+        return true;
       }
       const service = await window.getDigitalGoodsService(
         "https://play.google.com/billing"
@@ -74,8 +73,10 @@ const Onboarding = () => {
       await service.launchBillingFlow("fitblaqspremium");
       await checkPurchase();
       toast.success(t("Premium aktiviert", "Premium activated"));
+      return true;
     } catch {
       toast.error(t("Kauf fehlgeschlagen", "Purchase failed"));
+      return false;
     } finally {
       setIsPremiumLoading(false);
     }
@@ -156,13 +157,14 @@ const Onboarding = () => {
       toast.error(t("Bitte fülle alle Felder aus", "Please complete all fields"));
       return;
     }
-    if (!hasPremium) {
-      await buyPremium();
-      return;
-    }
     if (!userId) {
       navigate("/login", { replace: true });
       return;
+    }
+    let premiumOk = hasPremium;
+    if (!premiumOk) {
+      premiumOk = await buyPremium();
+      if (!premiumOk) return;
     }
     const success = await completeOnboarding(userId);
     if (success) {
