@@ -157,13 +157,14 @@ const Onboarding = () => {
       toast.error(t("Bitte fülle alle Felder aus", "Please complete all fields"));
       return;
     }
-    if (!hasPremium) {
-      await buyPremium();
-      return;
-    }
     if (!userId) {
       navigate("/login", { replace: true });
       return;
+    }
+    let premiumOk = hasPremium;
+    if (!premiumOk) {
+      premiumOk = await buyPremium();
+      if (!premiumOk) return;
     }
     const success = await completeOnboarding(userId);
     if (success) {
