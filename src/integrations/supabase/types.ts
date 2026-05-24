@@ -248,27 +248,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rate_limits: {
-        Row: {
-          endpoint: string
-          request_count: number | null
-          user_id: string
-          window_start: string | null
-        }
-        Insert: {
-          endpoint: string
-          request_count?: number | null
-          user_id: string
-          window_start?: string | null
-        }
-        Update: {
-          endpoint?: string
-          request_count?: number | null
-          user_id?: string
-          window_start?: string | null
-        }
-        Relationships: []
-      }
       subscriptions: {
         Row: {
           cancelled_at: string | null
@@ -390,15 +369,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_rate_limit: {
-        Args: {
-          p_endpoint: string
-          p_max_requests: number
-          p_user_id: string
-          p_window_seconds: number
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       body_part: "lower_body" | "upper_body"
