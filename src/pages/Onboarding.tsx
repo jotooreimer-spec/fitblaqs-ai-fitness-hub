@@ -17,6 +17,10 @@ import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
 import onboardingBg from "@/assets/onboarding-bg.jpg";
 import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import levelImg from "@/assets/upperbody.png";
+import powerImg from "@/assets/middlebody.png";
+import healthyImg from "@/assets/protein.jpg";
+import startImg from "@/assets/bodyworkout-bg.png";
 
 declare global {
   interface Window {
