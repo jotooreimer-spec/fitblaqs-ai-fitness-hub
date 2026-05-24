@@ -218,61 +218,71 @@ const Onboarding = () => {
         <div className="grid grid-cols-2 gap-3">
           <Card
             onClick={() => setLevelDialogOpen(true)}
-            className={`p-4 cursor-pointer transition hover:scale-105 backdrop-blur-sm ${
-              level
-                ? "bg-green-600/70 border-green-400/50"
-                : "bg-black/60 border-white/10"
+            className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
+              level ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
+            style={{ backgroundImage: `url(${levelImg})` }}
           >
-            <Dumbbell className="w-8 h-8 text-white mb-2" />
-            <h3 className="text-white font-semibold">Level</h3>
-            <p className="text-white/60 text-xs">{t("Fitness-Level", "Fitness level")}</p>
+            <div className="absolute inset-0 bg-black/55" />
+            <div className="relative z-10">
+              <Dumbbell className="w-8 h-8 text-white mb-2" />
+              <h3 className="text-white font-semibold">Level</h3>
+              <p className="text-white/70 text-xs">{t("Fitness-Level", "Fitness level")}</p>
+            </div>
           </Card>
 
           <Card
             onClick={() => setPowerDialogOpen(true)}
-            className={`p-4 cursor-pointer transition hover:scale-105 backdrop-blur-sm ${
-              bodyType
-                ? "bg-green-600/70 border-green-400/50"
-                : "bg-black/60 border-white/10"
+            className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
+              bodyType ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
+            style={{ backgroundImage: `url(${powerImg})` }}
           >
-            <Zap className="w-8 h-8 text-white mb-2" />
-            <h3 className="text-white font-semibold">Power</h3>
-            <p className="text-white/60 text-xs">{t("Körpertyp", "Body type")}</p>
+            <div className="absolute inset-0 bg-black/55" />
+            <div className="relative z-10">
+              <Zap className="w-8 h-8 text-white mb-2" />
+              <h3 className="text-white font-semibold">Power</h3>
+              <p className="text-white/70 text-xs">{t("Körpertyp", "Body type")}</p>
+            </div>
           </Card>
 
           <Card
             onClick={() => setHealthyDialogOpen(true)}
-            className={`p-4 cursor-pointer transition hover:scale-105 backdrop-blur-sm ${
-              healthOptions.length > 0
-                ? "bg-green-600/70 border-green-400/50"
-                : "bg-black/60 border-white/10"
+            className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
+              healthOptions.length > 0 ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
+            style={{ backgroundImage: `url(${healthyImg})` }}
           >
-            <Heart className="w-8 h-8 text-white mb-2" />
-            <h3 className="text-white font-semibold">Healthy</h3>
-            <p className="text-white/60 text-xs">{t("Gesundheit", "Health info")}</p>
+            <div className="absolute inset-0 bg-black/55" />
+            <div className="relative z-10">
+              <Heart className="w-8 h-8 text-white mb-2" />
+              <h3 className="text-white font-semibold">Healthy</h3>
+              <p className="text-white/70 text-xs">{t("Gesundheit", "Health info")}</p>
+            </div>
           </Card>
 
           <Card
             onClick={handleStart}
-            className="p-4 cursor-pointer transition hover:scale-105 backdrop-blur-sm bg-primary/80 border-primary/50"
+            className="relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border border-primary/60 bg-cover bg-center"
+            style={{ backgroundImage: `url(${startImg})` }}
           >
-            {hasPremium ? (
-              <Play className="w-8 h-8 text-white mb-2" />
-            ) : (
-              <Crown className="w-8 h-8 text-white mb-2" />
-            )}
-            <h3 className="text-white font-semibold">
-              {hasPremium ? t("Start", "Start") : t("Premium", "Premium")}
-            </h3>
-            <p className="text-white/70 text-xs">
-              {hasPremium ? t("Workout", "Workout") : t("Aktivieren", "Activate")}
-            </p>
-            {isPremiumLoading && (
-              <Loader2 className="w-4 h-4 text-white animate-spin mt-2" />
-            )}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/70 to-black/70" />
+            <div className="relative z-10">
+              {hasPremium ? (
+                <Play className="w-8 h-8 text-white mb-2" />
+              ) : (
+                <Crown className="w-8 h-8 text-white mb-2" />
+              )}
+              <h3 className="text-white font-semibold">
+                {hasPremium ? t("Start", "Start") : t("Premium", "Premium")}
+              </h3>
+              <p className="text-white/80 text-xs">
+                {hasPremium ? t("Workout", "Workout") : t("Aktivieren", "Activate")}
+              </p>
+              {isPremiumLoading && (
+                <Loader2 className="w-4 h-4 text-white animate-spin mt-2" />
+              )}
+            </div>
           </Card>
         </div>
 
