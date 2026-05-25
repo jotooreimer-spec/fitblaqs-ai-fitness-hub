@@ -11,7 +11,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dumbbell, Zap, Heart, Play, CheckCircle2 } from "lucide-react";
+import { Dumbbell, Zap, Heart, Play, CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
