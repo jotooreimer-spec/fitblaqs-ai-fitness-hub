@@ -11,7 +11,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dumbbell, Zap, Heart, Play, Crown, Loader2 } from "lucide-react";
+import { Dumbbell, Zap, Heart, Play, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
@@ -22,13 +22,14 @@ import powerImg from "@/assets/middlebody.png";
 import healthyImg from "@/assets/protein.jpg";
 import startImg from "@/assets/bodyworkout-bg.png";
 
-declare global {
-  interface Window {
-    getDigitalGoodsService?: (provider: string) => Promise<any>;
-  }
-}
-
 const HEALTH_KEYS = ["sleep", "stress", "diet", "activity"];
+
+const healthLabels = {
+  sleep: { de: "Schlaf", en: "Sleep" },
+  stress: { de: "Stress", en: "Stress" },
+  diet: { de: "Ernährung", en: "Diet" },
+  activity: { de: "Aktivität", en: "Activity" },
+};
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -37,8 +38,7 @@ const Onboarding = () => {
   const [userId, setUserId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const [hasPremium, setHasPremium] = useState(false);
-  const [isPremiumLoading, setIsPremiumLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [levelDialogOpen, setLevelDialogOpen] = useState(false);
   const [powerDialogOpen, setPowerDialogOpen] = useState(false);
@@ -49,42 +49,6 @@ const Onboarding = () => {
   const [healthOptions, setHealthOptions] = useState<string[]>([]);
 
   const t = (de: string, en: string) => (isGerman ? de : en);
-
-  const checkPurchase = async () => {
-    try {
-      if (!window.getDigitalGoodsService) return;
-      const service = await window.getDigitalGoodsService(
-        "https://play.google.com/billing"
-      );
-      const purchases = await service.listPurchases();
-      if (purchases?.length > 0) setHasPremium(true);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const buyPremium = async (): Promise<boolean> => {
-    try {
-      setIsPremiumLoading(true);
-      if (!window.getDigitalGoodsService) {
-        setHasPremium(true);
-        toast.success(t("Premium aktiviert", "Premium activated"));
-        return true;
-      }
-      const service = await window.getDigitalGoodsService(
-        "https://play.google.com/billing"
-      );
-      await service.launchBillingFlow("fitblaqspremium");
-      await checkPurchase();
-      toast.success(t("Premium aktiviert", "Premium activated"));
-      return true;
-    } catch {
-      toast.error(t("Kauf fehlgeschlagen", "Purchase failed"));
-      return false;
-    } finally {
-      setIsPremiumLoading(false);
-    }
-  };
 
   useEffect(() => {
     const init = async () => {
@@ -100,8 +64,6 @@ const Onboarding = () => {
 
         setUserId(session.user.id);
         setIsGerman(session.user.user_metadata?.language === "de");
-
-        await checkPurchase();
 
         const done = await checkOnboardingStatus(session.user.id);
         if (done) {
@@ -129,18 +91,40 @@ const Onboarding = () => {
     init();
   }, [navigate]);
 
+  const saveProfileField = async (values: { athlete_level?: string; body_type?: string }) => {
+    if (!userId) {
+      navigate("/login", { replace: true });
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: userId, ...values }, { onConflict: "user_id" });
+
+    if (error) {
+      toast.error(t("Fehler beim Speichern", "Error saving"));
+      return false;
+    }
+
+    return true;
+  };
+
   const saveLevel = async () => {
     if (!level || !userId) return;
-    await supabase.from("profiles").update({ athlete_level: level }).eq("user_id", userId);
-    setLevelDialogOpen(false);
-    toast.success(t("Level gespeichert", "Level saved"));
+    const saved = await saveProfileField({ athlete_level: level });
+    if (saved) {
+      setLevelDialogOpen(false);
+      toast.success(t("Level gespeichert", "Level saved"));
+    }
   };
 
   const savePower = async () => {
     if (!bodyType || !userId) return;
-    await supabase.from("profiles").update({ body_type: bodyType }).eq("user_id", userId);
-    setPowerDialogOpen(false);
-    toast.success(t("Körpertyp gespeichert", "Body type saved"));
+    const saved = await saveProfileField({ body_type: bodyType });
+    if (saved) {
+      setPowerDialogOpen(false);
+      toast.success(t("Körpertyp gespeichert", "Body type saved"));
+    }
   };
 
   const saveHealth = () => {
@@ -165,16 +149,13 @@ const Onboarding = () => {
       navigate("/login", { replace: true });
       return;
     }
-    let premiumOk = hasPremium;
-    if (!premiumOk) {
-      premiumOk = await buyPremium();
-      if (!premiumOk) return;
-    }
+    setIsSaving(true);
     const success = await completeOnboarding(userId);
     if (success) {
       navigate("/loading", { replace: true });
     } else {
       toast.error(t("Fehler beim Speichern", "Error saving"));
+      setIsSaving(false);
     }
   };
 
@@ -201,19 +182,6 @@ const Onboarding = () => {
           <p className="text-white/70 text-sm">{t("Power & Healthy", "Power & Healthy")}</p>
         </div>
 
-        {/* Premium banner */}
-        {!hasPremium && (
-          <Card className="p-4 bg-gradient-to-r from-amber-600/30 to-yellow-500/30 border-amber-400/40 backdrop-blur-sm">
-            <div className="flex items-center gap-2 text-amber-100">
-              <Crown className="w-5 h-5" />
-              <span className="font-semibold">{t("Premium erforderlich", "Premium required")}</span>
-            </div>
-            <p className="text-amber-50/80 text-xs mt-1">
-              {t("Aktiviere Premium um fortzufahren", "Activate premium to continue")}
-            </p>
-          </Card>
-        )}
-
         {/* Grid */}
         <div className="grid grid-cols-2 gap-3">
           <Card
@@ -221,13 +189,14 @@ const Onboarding = () => {
             className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
               level ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
-            style={{ backgroundImage: `url(${levelImg})` }}
           >
+            <img src={levelImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-black/55" />
             <div className="relative z-10">
               <Dumbbell className="w-8 h-8 text-white mb-2" />
               <h3 className="text-white font-semibold">Level</h3>
               <p className="text-white/70 text-xs">{t("Fitness-Level", "Fitness level")}</p>
+              {level && <CheckCircle2 className="absolute right-0 top-0 h-5 w-5 text-green-300" />}
             </div>
           </Card>
 
@@ -236,13 +205,14 @@ const Onboarding = () => {
             className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
               bodyType ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
-            style={{ backgroundImage: `url(${powerImg})` }}
           >
+            <img src={powerImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-black/55" />
             <div className="relative z-10">
               <Zap className="w-8 h-8 text-white mb-2" />
               <h3 className="text-white font-semibold">Power</h3>
               <p className="text-white/70 text-xs">{t("Körpertyp", "Body type")}</p>
+              {bodyType && <CheckCircle2 className="absolute right-0 top-0 h-5 w-5 text-green-300" />}
             </div>
           </Card>
 
@@ -251,35 +221,32 @@ const Onboarding = () => {
             className={`relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border bg-cover bg-center ${
               healthOptions.length > 0 ? "border-green-400/70 ring-2 ring-green-400/60" : "border-white/10"
             }`}
-            style={{ backgroundImage: `url(${healthyImg})` }}
           >
+            <img src={healthyImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-black/55" />
             <div className="relative z-10">
               <Heart className="w-8 h-8 text-white mb-2" />
               <h3 className="text-white font-semibold">Healthy</h3>
               <p className="text-white/70 text-xs">{t("Gesundheit", "Health info")}</p>
+              {healthOptions.length > 0 && <CheckCircle2 className="absolute right-0 top-0 h-5 w-5 text-green-300" />}
             </div>
           </Card>
 
           <Card
             onClick={handleStart}
             className="relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border border-primary/60 bg-cover bg-center"
-            style={{ backgroundImage: `url(${startImg})` }}
           >
+            <img src={startImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-br from-primary/70 to-black/70" />
             <div className="relative z-10">
-              {hasPremium ? (
-                <Play className="w-8 h-8 text-white mb-2" />
-              ) : (
-                <Crown className="w-8 h-8 text-white mb-2" />
-              )}
+              <Play className="w-8 h-8 text-white mb-2" />
               <h3 className="text-white font-semibold">
-                {hasPremium ? t("Start", "Start") : t("Premium", "Premium")}
+                {t("Start", "Start")}
               </h3>
               <p className="text-white/80 text-xs">
-                {hasPremium ? t("Workout", "Workout") : t("Aktivieren", "Activate")}
+                {t("Workout", "Workout")}
               </p>
-              {isPremiumLoading && (
+              {isSaving && (
                 <Loader2 className="w-4 h-4 text-white animate-spin mt-2" />
               )}
             </div>
@@ -306,7 +273,7 @@ const Onboarding = () => {
             {[
               { v: "beginner", de: "Anfänger", en: "Beginner" },
               { v: "intermediate", de: "Fortgeschritten", en: "Intermediate" },
-              { v: "pro", de: "Profi", en: "Professional" },
+              { v: "professional", de: "Profi", en: "Professional" },
             ].map((o) => (
               <div key={o.v} className="flex items-center gap-2">
                 <RadioGroupItem value={o.v} id={`lvl-${o.v}`} />
@@ -328,9 +295,10 @@ const Onboarding = () => {
           </DialogHeader>
           <RadioGroup value={bodyType} onValueChange={setBodyType}>
             {[
-              { v: "ectomorph", de: "Schlank", en: "Ectomorph" },
-              { v: "mesomorph", de: "Athletisch", en: "Mesomorph" },
-              { v: "endomorph", de: "Kräftig", en: "Endomorph" },
+              { v: "ectomorph", de: "Fett", en: "Fat" },
+              { v: "mesomorph", de: "Schlank", en: "Slim" },
+              { v: "endomorph", de: "Muskulös", en: "Muscular" },
+              { v: "defined", de: "Definiert", en: "Defined" },
             ].map((o) => (
               <div key={o.v} className="flex items-center gap-2">
                 <RadioGroupItem value={o.v} id={`pw-${o.v}`} />
@@ -357,7 +325,7 @@ const Onboarding = () => {
                   checked={healthOptions.includes(k)}
                   onCheckedChange={() => toggleHealth(k)}
                 />
-                <span className="capitalize">{k}</span>
+                <span>{t(healthLabels[k as keyof typeof healthLabels].de, healthLabels[k as keyof typeof healthLabels].en)}</span>
               </label>
             ))}
           </div>
