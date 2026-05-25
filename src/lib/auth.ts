@@ -72,7 +72,7 @@ export const checkOnboardingStatus = async (userId: string): Promise<boolean> =>
       .from("profiles")
       .select("has_completed_onboarding")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       return false;
@@ -89,8 +89,10 @@ export const completeOnboarding = async (userId: string): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from("profiles")
-      .update({ has_completed_onboarding: true })
-      .eq("user_id", userId);
+      .upsert(
+        { user_id: userId, has_completed_onboarding: true },
+        { onConflict: "user_id" }
+      );
 
     return !error;
   } catch (e) {
