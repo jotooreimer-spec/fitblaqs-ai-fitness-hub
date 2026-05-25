@@ -222,12 +222,12 @@ export const CookieBanner = () => {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 p-3 animate-in slide-in-from-bottom-5 duration-300 pointer-events-none">
-        <Card className="max-w-2xl mx-auto bg-background/95 backdrop-blur-md border-border shadow-2xl p-4 pointer-events-auto">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+        <Card className="max-w-4xl mx-auto bg-background/95 backdrop-blur-md border-border shadow-2xl p-3 pointer-events-auto">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="hidden sm:flex p-2 bg-primary/10 rounded-lg shrink-0">
               <Cookie className="w-6 h-6 text-primary" />
             </div>
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 min-w-0 space-y-2 sm:space-y-1">
               <div>
                 <h3 className="font-semibold text-foreground mb-1">{t("title")}</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground">{t("description")}</p>
@@ -238,7 +238,7 @@ export const CookieBanner = () => {
                   {t("privacyLink")}
                 </a>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 sm:hidden">
                 <Button 
                   onClick={handleAcceptAll}
                   className="gap-2"
@@ -261,6 +261,19 @@ export const CookieBanner = () => {
                   {t("settings")}
                 </Button>
               </div>
+            </div>
+            <div className="hidden sm:flex flex-wrap gap-2 shrink-0">
+              <Button onClick={handleAcceptAll} className="gap-2">
+                <Check className="w-4 h-4" />
+                {t("acceptAll")}
+              </Button>
+              <Button variant="outline" onClick={handleAcceptEssential}>
+                {t("acceptEssential")}
+              </Button>
+              <Button variant="ghost" onClick={() => setShowSettings(true)} className="gap-2">
+                <Settings2 className="w-4 h-4" />
+                {t("settings")}
+              </Button>
             </div>
             <Button 
               variant="ghost" 

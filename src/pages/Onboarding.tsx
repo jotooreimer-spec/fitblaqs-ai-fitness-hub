@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
 import onboardingBg from "@/assets/onboarding-bg.jpg";
-import fitblaqsLogo from "@/assets/fitblaqs-logo-transparent.png";
 import levelImg from "@/assets/upperbody.png";
 import powerImg from "@/assets/middlebody.png";
 import healthyImg from "@/assets/protein.jpg";
@@ -150,6 +149,11 @@ const Onboarding = () => {
       return;
     }
     setIsSaving(true);
+    const profileSaved = await saveProfileField({ athlete_level: level, body_type: bodyType });
+    if (!profileSaved) {
+      setIsSaving(false);
+      return;
+    }
     const success = await completeOnboarding(userId);
     if (success) {
       navigate("/loading", { replace: true });
@@ -162,7 +166,7 @@ const Onboarding = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <img src={fitblaqsLogo} alt="FitBlaqs" className="w-36 animate-pulse object-contain" />
+        <h1 className="text-3xl font-bold text-white animate-pulse">FitBlaqs</h1>
       </div>
     );
   }
@@ -177,8 +181,7 @@ const Onboarding = () => {
       <div className="relative z-10 w-full max-w-lg space-y-4 pb-28 sm:pb-0">
         {/* Header */}
         <div className="text-center space-y-1">
-          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-40 h-auto mx-auto object-contain" />
-          <h1 className="text-3xl font-bold text-white">FitBlaqs</h1>
+          <h1 className="text-4xl font-bold text-white">FitBlaqs</h1>
           <p className="text-white/70 text-sm">{t("Power & Healthy", "Power & Healthy")}</p>
         </div>
 
@@ -233,7 +236,7 @@ const Onboarding = () => {
           </Card>
 
           <Card
-            onClick={handleStart}
+            onClick={() => !isSaving && handleStart()}
             className="relative overflow-hidden p-4 h-36 cursor-pointer transition hover:scale-105 border border-primary/60 bg-cover bg-center"
           >
             <img src={startImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
