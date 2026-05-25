@@ -221,8 +221,8 @@ export const CookieBanner = () => {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-in slide-in-from-bottom-5 duration-300">
-        <Card className="max-w-2xl mx-auto bg-background/95 backdrop-blur-md border-border shadow-2xl p-6">
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-3 animate-in slide-in-from-bottom-5 duration-300 pointer-events-none">
+        <Card className="max-w-2xl mx-auto bg-background/95 backdrop-blur-md border-border shadow-2xl p-4 pointer-events-auto">
           <div className="flex items-start gap-4">
             <div className="p-2 bg-primary/10 rounded-lg shrink-0">
               <Cookie className="w-6 h-6 text-primary" />
@@ -230,7 +230,7 @@ export const CookieBanner = () => {
             <div className="flex-1 space-y-4">
               <div>
                 <h3 className="font-semibold text-foreground mb-1">{t("title")}</h3>
-                <p className="text-sm text-muted-foreground">{t("description")}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{t("description")}</p>
                 <a 
                   href="/privacy-policy" 
                   className="text-xs text-primary hover:underline mt-1 inline-block"

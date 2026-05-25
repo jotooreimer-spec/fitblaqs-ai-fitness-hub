@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { completeOnboarding, checkOnboardingStatus } from "@/lib/auth";
 import { toast } from "sonner";
 import onboardingBg from "@/assets/onboarding-bg.jpg";
-import fitblaqsLogo from "@/assets/fitblaqs-logo.png";
+import fitblaqsLogo from "@/assets/fitblaqs-logo-transparent.png";
 import levelImg from "@/assets/upperbody.png";
 import powerImg from "@/assets/middlebody.png";
 import healthyImg from "@/assets/protein.jpg";
@@ -162,7 +162,7 @@ const Onboarding = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <img src={fitblaqsLogo} alt="FitBlaqs" className="w-20 animate-pulse" />
+        <img src={fitblaqsLogo} alt="FitBlaqs" className="w-36 animate-pulse object-contain" />
       </div>
     );
   }
@@ -174,10 +174,10 @@ const Onboarding = () => {
     >
       <div className="absolute inset-0 bg-black/70" />
 
-      <div className="relative z-10 w-full max-w-lg space-y-6">
+      <div className="relative z-10 w-full max-w-lg space-y-4 pb-28 sm:pb-0">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-20 h-20 mx-auto" />
+        <div className="text-center space-y-1">
+          <img src={fitblaqsLogo} alt="FitBlaqs" className="w-40 h-auto mx-auto object-contain" />
           <h1 className="text-3xl font-bold text-white">FitBlaqs</h1>
           <p className="text-white/70 text-sm">{t("Power & Healthy", "Power & Healthy")}</p>
         </div>
