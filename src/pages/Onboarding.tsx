@@ -173,7 +173,7 @@ const Onboarding = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center"
+      className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-bottom"
       style={{ backgroundImage: `url(${onboardingBg})` }}
     >
       <div className="absolute inset-0 bg-black/70" />
