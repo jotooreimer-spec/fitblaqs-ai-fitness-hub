@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Upload, User } from "lucide-react";
+import { Upload, User, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 interface AvatarUploadProps {
   userId: string;
