@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Upload, User } from "lucide-react";
+import { Upload, User, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 interface AvatarUploadProps {
   userId: string;
@@ -15,6 +16,9 @@ export const AvatarUpload = ({ userId, currentAvatarUrl, onUploadSuccess, isGerm
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Resolve storage paths / legacy URLs to a displayable signed URL
+  const { signedUrl, loading: resolving } = useSignedUrl(currentAvatarUrl ?? null);
+  const displayUrl = signedUrl;
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -126,16 +130,24 @@ export const AvatarUpload = ({ userId, currentAvatarUrl, onUploadSuccess, isGerm
         disabled={isUploading}
       />
       
-      {currentAvatarUrl ? (
-        <img src={currentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+      {displayUrl ? (
+        <img src={displayUrl} alt="Avatar" className="w-full h-full object-cover" />
       ) : (
         <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-          <User className="w-16 h-16 text-primary" />
+          {resolving ? (
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          ) : (
+            <User className="w-16 h-16 text-primary" />
+          )}
         </div>
       )}
       
       <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-        <Upload className="w-8 h-8 text-white" />
+        {isUploading ? (
+          <Loader2 className="w-8 h-8 text-white animate-spin" />
+        ) : (
+          <Upload className="w-8 h-8 text-white" />
+        )}
       </div>
     </div>
   );
