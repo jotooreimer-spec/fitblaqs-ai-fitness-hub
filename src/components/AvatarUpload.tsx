@@ -16,6 +16,9 @@ export const AvatarUpload = ({ userId, currentAvatarUrl, onUploadSuccess, isGerm
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Resolve storage paths / legacy URLs to a displayable signed URL
+  const { signedUrl, loading: resolving } = useSignedUrl(currentAvatarUrl ?? null);
+  const displayUrl = signedUrl;
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
