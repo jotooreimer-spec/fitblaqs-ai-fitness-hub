@@ -189,7 +189,7 @@ const Settings = () => {
       .from("profiles")
       .select("*")
       .eq("user_id", session.user.id)
-      .single();
+      .maybeSingle();
 
     if (profile) {
       setProfileData(profile);
