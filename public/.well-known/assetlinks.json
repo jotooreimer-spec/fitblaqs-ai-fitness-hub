@@ -7,11 +7,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "app.fitblaqsstudio.twa",
-      sha256_cert_fingerprints": [
+      "sha256_cert_fingerprints": [
         "FB:32:18:02:05:19:7C:0B:0B:F4:D6:D0:E4:CF:BD:7B:49:80:6D:3E:F0:18:7C:B4:42:E1:3D:BB:69:0A:7F:BC"
       ]
     }
-  }
-]
   }
 ]
